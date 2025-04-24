@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 from utils.response import Response
 from utils.validator import CustomValidator
 from utils.models_validations import schema_login_user
-
+from utils.dynamo_utils import serialize_dynamo_to_dict
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -42,6 +42,10 @@ def lambda_handler(event, context):
         if isinstance(body, str):
             body = json.loads(body)
 
+        if not body:
+            return Response(status_code=400, body={'error': 'El body debe tener los parametros requeridos.'}).to_dict()
+
+
         if not validator_login_user.validate(body):
             logger.error(f"Errores de validación: {validator_login_user.get_errors()}")
             return Response(status_code=400, body={'error': 'Fallo en la validación de datos',
@@ -62,14 +66,19 @@ def lambda_handler(event, context):
         if 'Items' not in response or len(response['Items']) == 0:
             logger.error(f"Usuario no encontrado: {username}")
             return Response(status_code=401, body={'error': 'Usuario no encontrado'}).to_dict()
+        response_item_serialiser = serialize_dynamo_to_dict(response['Items'][0])
 
-        stored_hashed_password = response['Items'][0]['password']['S']
+        stored_hashed_password = response_item_serialiser['password']
+        id = response_item_serialiser['id']
+        role = response_item_serialiser['role']
 
         if not bcrypt.checkpw(password.encode('utf-8'), stored_hashed_password.encode('utf-8')):
             logger.error(f"Contraseña incorrecta para el usuario: {username}")
             return Response(status_code=401, body={'error': 'Contraseña incorrecta'}).to_dict()
 
         payload = {
+            'id': id,
+            'role': role,
             'username': username,
             'exp': datetime.utcnow() + timedelta(minutes=TOKEN_EXPIRATION)
         }
@@ -88,9 +97,9 @@ def lambda_handler(event, context):
 if __name__ == '__main__':
     event = {
         'body': json.dumps({
-            'username': 'peresfvbn',
-            'password': '12345678',
-        })
+    "username": "juanp",
+    "password": "123456"
+})
     }
 
     print(lambda_handler(event, None))

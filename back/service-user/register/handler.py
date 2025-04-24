@@ -9,6 +9,7 @@ from datetime import datetime
 from utils.response import Response
 from utils.validator import CustomValidator
 from utils.models_validations import schema_register_user
+from utils.dynamo_utils import serialize_to_dynamo
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -24,8 +25,12 @@ def lambda_handler(event, context):
     try:
         body = event.get('body')
 
+
         if isinstance(body, str):
             body = json.loads(body)
+
+        if not body:
+            return Response(status_code=400, body={'error': 'El body debe tener los parametros requeridos.'}).to_dict()
 
         if not validator_register_user.validate(body):
             logger.error(f"Errores de validación: {validator_register_user.get_errors()}")
@@ -48,23 +53,22 @@ def lambda_handler(event, context):
             return Response(status_code=400, body={'error': f'El username {username} ya existe'}).to_dict()
 
         user_data = {
-            'id': {'S': str(uuid.uuid4())},
-            'name': {'S': body['name']},
-            'username': {'S': username},
-            'password': {'S': body['password']},
-            'last_name': {'S': body['last_name']},
-            'created_at': {'S': datetime.utcnow().isoformat()}
+            **body,#toda la data validada del body
+            'id': str(uuid.uuid4()), #el id requerido en dynamo
+            'created_at': datetime.utcnow().isoformat(), # fecha de creacion
+            'role': 'TEACHER' # rol por defcto
         }
 
-        password = user_data['password']['S'].encode('utf-8')
+        password = user_data['password'].encode('utf-8')
         hashed_password = bcrypt.hashpw(password, bcrypt.gensalt())
-        user_data['password']['S'] = hashed_password.decode('utf-8')
+        user_data['password'] = hashed_password.decode('utf-8')
 
+        user_data_serialized = serialize_to_dynamo(user_data)
 
         try:
             dyname.put_item(
                 TableName=USER_TABLE,
-                Item=user_data,
+                Item=user_data_serialized,
                 ConditionExpression="attribute_not_exists(username)"
             )
 
@@ -84,10 +88,6 @@ def lambda_handler(event, context):
 if __name__ == '__main__':
     event = {
         "body": json.dumps({
-            "name": "rj",
-            "username": "12133",
-            "password": "1saghj",
-            "last_name": "nnxnnxnx"
         })
     }
 
