@@ -1,0 +1,75 @@
+service: service-user
+org: ${env:ORG}
+
+provider:
+  name: aws
+  runtime: python3.9
+  memorySize: 1024
+  timeout: 29
+  role: ${env:ROLE}
+  environment: #aca las variables de entorno
+    DATABASE_NAME: ${env:DATABASE_NAME}
+
+package:
+  individually: true
+  exclude:
+    - .serverless/**
+    - .venv/**
+    - .idea/**
+    - financial-data/**
+    - build_layer.sh
+    - user/**
+    - test/**
+    - Dockerfile
+    - variables/**
+    - businesses_businessId_ai-parse/**
+    - "*.zip" #eres incluir otros ZIP que no sean necesarios
+    - README.md  # Ejemplo, si hay archivos de documentación que no necesitas
+
+# Definición del layer que contiene las dependencias comunes.
+layers: #si es que hay librerias externa
+  commonLib:
+    package:
+      artifact: layer_common_lib.zip
+    description: "Dependencias comunes para todas las Lambdas"
+
+functions:
+  register:
+    handler: register/handler.lambda_handler
+    layers:
+      - { Ref: CommonLibLambdaLayer }
+    events:
+      - http:
+          path: user/register
+          method: post
+          cors:
+            origin: '*'
+            methods:
+              - POST
+            headers:
+              - Content-Type
+              - Authorization
+              - X-Amz-Date
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+
+  login:
+    handler: login/handler.lambda_handler
+    layers:
+      - { Ref: CommonLibLambdaLayer }
+    events:
+      - http:
+          path: user/login
+          method: post
+          cors:
+            origin: '*'
+            methods:
+              - POST
+            headers:
+              - Content-Type
+              - Authorization
+              - X-Amz-Date
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
