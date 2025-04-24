@@ -8,7 +8,7 @@ interface VisitorProps {
 const VisitorOption: React.FC<VisitorProps> = ({ onVisit }) => (
   <View style={styles.container}>
     <TouchableOpacity style={styles.button} onPress={onVisit}>
-      <Text style={styles.buttonText}>Continuar como Visitante</Text>
+      <Text style={styles.buttonText}>Continuar como Estudiante</Text>
     </TouchableOpacity>
   </View>
 );

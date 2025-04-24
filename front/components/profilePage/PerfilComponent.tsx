@@ -43,14 +43,25 @@ const PerfilComponent: React.FC<PerfilComponentProps> = ({ onLogout }) => {
           return;
         }
 
-        const response = await axios.get(
+        const TEMP_mockUser: UserData = {
+          email: "a@gmail.com",
+          data: {
+            name: "abc",
+            last_name: "def",
+            phone: "123",
+            district: "albuquerque new mexico"
+          }
+        };
+
+        const response = /*await axios.get(
           'https://plaqmrxx8g.execute-api.us-east-1.amazonaws.com/dev/user/me',
           {
             headers: {
               Authorization: `Bearer ${token}`,
             },
           }
-        );
+        );*/
+        { data: TEMP_mockUser };
 
         setUserData(response.data);
       } catch (error) {
@@ -159,17 +170,17 @@ const PerfilComponent: React.FC<PerfilComponentProps> = ({ onLogout }) => {
 
       <View style={styles.detailsContainer}>
         <View style={styles.detailRow}>
-          <Ionicons name="mail-outline" size={24} color="#70B7C7" />
+          <Ionicons name="mail-outline" size={24} color="#d34537" />
           <Text style={styles.detailText}>{userData.email || 'Correo no disponible'}</Text>
         </View>
 
         <View style={styles.detailRow}>
-          <Ionicons name="call-outline" size={24} color="#70B7C7" />
+          <Ionicons name="call-outline" size={24} color="#d34537" />
           <Text style={styles.detailText}>{userData.data?.phone || 'Teléfono no disponible'}</Text>
         </View>
 
         <View style={styles.detailRow}>
-          <Ionicons name="location-outline" size={24} color="#70B7C7" />
+          <Ionicons name="location-outline" size={24} color="#d34537" />
           <Text style={styles.detailText}>{userData.data?.district || 'Distrito no disponible'}</Text>
         </View>
       </View>
@@ -187,12 +198,12 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     alignItems: 'center',
     paddingVertical: 20,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#fed3c2',
   },
   header: {
     alignItems: 'center',
     marginBottom: 20,
-    backgroundColor: '#70B7C7',
+    backgroundColor: '#d34537',
     width: '100%',
     paddingVertical: 30,
     borderBottomLeftRadius: 20,
@@ -210,7 +221,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 0,
     right: 10,
-    backgroundColor: '#70B7C7',
+    backgroundColor: '#d34537',
     borderRadius: 20,
     padding: 5,
   },
@@ -255,11 +266,11 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#fed3c2',
   },
   loadingText: {
     fontSize: 18,
-    color: 'gray',
+    color: 'dark gray',
   },
 });
 

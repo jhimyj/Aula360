@@ -61,11 +61,13 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
       <View style={styles.circleLarge} />
 
       <Image
-        source={require('../assets/images/register_imagen.png')}
+        source={require('../assets/images/logo_register.png')}
         style={styles.image}
       />
 
-      <Text style={styles.title}>Registrarse</Text>
+      <View style={styles.titleContainer}>
+        <Text style={styles.title}>Registrarse</Text>
+      </View>
 
       {/* Inputs */}
       <TextInput
@@ -144,7 +146,7 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFF',
+    backgroundColor: '#fed3c2',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -153,7 +155,7 @@ const styles = StyleSheet.create({
     width: 300,
     height: 300,
     borderRadius: 150,
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#ea735b',
     top: -100,
     right: -100,
   },
@@ -165,8 +167,17 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 30,
     fontWeight: 'bold',
+    color: '#fefbec',
+  },
+  titleContainer: {
+    width: 200,
+    height: 55,
     marginBottom: 20,
-    color: '#333',
+    backgroundColor: "#911d20",
+    textAlign: "center",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 10
   },
   input: {
     width: 300,
@@ -195,7 +206,7 @@ const styles = StyleSheet.create({
     padding: 0, // Elimina padding adicional del TextInput
   },
   button: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#FF0000',
     padding: 12,
     borderRadius: 10,
     width: 300,
@@ -213,7 +224,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   textHighlight: {
-    color: '#4CAF50',
+    color: '#FF0000',
     fontWeight: 'bold',
   },
 });

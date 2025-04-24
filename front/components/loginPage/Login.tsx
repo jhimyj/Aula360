@@ -30,7 +30,9 @@ const Login: React.FC<LoginProps> = ({ onNavigate, onLogin }) => {
         password: password,
       };
 
-      const response = await axios.post(
+      const TEMP_mockToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvZSBEb2UiLCJpYXQiOjE1MTYyMzkwMjJ9.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c";
+      
+      const response = /*await axios.post(
         'https://plaqmrxx8g.execute-api.us-east-1.amazonaws.com/dev/user/login',
         requestBody,
         {
@@ -38,7 +40,8 @@ const Login: React.FC<LoginProps> = ({ onNavigate, onLogin }) => {
             'Content-Type': 'application/json',
           },
         }
-      );
+      );*/
+      { data: { token: TEMP_mockToken }, status: 200 };
 
       console.log('Respuesta del servidor:', response.data);
 
@@ -81,7 +84,9 @@ const Login: React.FC<LoginProps> = ({ onNavigate, onLogin }) => {
       />
 
       {/* Título */}
-      <Text style={styles.title}>Iniciar Sesión</Text>
+      <View style={styles.titleContainer}>
+        <Text style={styles.title}>Iniciar Sesión</Text>
+      </View>
 
       {/* Inputs */}
       <TextInput
@@ -135,7 +140,7 @@ const Login: React.FC<LoginProps> = ({ onNavigate, onLogin }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFF',
+    backgroundColor: '#fed3c2',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -144,7 +149,7 @@ const styles = StyleSheet.create({
     width: 300,
     height: 300,
     borderRadius: 150,
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#ea735b',
     top: -100,
     right: -100,
   },
@@ -156,8 +161,17 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 30,
     fontWeight: 'bold',
+    color: '#fefbec',
+  },
+  titleContainer: {
+    width: 200,
+    height: 55,
     marginBottom: 20,
-    color: '#333',
+    backgroundColor: "#911d20",
+    textAlign: "center",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 10
   },
   input: {
     width: 300,
