@@ -8,7 +8,10 @@ provider:
   timeout: 29
   role: ${env:ROLE}
   environment: #aca las variables de entorno
-    DATABASE_NAME: ${env:DATABASE_NAME}
+    USER_TABLE: ${env:USER_TABLE}
+    USER_GSI_INDEX_USERNAME: ${env:USER_GSI_INDEX_USERNAME}
+    SECRET_KEY: ${env:SECRET_KEY}
+
 
 package:
   individually: true
