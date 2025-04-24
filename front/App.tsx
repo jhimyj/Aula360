@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { TouchableOpacity, Text, View, StyleSheet } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage'; // Importa AsyncStorage
 import SplashScreen from './components/SplashScreen'; // Importa SplashScreen
 import AuthScreen from './components/AuthScreen'; // Importa AuthScreen
@@ -77,15 +77,40 @@ export default function HomeScreen() {
     );
   }
 
-  // 3. Mostrar la interfaz principal si el usuario está autenticado o es visitante
+  // 3. Mostrar la interfaz principal si el usuario está autenticado (solo profesores)
+  if (isAuthenticated) {
+    return (
+      <View style={styles.navigationContainer}>
+        <NavigationContainer>
+          <DrawerNavigator onLogout={handleLogout} />
+        </NavigationContainer>
+      </View>
+    );
+  }
+
+  // 4. TODO: Mostrar la interfaz de visitante (estudiante) en caso final
   return (
-    <NavigationContainer>
-      <DrawerNavigator onLogout={handleLogout} />
-    </NavigationContainer>
+    <View style={styles.TEMP_placeholderContainer}>
+      <TouchableOpacity onPress={handleLogout}>
+        <Text>{":)"}</Text>
+      </TouchableOpacity>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  navigationContainer: {
+    width: "100%",
+    height: "100%",
+    backgroundColor: "#fed3c2"
+  },
+  TEMP_placeholderContainer: {
+    width: "100%",
+    height: "100%",
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#fed3c2"
+  },
   inputContainer: {
     padding: 20,
     backgroundColor: '#EAF7F8',

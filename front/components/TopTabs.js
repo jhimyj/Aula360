@@ -65,7 +65,7 @@ export default function DrawerNavigator({ onLogout }) {
     <Drawer.Navigator
       screenOptions={{
         headerStyle: {
-          backgroundColor: '#70B7C7',
+          backgroundColor: '#911d20',
         },
         headerTintColor: '#fff',
         headerTitleStyle: {
