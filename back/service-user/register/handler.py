@@ -1,25 +1,22 @@
 import json
 import logging
-import os
 import boto3
 import bcrypt
 import uuid
 from datetime import datetime
 
 from utils.response import Response
-from utils.validator import CustomValidator
-from utils.models_validations import schema_register_user
 from utils.dynamo_utils import serialize_to_dynamo
+from utils.config import USER_TABLE, USER_GSI_INDEX_USERNAME
+from utils.validator import create_instance_validator_register
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-USER_TABLE = os.environ['USER_TABLE']
-GSI_INDEX_NAME = os.environ['USER_GSI_INDEX_USERNAME']
 
 dyname = boto3.client('dynamodb')
 
-validator_register_user = CustomValidator(schema_register_user)
+validator_register = create_instance_validator_register()
 
 def lambda_handler(event, context):
     try:
@@ -32,16 +29,16 @@ def lambda_handler(event, context):
         if not body:
             return Response(status_code=400, body={'error': 'El body debe tener los parametros requeridos.'}).to_dict()
 
-        if not validator_register_user.validate(body):
-            logger.error(f"Errores de validación: {validator_register_user.get_errors()}")
+        if not validator_register.validate(body):
+            logger.error(f"Errores de validación: {validator_register.get_errors()}")
             return Response(status_code=400, body={'error': 'Fallo en la validación de datos',
-                                                   'details': validator_register_user.get_errors()}).to_dict()
+                                                   'details': validator_register.get_errors()}).to_dict()
 
         username = body['username']
 
         response = dyname.query(
             TableName=USER_TABLE,
-            IndexName=GSI_INDEX_NAME,
+            IndexName=USER_GSI_INDEX_USERNAME,
             KeyConditionExpression='username = :username',
             ExpressionAttributeValues={
                 ':username': {'S': username}
@@ -88,6 +85,10 @@ def lambda_handler(event, context):
 if __name__ == '__main__':
     event = {
         "body": json.dumps({
+            "name": "juan",
+            "username": "juanp1",
+            "password": "123456",
+            "last_name": "perez"
         })
     }
 

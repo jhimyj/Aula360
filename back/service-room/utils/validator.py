@@ -1,5 +1,5 @@
 import re
-from utils.schema_validators import schema_register_user, schema_login_user
+from utils.config import schema_create_room
 class CustomValidator:
     """
     Clase para validar datos según un esquema definido, soportando validación de tipo, rango y formato.
@@ -68,8 +68,7 @@ class CustomValidator:
     def get_errors(self):
         return self.errors
 
-def create_instance_validator_register():
-    return CustomValidator(schema_register_user)
-def create_instance_validator_login():
-    return CustomValidator(schema_login_user)
+
+def get_validator_create_room():
+    return CustomValidator(schema_create_room)
 

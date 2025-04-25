@@ -1,4 +1,4 @@
-service: service-user
+service: service-room
 org: ${env:ORG}
 
 provider:
@@ -8,8 +8,8 @@ provider:
   timeout: 29
   role: ${env:ROLE}
   environment: #aca las variables de entorno
-    USER_TABLE: ${env:USER_TABLE}
-    USER_GSI_INDEX_USERNAME: ${env:USER_GSI_INDEX_USERNAME}
+    ROOM_TABLE: ${env:ROOM_TABLE}
+    ROOM_GSI_INDEX_USERID_ID: ${env:ROOM_GSI_INDEX_USERID_ID}
     JWT_SECRET_KEY: ${env:JWT_SECRET_KEY}
 
 
@@ -39,13 +39,13 @@ layers: #si es que hay librerias externa
     description: "Dependencias comunes para todas las Lambdas"
 
 functions:
-  register:
-    handler: register/handler.lambda_handler
+  create:
+    handler: create/handler.lambda_handler
     layers:
       - { Ref: CommonLibLambdaLayer }
     events:
       - http:
-          path: user/register
+          path: rooms/create
           method: post
           cors:
             origin: '*'
@@ -59,18 +59,18 @@ functions:
               - X-Amz-Security-Token
               - X-Amz-User-Agent
 
-  login:
-    handler: login/handler.lambda_handler
+  get_room:
+    handler: get_room/handler.lambda_handler
     layers:
       - { Ref: CommonLibLambdaLayer }
     events:
       - http:
-          path: user/login
-          method: post
+          path: rooms/{roomId}
+          method: get
           cors:
             origin: '*'
             methods:
-              - POST
+              - GET
             headers:
               - Content-Type
               - Authorization
@@ -79,13 +79,13 @@ functions:
               - X-Amz-Security-Token
               - X-Amz-User-Agent
 
-  me:
-    handler: me/handler.lambda_handler
+  get_rooms:
+    handler: get_rooms/handler.lambda_handler
     layers:
       - { Ref: CommonLibLambdaLayer }
     events:
       - http:
-          path: user/me
+          path: rooms
           method: get
           cors:
             origin: '*'
