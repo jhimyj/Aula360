@@ -10,7 +10,7 @@ provider:
   environment: #aca las variables de entorno
     USER_TABLE: ${env:USER_TABLE}
     USER_GSI_INDEX_USERNAME: ${env:USER_GSI_INDEX_USERNAME}
-    SECRET_KEY: ${env:SECRET_KEY}
+    JWT_SECRET_KEY: ${env:JWT_SECRET_KEY}
 
 
 package:
@@ -28,6 +28,8 @@ package:
     - businesses_businessId_ai-parse/**
     - "*.zip" #eres incluir otros ZIP que no sean necesarios
     - README.md  # Ejemplo, si hay archivos de documentación que no necesitas
+    - serverless.yml
+    - requirements.txt
 
 # Definición del layer que contiene las dependencias comunes.
 layers: #si es que hay librerias externa

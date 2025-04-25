@@ -1,33 +1,21 @@
 import json
 import logging
-import os
 import boto3
 import bcrypt
-import jwt
-from datetime import datetime, timedelta
 
 from utils.response import Response
-from utils.validator import CustomValidator
-from utils.models_validations import schema_login_user
 from utils.dynamo_utils import serialize_dynamo_to_dict
+from utils.config import USER_TABLE, USER_GSI_INDEX_USERNAME
+from utils.validator import create_instance_validator_login
+from utils.token import get_token_instance
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-validator_login_user = CustomValidator(schema_login_user)
-
-
-USER_TABLE = os.environ['USER_TABLE']
-GSI_INDEX_NAME = os.environ['USER_GSI_INDEX_USERNAME']
-
+validator_login_user = create_instance_validator_login()
+token_validator = get_token_instance()
 
 dyname = boto3.client('dynamodb')
-
-
-SECRET_KEY = os.environ['SECRET_KEY']
-
-
-TOKEN_EXPIRATION = 30
 
 
 def lambda_handler(event, context):
@@ -56,7 +44,7 @@ def lambda_handler(event, context):
 
         response = dyname.query(
             TableName=USER_TABLE,
-            IndexName=GSI_INDEX_NAME,
+            IndexName=USER_GSI_INDEX_USERNAME,
             KeyConditionExpression='username = :username',
             ExpressionAttributeValues={
                 ':username': {'S': username}
@@ -79,11 +67,11 @@ def lambda_handler(event, context):
         payload = {
             'id': id,
             'role': role,
-            'username': username,
-            'exp': datetime.utcnow() + timedelta(minutes=TOKEN_EXPIRATION)
+            'username': username
         }
 
-        token = jwt.encode(payload, SECRET_KEY, algorithm='HS256')
+        token = token_validator.generate_token(payload)
+
 
         logger.info(f"Usuario autenticado exitosamente: {username}")
 
