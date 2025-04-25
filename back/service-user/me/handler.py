@@ -1,19 +1,17 @@
 import logging
-import os
 import boto3
-import jwt
 
 from utils.response import Response
 from utils.dynamo_utils import serialize_dynamo_to_dict
+from utils.config import USER_TABLE
+from utils.token import get_token_instance
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 dyname = boto3.client('dynamodb')
-USER_TABLE = os.environ['USER_TABLE']
-SECRET_KEY = os.environ['SECRET_KEY']
 
-TOKEN_EXPIRATION = 30
+token_valitador = get_token_instance()
 
 
 def lambda_handler(event, context):
@@ -27,18 +25,13 @@ def lambda_handler(event, context):
             return Response(status_code=400, body={"error": "Missing Authorization header"})
 
         auth_header = headers['Authorization']
-        if not auth_header.startswith("Bearer "):
-            return Response(status_code=400,
-                            body={"error": "Invalid Authorization header format. Must be Bearer <token>"})
 
-        token = auth_header.split(" ")[1]
-
+        token = token_valitador.remove_bearer_prefix(auth_header)
         try:
-            jwt_decode = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
-        except jwt.ExpiredSignatureError:
-            return Response(status_code=401, body={"error": "Token has expired"})
-        except jwt.InvalidTokenError:
-            return Response(status_code=401, body={"error": "Invalid token"})
+            jwt_decode = token_valitador.decode_token(token)
+        except ValueError as e:
+            logger.error(f"error decoding JWT token: {str(e)}")
+            return Response(status_code=401, body={"error": str(e)}).to_dict()
 
         user_id = jwt_decode.get('id')
 
@@ -72,7 +65,7 @@ def lambda_handler(event, context):
 if __name__ == '__main__':
     event = {
         'headers':{
-            'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImE0ZTEyZmNlLTVhZmMtNDExYy1iODRiLWQxNjVkMGViMDI4MyIsInJvbGUiOiJURUFDSEVSIiwidXNlcm5hbWUiOiJqdWFucCIsImV4cCI6MTc0NTUyMTAyN30.mw3rBGsdD8MXB3HEMHAlFpl0cWyNwGH9HAnrW2rucBI',
+            'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImE0ZTEyZmNlLTVhZmMtNDExYy1iODRiLWQxNjVkMGViMDI4MyIsInJvbGUiOiJURUFDSEVSIiwidXNlcm5hbWUiOiJqdWFucCIsImV4cCI6MTc0NTU2NTY1M30._X-WYu-AR4CJUEAERI-Ckva_-mw8Ak1Nuxj1FsZzCvk',
         }
     }
 
