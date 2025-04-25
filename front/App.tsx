@@ -94,6 +94,9 @@ export default function HomeScreen() {
       <TouchableOpacity onPress={handleLogout}>
         <Text>{":)"}</Text>
       </TouchableOpacity>
+      <TouchableOpacity style={styles.button} onPress={() => setIsVisitor(false)}>
+        <Text style={styles.buttonText}>Volver al Login</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -137,4 +140,6 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
+  button: { backgroundColor: '#FF0000', padding: 10, borderRadius: 5, marginTop: 10 },
+  buttonText: { color: '#FFF', fontSize: 16, textAlign: 'center' },
 });
