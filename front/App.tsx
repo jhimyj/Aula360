@@ -105,25 +105,25 @@ const styles = StyleSheet.create({
   navigationContainer: {
     width: "100%",
     height: "100%",
-    backgroundColor: "#fed3c2"
+    backgroundColor: "#FFF"
   },
   TEMP_placeholderContainer: {
     width: "100%",
     height: "100%",
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#fed3c2"
+    backgroundColor: "#FFF"
   },
   inputContainer: {
     padding: 20,
-    backgroundColor: '#EAF7F8',
+    backgroundColor: '#FFF',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
   textInput: {
     borderWidth: 1,
-    borderColor: '#70B7C7',
+    borderColor: '#FFF',
     borderRadius: 10,
     padding: 10,
     fontSize: 16,

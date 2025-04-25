@@ -43,25 +43,14 @@ const PerfilComponent: React.FC<PerfilComponentProps> = ({ onLogout }) => {
           return;
         }
 
-        const TEMP_mockUser: UserData = {
-          email: "a@gmail.com",
-          data: {
-            name: "abc",
-            last_name: "def",
-            phone: "123",
-            district: "albuquerque new mexico"
-          }
-        };
-
-        const response = /*await axios.get(
-          'https://plaqmrxx8g.execute-api.us-east-1.amazonaws.com/dev/user/me',
+        const response = await axios.get(
+          'https://9l68voxzvc.execute-api.us-east-1.amazonaws.com/dev/user/me', // Nueva URL
           {
             headers: {
-              Authorization: `Bearer ${token}`,
+              Authorization: `Bearer ${token}`, // Enviar el token en los encabezados
             },
           }
-        );*/
-        { data: TEMP_mockUser };
+        );
 
         setUserData(response.data);
       } catch (error) {
@@ -163,24 +152,22 @@ const PerfilComponent: React.FC<PerfilComponentProps> = ({ onLogout }) => {
             <Ionicons name="camera" size={24} color="#fff" />
           </View>
         </TouchableOpacity>
-        <Text style={styles.userName}>{`${userData.data?.name || ''} ${
-          userData.data?.last_name || ''
-        }`}</Text>
+        <Text style={styles.userName}>{`${userData.data?.name || ''} ${userData.data?.last_name || ''}`}</Text>
       </View>
 
       <View style={styles.detailsContainer}>
         <View style={styles.detailRow}>
-          <Ionicons name="mail-outline" size={24} color="#d34537" />
+          <Ionicons name="mail-outline" size={24} color="#70B7C7" />
           <Text style={styles.detailText}>{userData.email || 'Correo no disponible'}</Text>
         </View>
 
         <View style={styles.detailRow}>
-          <Ionicons name="call-outline" size={24} color="#d34537" />
+          <Ionicons name="call-outline" size={24} color="#70B7C7" />
           <Text style={styles.detailText}>{userData.data?.phone || 'Teléfono no disponible'}</Text>
         </View>
 
         <View style={styles.detailRow}>
-          <Ionicons name="location-outline" size={24} color="#d34537" />
+          <Ionicons name="location-outline" size={24} color="#70B7C7" />
           <Text style={styles.detailText}>{userData.data?.district || 'Distrito no disponible'}</Text>
         </View>
       </View>
@@ -198,12 +185,12 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     alignItems: 'center',
     paddingVertical: 20,
-    backgroundColor: '#fed3c2',
+    backgroundColor: '#F5F5F5',
   },
   header: {
     alignItems: 'center',
     marginBottom: 20,
-    backgroundColor: '#d34537',
+    backgroundColor: '#70B7C7',
     width: '100%',
     paddingVertical: 30,
     borderBottomLeftRadius: 20,
@@ -221,7 +208,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 0,
     right: 10,
-    backgroundColor: '#d34537',
+    backgroundColor: '#70B7C7',
     borderRadius: 20,
     padding: 5,
   },
@@ -266,11 +253,11 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#fed3c2',
+    backgroundColor: '#F5F5F5',
   },
   loadingText: {
     fontSize: 18,
-    color: 'dark gray',
+    color: 'gray',
   },
 });
 

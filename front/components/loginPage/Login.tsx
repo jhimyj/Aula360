@@ -18,30 +18,27 @@ interface LoginProps {
 }
 
 const Login: React.FC<LoginProps> = ({ onNavigate, onLogin }) => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [username, setUsername] = useState(''); // Nombre de usuario
+  const [password, setPassword] = useState(''); // Contraseña
   const [showPassword, setShowPassword] = useState(false); // Estado para mostrar/ocultar contraseña
   const [errorMessage, setErrorMessage] = useState<string | null>(null); // Estado para el mensaje de error
 
   const handleLogin = async () => {
     try {
       const requestBody = {
-        email: email,
-        password: password,
+        username, // Aquí se pasa el username
+        password, // Aquí se pasa la contraseña
       };
 
-      const TEMP_mockToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvZSBEb2UiLCJpYXQiOjE1MTYyMzkwMjJ9.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c";
-      
-      const response = /*await axios.post(
-        'https://plaqmrxx8g.execute-api.us-east-1.amazonaws.com/dev/user/login',
+      const response = await axios.post(
+        'https://9l68voxzvc.execute-api.us-east-1.amazonaws.com/dev/user/login', // Endpoint del login
         requestBody,
         {
           headers: {
             'Content-Type': 'application/json',
           },
         }
-      );*/
-      { data: { token: TEMP_mockToken }, status: 200 };
+      );
 
       console.log('Respuesta del servidor:', response.data);
 
@@ -53,20 +50,20 @@ const Login: React.FC<LoginProps> = ({ onNavigate, onLogin }) => {
         console.log('JWT guardado en AsyncStorage:', token);
 
         setErrorMessage(null); // Limpiar mensaje de error
-        //Alert.alert('Inicio de Sesión Exitoso', 'Bienvenido a la aplicación');
         onLogin(); // Notificar al componente principal que el login fue exitoso
+        onNavigate(); // Llamar a la función de navegación para redirigir al usuario
+
       } else {
-        handleErrorMessage('Correo o contraseña incorrecta');
+        handleErrorMessage('Usuario o contraseña incorrectos');
       }
     } catch (error: any) {
       console.error('Error al iniciar sesión:', error.response?.data || error.message);
-      handleErrorMessage('Correo o contraseña incorrecta');
+      handleErrorMessage('Usuario o contraseña incorrectos');
     }
   };
 
   const handleErrorMessage = (message: string) => {
     setErrorMessage(message);
-    // Configurar el temporizador para eliminar el mensaje después de 5 segundos
     setTimeout(() => {
       setErrorMessage(null);
     }, 5000);
@@ -74,31 +71,24 @@ const Login: React.FC<LoginProps> = ({ onNavigate, onLogin }) => {
 
   return (
     <View style={styles.container}>
-      {/* Fondo decorativo con círculo */}
+      {/* Círculos decorativos */}
       <View style={styles.circleLarge} />
-
-      {/* Imagen encima del título */}
+      <View style={styles.circleSmallRed} />  {/* Círculo en la esquina inferior izquierda */}
+      
       <Image
         source={require('../../assets/images/logo_login.png')} // Reemplaza con tu imagen
         style={styles.image}
       />
+      <Text style={styles.title}>Iniciar Sesión</Text>
 
-      {/* Título */}
-      <View style={styles.titleContainer}>
-        <Text style={styles.title}>Iniciar Sesión</Text>
-      </View>
-
-      {/* Inputs */}
       <TextInput
-        placeholder="Correo Electrónico"
+        placeholder="Nombre de Usuario"
         style={styles.input}
-        value={email}
-        onChangeText={setEmail}
-        keyboardType="email-address"
+        value={username}
+        onChangeText={setUsername}
         placeholderTextColor="#999"
       />
 
-      {/* Input de contraseña con funcionalidad de mostrar/ocultar */}
       <View style={styles.passwordContainer}>
         <TextInput
           placeholder="Contraseña"
@@ -117,17 +107,13 @@ const Login: React.FC<LoginProps> = ({ onNavigate, onLogin }) => {
         </TouchableOpacity>
       </View>
 
-      {/* Mensaje de error */}
       {errorMessage && (
         <Text style={styles.errorText}>{errorMessage}</Text>
       )}
 
-      {/* Botón para iniciar sesión */}
       <TouchableOpacity style={styles.button} onPress={handleLogin}>
         <Text style={styles.buttonText}>Iniciar Sesión</Text>
       </TouchableOpacity>
-
-      {/* Texto para navegar al registro */}
       <TouchableOpacity onPress={onNavigate}>
         <Text style={styles.text}>
           ¿No tienes cuenta? <Text style={styles.textHighlight}>Regístrate</Text>
@@ -140,45 +126,49 @@ const Login: React.FC<LoginProps> = ({ onNavigate, onLogin }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fed3c2',
+    backgroundColor: '#FFF',
     alignItems: 'center',
     justifyContent: 'center',
+    padding: 20,
+    backgroundColor: '#FFF', // Color de fondo suave
   },
+  // Círculo en la parte superior derecha
   circleLarge: {
     position: 'absolute',
-    width: 300,
-    height: 300,
-    borderRadius: 150,
-    backgroundColor: '#ea735b',
-    top: -100,
-    right: -100,
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    backgroundColor: '#FF8C00', // Naranja suave
+    top: -80,
+    right: -120,
+  },
+  // Círculo rojo en la esquina inferior izquierda
+  circleSmallRed: {
+    position: 'absolute',
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    backgroundColor: '#FF8C00', // Rojo brillante
+    bottom: -75, // Coloca el círculo en la esquina inferior izquierda
+    left: -100,
   },
   image: {
-    width: 120,
+    width: 100,
     height: 120,
     marginBottom: 20,
   },
   title: {
-    fontSize: 30,
+    fontSize: 28,
     fontWeight: 'bold',
-    color: '#fefbec',
-  },
-  titleContainer: {
-    width: 200,
-    height: 55,
-    marginBottom: 20,
-    backgroundColor: "#911d20",
-    textAlign: "center",
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 10
+    marginBottom: 30,
+    color: '#333', // Título en negro
   },
   input: {
     width: 300,
     padding: 12,
     marginBottom: 15,
     borderWidth: 1,
-    borderColor: '#CCC',
+    borderColor: '#FF8C00', // Naranja suave
     borderRadius: 10,
     backgroundColor: '#F9F9F9',
   },
@@ -187,7 +177,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#CCC',
+    borderColor: '#FF8C00', // Naranja suave
     borderRadius: 10,
     backgroundColor: '#F9F9F9',
     padding: 3,
@@ -205,7 +195,7 @@ const styles = StyleSheet.create({
     width: 300,
   },
   button: {
-    backgroundColor: '#FF0000', // Cambiado a rojo
+    backgroundColor: '#FF8C00', // Naranja suave
     padding: 12,
     borderRadius: 10,
     width: 300,
@@ -223,7 +213,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   textHighlight: {
-    color: '#FF0000', // Cambiado a rojo
+    color: '#FF8C00', // Naranja suave
     fontWeight: 'bold',
   },
 });

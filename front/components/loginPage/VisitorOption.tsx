@@ -15,7 +15,7 @@ const VisitorOption: React.FC<VisitorProps> = ({ onVisit }) => (
 
 const styles = StyleSheet.create({
   container: { marginTop: 20 },
-  button: { backgroundColor: '#FF0000', padding: 10, borderRadius: 5 },
+  button: { backgroundColor: '#FF8C00', padding: 10, borderRadius: 5 },
   buttonText: { color: '#FFF', fontSize: 16 },
 });
 

@@ -8,38 +8,36 @@ import {
   Image,
   Alert,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons'; // Aregissegúrate de tener instalado @expo/vector-icons
+import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 
 interface RegisterProps {
-  onNavigate: () => void; // Prop para manejar la navegación a otra pantalla
+  onNavigate: () => void;
 }
 
 const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
-  const [name, setName] = useState<string>(''); // Agregando el tipo explícito <string>
+  const [name, setName] = useState<string>('');
   const [lastName, setLastName] = useState<string>('');
-  const [phone, setPhone] = useState<string>('');
-  const [district, setDistrict] = useState<string>('');
-  const [email, setEmail] = useState<string>('');
+  const [username, setUsername] = useState<string>('');
   const [password, setPassword] = useState<string>('');
-  const [showPassword, setShowPassword] = useState<boolean>(false); // Estado para mostrar/ocultar contraseña
+  const [showPassword, setShowPassword] = useState<boolean>(false);
 
-  // Función para manejar el registro
   const handleRegister = async (): Promise<void> => {
-    try {
-      const requestBody = {
-        data: {
-          name,
-          last_name: lastName,
-          phone,
-          district,
-        },
-        email,
-        password,
-      };
+    if (!name || !lastName || !username || !password) {
+      Alert.alert('Error', 'Por favor, complete todos los campos');
+      return;
+    }
 
+    const requestBody = {
+      name,
+      last_name: lastName,
+      username,
+      password,
+    };
+
+    try {
       const response = await axios.post(
-        'https://plaqmrxx8g.execute-api.us-east-1.amazonaws.com/dev/user/register',
+        'https://9l68voxzvc.execute-api.us-east-1.amazonaws.com/dev/user/register',
         requestBody,
         {
           headers: {
@@ -48,8 +46,11 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
         }
       );
 
-      Alert.alert('Registro Exitoso', 'Usuario registrado correctamente');
-      console.log(response.data);
+      if (response.status === 200) {
+        Alert.alert('Registro Exitoso', response.data.message);
+      } else {
+        Alert.alert('Error', 'No se pudo registrar el usuario. Inténtalo de nuevo.');
+      }
     } catch (error) {
       console.error('Error al registrar usuario:', error);
       Alert.alert('Error', 'No se pudo registrar el usuario. Inténtalo de nuevo.');
@@ -59,19 +60,11 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
   return (
     <View style={styles.container}>
       <View style={styles.circleLarge} />
+      <Image source={require('../assets/images/register_imagen.png')} style={styles.image} />
+      <Text style={styles.title}>Registrarse</Text>
 
-      <Image
-        source={require('../assets/images/logo_register.png')}
-        style={styles.image}
-      />
-
-      <View style={styles.titleContainer}>
-        <Text style={styles.title}>Registrarse</Text>
-      </View>
-
-      {/* Inputs */}
       <TextInput
-        placeholder="Nombre Completo"
+        placeholder="Nombre"
         style={styles.input}
         value={name}
         onChangeText={setName}
@@ -85,30 +78,13 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
         placeholderTextColor="#999"
       />
       <TextInput
-        placeholder="Teléfono"
+        placeholder="Nombre de Usuario"
         style={styles.input}
-        value={phone}
-        onChangeText={setPhone}
-        keyboardType="phone-pad"
-        placeholderTextColor="#999"
-      />
-      <TextInput
-        placeholder="Distrito"
-        style={styles.input}
-        value={district}
-        onChangeText={setDistrict}
-        placeholderTextColor="#999"
-      />
-      <TextInput
-        placeholder="Correo Electrónico"
-        style={styles.input}
-        value={email}
-        onChangeText={setEmail}
-        keyboardType="email-address"
+        value={username}
+        onChangeText={setUsername}
         placeholderTextColor="#999"
       />
 
-      {/* Input de contraseña con funcionalidad de mostrar/ocultar */}
       <View style={styles.passwordContainer}>
         <TextInput
           placeholder="Contraseña"
@@ -119,24 +95,17 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
           placeholderTextColor="#999"
         />
         <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-          <Ionicons
-            name={showPassword ? 'eye-off' : 'eye'}
-            size={24}
-            color="#999"
-          />
+          <Ionicons name={showPassword ? 'eye-off' : 'eye'} size={24} color="#999" />
         </TouchableOpacity>
       </View>
 
-      {/* Botón para registrarse */}
       <TouchableOpacity style={styles.button} onPress={handleRegister}>
         <Text style={styles.buttonText}>Crear Cuenta</Text>
       </TouchableOpacity>
 
-      {/* Texto para navegar al inicio de sesión */}
       <TouchableOpacity onPress={onNavigate}>
         <Text style={styles.text}>
-          ¿Ya tienes cuenta?{' '}
-          <Text style={styles.textHighlight}>Inicia Sesión</Text>
+          ¿Ya tienes cuenta? <Text style={styles.textHighlight}>Inicia Sesión</Text>
         </Text>
       </TouchableOpacity>
     </View>
@@ -146,45 +115,38 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fed3c2',
+    backgroundColor: '#FFF',
     alignItems: 'center',
     justifyContent: 'center',
+    padding: 20,
+    backgroundColor: '#FFF',
   },
   circleLarge: {
     position: 'absolute',
     width: 300,
     height: 300,
     borderRadius: 150,
-    backgroundColor: '#ea735b',
+    backgroundColor: '#FF8C00',
     top: -100,
     right: -100,
   },
   image: {
-    width: 120,
+    width: 90,
     height: 120,
     marginBottom: 20,
   },
   title: {
-    fontSize: 30,
+    fontSize: 28,
     fontWeight: 'bold',
-    color: '#fefbec',
-  },
-  titleContainer: {
-    width: 200,
-    height: 55,
-    marginBottom: 20,
-    backgroundColor: "#911d20",
-    textAlign: "center",
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 10
+    marginBottom: 30,
+    color: '#333',
   },
   input: {
     width: 300,
     padding: 12,
     marginBottom: 15,
     borderWidth: 1,
-    borderColor: '#CCC',
+    borderColor: '#FF8C00',
     borderRadius: 10,
     backgroundColor: '#F9F9F9',
   },
@@ -193,20 +155,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#CCC',
+    borderColor: '#FF8C00',
     borderRadius: 10,
     backgroundColor: '#F9F9F9',
-    paddingHorizontal: 10, // Ajustado para reducir el ancho visual
-    paddingVertical: 8, // Ajustado para reducir la altura visual
-    marginBottom: 15,
+    padding: 3,
+    marginBottom: 5,
   },
   inputPassword: {
     flex: 1,
     fontSize: 16,
-    padding: 0, // Elimina padding adicional del TextInput
   },
   button: {
-    backgroundColor: '#FF0000',
+    backgroundColor: '#FF8C00',
     padding: 12,
     borderRadius: 10,
     width: 300,
@@ -224,7 +184,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   textHighlight: {
-    color: '#FF0000',
+    color: '#FF8C00',
     fontWeight: 'bold',
   },
 });
