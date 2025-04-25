@@ -1,0 +1,100 @@
+service: service-room
+org: ${env:ORG}
+
+provider:
+  name: aws
+  runtime: python3.9
+  memorySize: 1024
+  timeout: 29
+  role: ${env:ROLE}
+  environment: #aca las variables de entorno
+    ROOM_TABLE: ${env:ROOM_TABLE}
+    ROOM_GSI_INDEX_USERID_ID: ${env:ROOM_GSI_INDEX_USERID_ID}
+    JWT_SECRET_KEY: ${env:JWT_SECRET_KEY}
+
+
+package:
+  individually: true
+  exclude:
+    - .serverless/**
+    - .venv/**
+    - .idea/**
+    - financial-data/**
+    - build_layer.sh
+    - user/**
+    - test/**
+    - Dockerfile
+    - variables/**
+    - businesses_businessId_ai-parse/**
+    - "*.zip" #eres incluir otros ZIP que no sean necesarios
+    - README.md  # Ejemplo, si hay archivos de documentación que no necesitas
+    - serverless.yml
+    - requirements.txt
+
+# Definición del layer que contiene las dependencias comunes.
+layers: #si es que hay librerias externa
+  commonLib:
+    package:
+      artifact: layer_common_lib.zip
+    description: "Dependencias comunes para todas las Lambdas"
+
+functions:
+  create:
+    handler: create/handler.lambda_handler
+    layers:
+      - { Ref: CommonLibLambdaLayer }
+    events:
+      - http:
+          path: rooms/create
+          method: post
+          cors:
+            origin: '*'
+            methods:
+              - POST
+            headers:
+              - Content-Type
+              - Authorization
+              - X-Amz-Date
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+
+  get_room:
+    handler: get_room/handler.lambda_handler
+    layers:
+      - { Ref: CommonLibLambdaLayer }
+    events:
+      - http:
+          path: rooms/{roomId}
+          method: get
+          cors:
+            origin: '*'
+            methods:
+              - GET
+            headers:
+              - Content-Type
+              - Authorization
+              - X-Amz-Date
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+
+  get_rooms:
+    handler: get_rooms/handler.lambda_handler
+    layers:
+      - { Ref: CommonLibLambdaLayer }
+    events:
+      - http:
+          path: rooms
+          method: get
+          cors:
+            origin: '*'
+            methods:
+              - GET
+            headers:
+              - Content-Type
+              - Authorization
+              - X-Amz-Date
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
