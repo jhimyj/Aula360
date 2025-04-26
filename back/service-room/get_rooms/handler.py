@@ -2,7 +2,6 @@ import json
 import logging
 import boto3
 import base64
-from utils.validator import get_validator_create_room
 from utils.response import Response
 from utils.token import get_token_instance
 from utils.config import ROOM_TABLE, ROLES_PERMITED_CREATE_ROOM, LIMIT_PAGE_SIZE, ROOM_GSI_INDEX_USERID_ID
@@ -11,7 +10,6 @@ from utils.dynamo_utils import serialize_dynamo_to_dict
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-validator_create_room = get_validator_create_room()
 token_validator = get_token_instance()
 
 dynamodb_client = boto3.client('dynamodb')
@@ -98,15 +96,4 @@ def lambda_handler(event, context):
         logger.error(f"Error inesperado en el servidor: {str(e)}")
         return Response(status_code=500, body={'message': 'Error interno del servidor.'}).to_dict()
 
-if __name__ == "__main__":
-    event = {
-        "headers": {
-            "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImE0ZTEyZmNlLTVhZmMtNDExYy1iODRiLWQxNjVkMGViMDI4MyIsInJvbGUiOiJURUFDSEVSIiwidXNlcm5hbWUiOiJqdWFucCIsImV4cCI6MTc0NTU4MTk1MX0.fYMXF99p4pADazzUGzyUWhHUd6eP6lv1V57ZOZjByEs",
-        },
-        "queryStringParameters": {
-            "size": 100,
-            "last_evaluated_key":"eyJpZCI6IHsiUyI6ICIxODg5Yjg4My03MzkxLTQxOTItOGFkMS02NTRlM2VjNTAzMzgifSwgInVzZXJfaWQiOiB7IlMiOiAiYTRlMTJmY2UtNWFmYy00MTFjLWI4NGItZDE2NWQwZWIwMjgzIn19"
-        }
-    }
 
-    print(lambda_handler(event, None))
