@@ -1,12 +1,5 @@
 import os
 
-#solo test
-
-os.environ['ROOM_TABLE']="Room"
-os.environ['JWT_SECRET_KEY']= "secret"
-os.environ['ROOM_GSI_INDEX_USERID_ID'] = "user_id-id-index"
-#######
-
 ROOM_TABLE = os.environ['ROOM_TABLE']
 ROOM_GSI_INDEX_USERID_ID= os.environ['ROOM_GSI_INDEX_USERID_ID']
 JWT_SECRET_KEY = os.environ['JWT_SECRET_KEY']
@@ -16,6 +9,10 @@ LIMIT_PAGE_SIZE = 100
 
 ROLES_PERMITED_CREATE_ROOM = {'TEACHER'}
 
+HEADERS_RESPONSE_DEFAULT = {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Credentials': True
+        }
 
 
 """validadores de resquest"""

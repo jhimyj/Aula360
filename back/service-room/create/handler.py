@@ -22,7 +22,6 @@ dynamodb_client = boto3.client('dynamodb')
 def lambda_handler(event, context):
     """
     Esta función crea un room (sala) en la base de datos DynamoDB
-
     """
     try:
         body = event.get('body')
@@ -34,7 +33,7 @@ def lambda_handler(event, context):
             return Response(status_code=400, body={
                 'error': 'El cuerpo de la solicitud debe contener los parámetros requeridos.'}).to_dict()
 
-        if not validator_create_room.validate(body):
+        if not validator_create_room.validate(data=body,param_field='body'):
             logger.error(f"Errores de validación: {validator_create_room.get_errors()}")
             return Response(status_code=400, body={'error': 'Fallo en la validación de los datos proporcionados.',
                                                    'details': validator_create_room.get_errors()}).to_dict()
@@ -89,17 +88,3 @@ def lambda_handler(event, context):
         logger.error(f"Error inesperado en el servidor: {e}")
         return Response(status_code=500, body={'message': 'Error interno del servidor.'}).to_dict()
 
-if __name__ == "__main__":
-    event = {
-        # "headers":{
-        #     "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImE0ZTEyZmNlLTVhZmMtNDExYy1iODRiLWQxNjVkMGViMDI4MyIsInJvbGUiOiJURUFDSEVSIiwidXNlcm5hbWUiOiJqdWFucCIsImV4cCI6MTc0NTU3Mzk2MH0.77Y1ONEXnPmSuhrk5H1XvpbwNTenV9RKPvCXQj4eE2k",
-        # },
-        "body": json.dumps({
-            'name': "aula361",
-            'description': "los errores te hacen mas fuerte pero Alda es abusivo (:",
-            'course':"comunicocion",
-            'topic':"asdhhd"
-        })
-    }
-
-    print(lambda_handler(event,None))
