@@ -199,7 +199,7 @@
         <mxCell id="Gk6qS_8D5_bUo4UHnjvM-13" value="updatedAt: String" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" vertex="1" parent="F87xovZIvBHrIdit54uJ-10">
           <mxGeometry y="180" width="267.5" height="30" as="geometry" />
         </mxCell>
-        <mxCell id="y1nnShSE0CAn0aN4Rdnw-1" value="question" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+        <mxCell id="y1nnShSE0CAn0aN4Rdnw-1" value="Question" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
           <mxGeometry x="20" y="630" width="360" height="180" as="geometry" />
         </mxCell>
         <mxCell id="y1nnShSE0CAn0aN4Rdnw-3" value="room_id (Primary Index, Partition Key): String" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="y1nnShSE0CAn0aN4Rdnw-1" vertex="1">
