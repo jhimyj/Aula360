@@ -755,7 +755,7 @@
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="GNkOfOVwCuja3tpiPY0B-35" value="Amazon API Gateway question" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=#ffffff;fillColor=#232F3E;dashed=0;verticalLabelPosition=middle;verticalAlign=bottom;align=center;html=1;whiteSpace=wrap;fontSize=10;fontStyle=1;spacing=3;shape=mxgraph.aws4.productIcon;prIcon=mxgraph.aws4.api_gateway;" vertex="1" parent="viACW6OI14xSU_S_U_km-42">
-          <mxGeometry x="10" y="69.38" width="70" height="115" as="geometry" />
+          <mxGeometry x="10" y="62.49999999999999" width="70" height="115" as="geometry" />
         </mxCell>
         <mxCell id="viACW6OI14xSU_S_U_km-55" value="&#xa;&#xa;Microservicio Responses&#xa;SERVICIO 5" style="swimlane;startSize=0;rounded=1;shadow=0;" vertex="1" parent="viACW6OI14xSU_S_U_km-8">
           <mxGeometry x="80" y="780" width="570" height="290" as="geometry">
