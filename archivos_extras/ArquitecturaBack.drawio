@@ -613,7 +613,7 @@
         <mxCell id="viACW6OI14xSU_S_U_km-77" value="&lt;br&gt;&lt;div&gt;&lt;span style=&quot;font-size: 12px; font-weight: 400; text-wrap-mode: nowrap;&quot;&gt;Mi&amp;nbsp;&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;font-size: 12px; font-weight: 400; text-wrap-mode: nowrap;&quot;&gt;Informacion&lt;/span&gt;&lt;/div&gt;" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=#ffffff;fillColor=#232F3E;dashed=0;verticalLabelPosition=middle;verticalAlign=bottom;align=center;html=1;whiteSpace=wrap;fontSize=10;fontStyle=1;spacing=3;shape=mxgraph.aws4.productIcon;prIcon=mxgraph.aws4.lambda;" vertex="1" parent="viACW6OI14xSU_S_U_km-12">
           <mxGeometry x="132" y="15" width="48" height="82.5" as="geometry" />
         </mxCell>
-        <mxCell id="GNkOfOVwCuja3tpiPY0B-24" value="&lt;span style=&quot;text-wrap-mode: nowrap;&quot;&gt;BD User&lt;/span&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;" vertex="1" parent="viACW6OI14xSU_S_U_km-9">
+        <mxCell id="GNkOfOVwCuja3tpiPY0B-24" value="&lt;span style=&quot;text-wrap-mode: nowrap;&quot;&gt;BD Users&lt;/span&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;" vertex="1" parent="viACW6OI14xSU_S_U_km-9">
           <mxGeometry x="340" y="49.499999999999886" width="80" height="61" as="geometry" />
         </mxCell>
         <mxCell id="GNkOfOVwCuja3tpiPY0B-25" value="&lt;font&gt;DynamoDB&lt;/font&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="viACW6OI14xSU_S_U_km-9">
@@ -653,7 +653,7 @@
         <mxCell id="viACW6OI14xSU_S_U_km-79" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=1;entryDx=0;entryDy=0;entryPerimeter=0;" edge="1" parent="viACW6OI14xSU_S_U_km-18" source="viACW6OI14xSU_S_U_km-78" target="viACW6OI14xSU_S_U_km-27">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="GNkOfOVwCuja3tpiPY0B-19" value="&lt;span style=&quot;text-wrap-mode: nowrap;&quot;&gt;BD Room&lt;/span&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;" vertex="1" parent="viACW6OI14xSU_S_U_km-18">
+        <mxCell id="GNkOfOVwCuja3tpiPY0B-19" value="&lt;span style=&quot;text-wrap-mode: nowrap;&quot;&gt;BD Rooms&lt;/span&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;" vertex="1" parent="viACW6OI14xSU_S_U_km-18">
           <mxGeometry x="340" y="79.49999999999989" width="80" height="61" as="geometry" />
         </mxCell>
         <mxCell id="GNkOfOVwCuja3tpiPY0B-20" value="&lt;font&gt;DynamoDB&lt;/font&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="viACW6OI14xSU_S_U_km-18">
@@ -699,7 +699,7 @@
         <mxCell id="viACW6OI14xSU_S_U_km-85" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=1;entryDx=0;entryDy=0;entryPerimeter=0;" edge="1" parent="viACW6OI14xSU_S_U_km-29" source="viACW6OI14xSU_S_U_km-84" target="viACW6OI14xSU_S_U_km-39">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="GNkOfOVwCuja3tpiPY0B-16" value="&lt;span style=&quot;text-wrap-mode: nowrap;&quot;&gt;BD Student&lt;/span&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;" vertex="1" parent="viACW6OI14xSU_S_U_km-29">
+        <mxCell id="GNkOfOVwCuja3tpiPY0B-16" value="&lt;span style=&quot;text-wrap-mode: nowrap;&quot;&gt;BD Students&lt;/span&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;" vertex="1" parent="viACW6OI14xSU_S_U_km-29">
           <mxGeometry x="480" y="79.49999999999989" width="80" height="61" as="geometry" />
         </mxCell>
         <mxCell id="GNkOfOVwCuja3tpiPY0B-17" value="&lt;font&gt;DynamoDB&lt;/font&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="viACW6OI14xSU_S_U_km-29">
@@ -742,7 +742,7 @@
         <mxCell id="viACW6OI14xSU_S_U_km-92" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=1;entryDx=0;entryDy=0;entryPerimeter=0;" edge="1" parent="viACW6OI14xSU_S_U_km-42" source="viACW6OI14xSU_S_U_km-91" target="viACW6OI14xSU_S_U_km-52">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="GNkOfOVwCuja3tpiPY0B-13" value="&lt;span style=&quot;text-wrap-mode: nowrap;&quot;&gt;BD Question&lt;/span&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;" vertex="1" parent="viACW6OI14xSU_S_U_km-42">
+        <mxCell id="GNkOfOVwCuja3tpiPY0B-13" value="&lt;span style=&quot;text-wrap-mode: nowrap;&quot;&gt;BD Questions&lt;/span&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;" vertex="1" parent="viACW6OI14xSU_S_U_km-42">
           <mxGeometry x="420" y="89.5" width="80" height="61" as="geometry" />
         </mxCell>
         <mxCell id="GNkOfOVwCuja3tpiPY0B-14" value="&lt;font&gt;DynamoDB&lt;/font&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="viACW6OI14xSU_S_U_km-42">
@@ -799,7 +799,7 @@
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="GNkOfOVwCuja3tpiPY0B-9" value="&lt;span style=&quot;text-wrap-mode: nowrap;&quot;&gt;&lt;font&gt;BD Response&lt;/font&gt;&lt;/span&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;" vertex="1" parent="viACW6OI14xSU_S_U_km-55">
+        <mxCell id="GNkOfOVwCuja3tpiPY0B-9" value="&lt;span style=&quot;text-wrap-mode: nowrap;&quot;&gt;&lt;font&gt;BD Responses&lt;/font&gt;&lt;/span&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;" vertex="1" parent="viACW6OI14xSU_S_U_km-55">
           <mxGeometry x="480" y="87.00000000000001" width="80" height="61" as="geometry" />
         </mxCell>
         <mxCell id="GNkOfOVwCuja3tpiPY0B-10" value="&lt;font&gt;DynamoDB&lt;/font&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="viACW6OI14xSU_S_U_km-55">
