@@ -1,15 +1,27 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { View, Text, StyleSheet, SafeAreaView, Image, Dimensions, StatusBar } from "react-native"
-import { LinearGradient } from "expo-linear-gradient"
-import BackButton from "../ComponentesVillano/UI/back-button"
-import VillainCarousel from "../ComponentesVillano/villain-carousel"
-import VillainCard from "../ComponentesVillano/villain-card"
-import ActionButton from "../ComponentesVillano/UI/action-button"
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  SafeAreaView,
+  Image,
+  Dimensions,
+  StatusBar as RNStatusBar,
+} from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import { Audio } from "expo-av";
+import { useIsFocused } from "@react-navigation/native";
 
-const { width, height } = Dimensions.get("window")
+import BackButton from "../ComponentesVillano/UI/back-button";
+import VillainCarousel from "../ComponentesVillano/villain-carousel";
+import VillainCard from "../ComponentesVillano/villain-card";
+import ActionButton from "../ComponentesVillano/UI/action-button";
 
+const { width, height } = Dimensions.get("window");
+
+// -------------------- Datos de villanos --------------------
 const villains = [
   {
     id: 1,
@@ -35,48 +47,84 @@ const villains = [
     id: 3,
     name: "Shadowman",
     image: require("../../assets/villanos/Shadowman.png"),
-
     description:
       "Manipulador de las sombras que opera desde las tinieblas. Nadie conoce su verdadera identidad ni sus motivaciones, pero su red de espionaje se extiende por todo el mundo.",
     power: 75,
     danger: 95,
     reach: 85,
   },
-]
+];
 
+// -------------------- Componente ---------------------------
 export default function VillainSelectionScreen({ navigation }) {
-  const [selectedVillain, setSelectedVillain] = useState(0)
-  const [animateCard, setAnimateCard] = useState(false)
+  const isFocused = useIsFocused();                 // ← detecta foco
+  const soundRef = useRef<Audio.Sound | null>(null);
 
+  const [selectedVillain, setSelectedVillain] = useState(0);
+  const [animateCard, setAnimateCard] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(true);
+
+  // ------------------ Audio helpers ------------------------
+  const playBackgroundSound = useCallback(async () => {
+    if (soundRef.current) return; // ya cargado
+
+    await Audio.setAudioModeAsync({
+      playsInSilentModeIOS: true,
+      shouldDuckAndroid: true,
+    });
+
+    const { sound } = await Audio.Sound.createAsync(
+      require("../../assets/SonidoJuego/sonidoFondo.mp3"),
+      { isLooping: true, volume: 0.5, shouldPlay: true }
+    );
+
+    soundRef.current = sound;
+    setIsPlaying(true);
+  }, []);
+
+  const stopSound = useCallback(async () => {
+    if (!soundRef.current) return;
+    await soundRef.current.stopAsync();
+    await soundRef.current.unloadAsync();
+    soundRef.current = null;
+    setIsPlaying(false);
+  }, []);
+
+  // ------------------ Control de foco ----------------------
   useEffect(() => {
-    setAnimateCard(true)
-    const timer = setTimeout(() => setAnimateCard(false), 300)
-    return () => clearTimeout(timer)
-  }, [selectedVillain])
+    if (isFocused) playBackgroundSound();
+    else stopSound();
+
+    return () => stopSound(); // limpieza al desmontar
+  }, [isFocused, playBackgroundSound, stopSound]);
+
+  // ----------- Resto de lógica de componente ---------------
+  useEffect(() => {
+    setAnimateCard(true);
+    const t = setTimeout(() => setAnimateCard(false), 300);
+    return () => clearTimeout(t);
+  }, [selectedVillain]);
 
   const handleBack = () => {
-    if (navigation?.goBack) {
-      navigation.goBack()
-    } else {
-      console.log("Volver atrás")
-    }
-  }
+    navigation?.goBack?.();
+  };
 
   const handleVillainSelect = (index) => {
-    setSelectedVillain(index)
-  }
+    setSelectedVillain(index);
+  };
 
   const handleStartMission = () => {
-    alert(`Iniciando misión con ${villains[selectedVillain].name}`)
-  }
+    alert(`Iniciando misión con ${villains[selectedVillain].name}`);
+  };
 
   const handleMoreInfo = (villainId) => {
-    alert(`Más información sobre ${villains.find((v) => v.id === villainId).name}`)
-  }
+    alert(`Más información sobre ${villains.find((v) => v.id === villainId).name}`);
+  };
 
+  // -------------------- UI --------------------------------
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="light-content" backgroundColor="#051438" />
+      <RNStatusBar barStyle="light-content" backgroundColor="#051438" />
       <LinearGradient colors={["#051438", "#0A2463", "#1E3A8A"]} style={styles.gradient}>
         <View style={styles.container}>
           {/* Header */}
@@ -86,9 +134,12 @@ export default function VillainSelectionScreen({ navigation }) {
             <View style={styles.placeholder} />
           </View>
 
-          {/* Sección del carrusel */}
+          {/* Carrusel */}
           <View style={styles.carouselSection}>
-            <VillainCarousel onVillainSelect={handleVillainSelect} selectedIndex={selectedVillain}>
+            <VillainCarousel
+              onVillainSelect={handleVillainSelect}
+              selectedIndex={selectedVillain}
+            >
               {villains.map((villain) => (
                 <View key={villain.id} style={styles.villainPreview}>
                   <View style={styles.imageWrapper}>
@@ -102,7 +153,7 @@ export default function VillainSelectionScreen({ navigation }) {
             </VillainCarousel>
           </View>
 
-          {/* Sección de la tarjeta */}
+          {/* Tarjeta */}
           <View style={styles.cardSection}>
             <VillainCard
               villain={villains[selectedVillain]}
@@ -111,36 +162,37 @@ export default function VillainSelectionScreen({ navigation }) {
             />
           </View>
 
-          {/* Sección del botón de acción */}
+          {/* Botón de acción */}
           <View style={styles.actionSection}>
-            <ActionButton title="¡INICIAR MISIÓN!" onPress={handleStartMission} primary icon="play-circle" />
+            <ActionButton
+              title="¡INICIAR MISIÓN!"
+              onPress={handleStartMission}
+              primary
+              icon="play-circle"
+            />
           </View>
         </View>
       </LinearGradient>
     </SafeAreaView>
-  )
+  );
 }
 
+// ------------------ Estilos -------------------------------
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-  },
-  gradient: {
-    flex: 1,
-  },
+  safeArea: { flex: 1 },
+  gradient: { flex: 1 },
   container: {
     flex: 1,
     padding: width * 0.05,
     justifyContent: "space-between",
   },
   header: {
-  flexDirection: "row",
-  alignItems: "center",
-  justifyContent: "space-between",
-  paddingTop: height * 0.0000000001, // Menos espacio arriba
-  height: height * 0.065,     // Reduce la altura total del header
-},
-
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingTop: height * 0.0000000001,
+    height: height * 0.065,
+  },
   title: {
     fontSize: 22,
     fontWeight: "800",
@@ -151,10 +203,7 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 3,
   },
-  placeholder: {
-    width: 40,
-    height: 40,
-  },
+  placeholder: { width: 40, height: 40 },
   carouselSection: {
     height: height * 0.28,
     marginTop: height * 0.02,
@@ -169,17 +218,8 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0, 0, 0, 0.2)",
     padding: 12,
   },
-  imageWrapper: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    width: "100%",
-  },
-  villainImage: {
-    width: 120,
-    height: 120,
-    resizeMode: "contain",
-  },
+  imageWrapper: { flex: 1, justifyContent: "center", alignItems: "center", width: "100%" },
+  villainImage: { width: 120, height: 120, resizeMode: "contain" },
   nameWrapper: {
     width: "100%",
     backgroundColor: "rgba(0, 0, 0, 0.4)",
@@ -209,4 +249,4 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: height * 0.02,
   },
-})
+});

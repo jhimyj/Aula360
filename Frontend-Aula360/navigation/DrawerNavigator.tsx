@@ -7,6 +7,7 @@ import StudentDashboardScreen from '../screens/Students/StudentDashboardScreen';
 import LoginScreen from '../screens/auth/LoginScreen';
 import VillainSelectionScreen from "../screens/VillainSelectionScreen/VillainSelectionScreen" // Ajusta la ruta de la pantalla de villanos
 import Register from '../screens/auth/RegisterScreen';
+import BattleScreen from '../screens/Versus/BattleScreen';
 const Drawer = createDrawerNavigator();
 import { Image } from "react-native"
 
@@ -19,6 +20,8 @@ export default function DrawerNavigator() {
       <Drawer.Screen name="Login" component={LoginScreen} />
       <Drawer.Screen name="Register" component={Register} />
       <Drawer.Screen name="VillainSelection" component={VillainSelectionScreen} />
+      <Drawer.Screen name="BattleScreen" component={BattleScreen} />
+
     </Drawer.Navigator>
   );
 }
