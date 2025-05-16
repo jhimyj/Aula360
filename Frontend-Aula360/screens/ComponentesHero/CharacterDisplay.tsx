@@ -261,7 +261,7 @@ const CharacterDisplay: React.FC<CharacterDisplayProps> = ({ character, imageSiz
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
             >
-              <Feather name="check-circle" size={18} color="#4A2C00" style={styles.buttonIcon} />
+              <Feather name="check-circle" size={21} color="#4A2C00" style={styles.buttonIcon} />
               <Text style={styles.selectButtonText}>SELECCIONAR</Text>
             </LinearGradient>
           </Animated.View>
@@ -506,13 +506,18 @@ const styles = StyleSheet.create({
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
+    marginLeft: -40, // Ajusta el valor según cuánto quieres moverlo
+
+
+
     shadowRadius: 5,
   },
   gradientButton: {
     width: "100%",
     height: "100%",
     flexDirection: "row",
-    justifyContent: "center",
+    justifyContent: "flex-start",  // <--- aquí
+
     alignItems: "center",
     borderRadius: 25,
   },
@@ -524,6 +529,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     fontSize: 18,
     letterSpacing: 1,
+
   },
   particle: {
     position: "absolute",

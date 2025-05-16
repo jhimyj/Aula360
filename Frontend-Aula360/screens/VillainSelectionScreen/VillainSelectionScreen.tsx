@@ -9,6 +9,8 @@ import {
   Image,
   Dimensions,
   StatusBar as RNStatusBar,
+  Platform,
+  ScaledSize,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Audio } from "expo-av";
@@ -18,8 +20,6 @@ import BackButton from "../ComponentesVillano/UI/back-button";
 import VillainCarousel from "../ComponentesVillano/villain-carousel";
 import VillainCard from "../ComponentesVillano/villain-card";
 import ActionButton from "../ComponentesVillano/UI/action-button";
-
-const { width, height } = Dimensions.get("window");
 
 // -------------------- Datos de villanos --------------------
 const villains = [
@@ -59,10 +59,32 @@ const villains = [
 export default function VillainSelectionScreen({ navigation }) {
   const isFocused = useIsFocused();                 // ← detecta foco
   const soundRef = useRef<Audio.Sound | null>(null);
+  const [dimensions, setDimensions] = useState<ScaledSize>(Dimensions.get("window"));
 
   const [selectedVillain, setSelectedVillain] = useState(0);
   const [animateCard, setAnimateCard] = useState(false);
   const [isPlaying, setIsPlaying] = useState(true);
+
+  // Detect screen size changes
+  useEffect(() => {
+    const subscription = Dimensions.addEventListener("change", ({ window }) => {
+      setDimensions(window);
+    });
+    
+    return () => subscription.remove();
+  }, []);
+
+  // Calculate if device is a tablet based on screen size and pixel density
+  const isTablet = useCallback(() => {
+    const { width, height } = dimensions;
+    const screenSize = Math.sqrt(width * width + height * height) / 160;
+    return screenSize >= 7; // Common threshold for tablets
+  }, [dimensions]);
+
+  // Get responsive size based on device type
+  const getResponsiveSize = (size: number, tabletMultiplier = 1.3) => {
+    return isTablet() ? size * tabletMultiplier : size;
+  };
 
   // ------------------ Audio helpers ------------------------
   const playBackgroundSound = useCallback(async () => {
@@ -128,25 +150,76 @@ export default function VillainSelectionScreen({ navigation }) {
       <LinearGradient colors={["#051438", "#0A2463", "#1E3A8A"]} style={styles.gradient}>
         <View style={styles.container}>
           {/* Header */}
-          <View style={styles.header}>
-            <BackButton onPress={handleBack} />
-            <Text style={styles.title}>SELECCIÓN DE VILLANO</Text>
-            <View style={styles.placeholder} />
+          <View style={[
+            styles.header,
+            isTablet() && {
+              height: dimensions.height * 0.08,
+              paddingTop: dimensions.height * 0.01
+            }
+          ]}>
+            <BackButton onPress={handleBack} size={isTablet() ? 32 : 24} />
+            <Text style={[
+              styles.title,
+              { fontSize: getResponsiveSize(22, 1.4) }
+            ]}>
+              SELECCIÓN DE VILLANO
+            </Text>
+            <View style={[
+              styles.placeholder,
+              isTablet() && { width: 50, height: 50 }
+            ]} />
           </View>
 
           {/* Carrusel */}
-          <View style={styles.carouselSection}>
+          <View style={[
+            styles.carouselSection,
+            {
+              height: dimensions.height * (isTablet() ? 0.32 : 0.28),
+              marginTop: dimensions.height * (isTablet() ? 0.03 : 0.02),
+              marginBottom: dimensions.height * (isTablet() ? 0.03 : 0.02),
+            }
+          ]}>
             <VillainCarousel
               onVillainSelect={handleVillainSelect}
               selectedIndex={selectedVillain}
+              itemWidth={dimensions.width * (isTablet() ? 0.65 : 0.6)}
             >
               {villains.map((villain) => (
-                <View key={villain.id} style={styles.villainPreview}>
+                <View key={villain.id} style={[
+                  styles.villainPreview,
+                  {
+                    width: dimensions.width * (isTablet() ? 0.65 : 0.6),
+                    height: dimensions.height * (isTablet() ? 0.26 : 0.22),
+                    padding: getResponsiveSize(12),
+                    borderRadius: getResponsiveSize(16),
+                  }
+                ]}>
                   <View style={styles.imageWrapper}>
-                    <Image source={villain.image} style={styles.villainImage} />
+                    <Image 
+                      source={villain.image} 
+                      style={[
+                        styles.villainImage,
+                        {
+                          width: getResponsiveSize(120, 1.5),
+                          height: getResponsiveSize(120, 1.5),
+                        }
+                      ]} 
+                    />
                   </View>
-                  <View style={styles.nameWrapper}>
-                    <Text style={styles.villainName}>{villain.name}</Text>
+                  <View style={[
+                    styles.nameWrapper,
+                    {
+                      paddingVertical: getResponsiveSize(8),
+                      borderRadius: getResponsiveSize(8),
+                      marginTop: getResponsiveSize(8),
+                    }
+                  ]}>
+                    <Text style={[
+                      styles.villainName,
+                      { fontSize: getResponsiveSize(16, 1.3) }
+                    ]}>
+                      {villain.name}
+                    </Text>
                   </View>
                 </View>
               ))}
@@ -154,21 +227,38 @@ export default function VillainSelectionScreen({ navigation }) {
           </View>
 
           {/* Tarjeta */}
-          <View style={styles.cardSection}>
+          <View style={[
+            styles.cardSection,
+            {
+              flex: isTablet() ? 1.2 : 1,
+              marginTop: dimensions.height * (isTablet() ? 0.02 : 0.01),
+              marginBottom: dimensions.height * (isTablet() ? 0.03 : 0.02),
+            }
+          ]}>
             <VillainCard
               villain={villains[selectedVillain]}
               onPress={() => {}}
               onMorePress={() => handleMoreInfo(villains[selectedVillain].id)}
+              isTablet={isTablet()}
+              scale={isTablet() ? 1.2 : 1}
             />
           </View>
 
           {/* Botón de acción */}
-          <View style={styles.actionSection}>
+          <View style={[
+            styles.actionSection,
+            {
+              height: dimensions.height * (isTablet() ? 0.12 : 0.1),
+              marginBottom: dimensions.height * (isTablet() ? 0.03 : 0.02),
+            }
+          ]}>
             <ActionButton
               title="¡INICIAR MISIÓN!"
               onPress={handleStartMission}
               primary
               icon="play-circle"
+              size={isTablet() ? "large" : "medium"}
+              fontSize={getResponsiveSize(16, 1.3)}
             />
           </View>
         </View>
@@ -179,22 +269,25 @@ export default function VillainSelectionScreen({ navigation }) {
 
 // ------------------ Estilos -------------------------------
 const styles = StyleSheet.create({
-  safeArea: { flex: 1 },
-  gradient: { flex: 1 },
+  safeArea: { 
+    flex: 1 
+  },
+  gradient: { 
+    flex: 1 
+  },
   container: {
     flex: 1,
-    padding: width * 0.05,
+    padding: Dimensions.get("window").width * 0.05,
     justifyContent: "space-between",
   },
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingTop: height * 0.0000000001,
-    height: height * 0.065,
+    paddingTop: Dimensions.get("window").height * 0.0000000001,
+    height: Dimensions.get("window").height * 0.065,
   },
   title: {
-    fontSize: 22,
     fontWeight: "800",
     color: "#FFFFFF",
     textAlign: "center",
@@ -203,33 +296,34 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 3,
   },
-  placeholder: { width: 40, height: 40 },
+  placeholder: { 
+    width: 40, 
+    height: 40 
+  },
   carouselSection: {
-    height: height * 0.28,
-    marginTop: height * 0.02,
-    marginBottom: height * 0.02,
+    marginTop: Dimensions.get("window").height * 0.02,
+    marginBottom: Dimensions.get("window").height * 0.02,
   },
   villainPreview: {
     alignItems: "center",
     justifyContent: "space-between",
-    width: width * 0.6,
-    height: height * 0.22,
-    borderRadius: 16,
     backgroundColor: "rgba(0, 0, 0, 0.2)",
-    padding: 12,
   },
-  imageWrapper: { flex: 1, justifyContent: "center", alignItems: "center", width: "100%" },
-  villainImage: { width: 120, height: 120, resizeMode: "contain" },
+  imageWrapper: { 
+    flex: 1, 
+    justifyContent: "center", 
+    alignItems: "center", 
+    width: "100%" 
+  },
+  villainImage: { 
+    resizeMode: "contain" 
+  },
   nameWrapper: {
     width: "100%",
     backgroundColor: "rgba(0, 0, 0, 0.4)",
-    paddingVertical: 8,
-    borderRadius: 8,
-    marginTop: 8,
   },
   villainName: {
     color: "#FFFFFF",
-    fontSize: 16,
     fontWeight: "700",
     textAlign: "center",
     textShadowColor: "rgba(0, 0, 0, 0.5)",
@@ -240,13 +334,9 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "flex-start",
     alignItems: "center",
-    marginTop: height * 0.01,
-    marginBottom: height * 0.02,
   },
   actionSection: {
-    height: height * 0.1,
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: height * 0.02,
   },
 });

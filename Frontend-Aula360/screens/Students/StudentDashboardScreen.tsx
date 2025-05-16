@@ -1,25 +1,41 @@
-// App.tsx
-import React, { useState, useRef, useEffect, useCallback } from "react";
-import { SafeAreaView, StyleSheet, View, TouchableOpacity } from "react-native";
-import { StatusBar } from "expo-status-bar";
-import { Audio } from "expo-av";
-import { Feather } from "@expo/vector-icons";
-import { useIsFocused } from "@react-navigation/native";
+"use client"
 
-import ProfileHeader from "../ComponentesHero/ProfileHeader";
-import CharacterDisplay from "../ComponentesHero/CharacterDisplay";
-import CharacterList from "../ComponentesHero/CharacterList";
-import type { Character } from "../ComponentesHero/types";
+import { useState, useRef, useEffect, useCallback } from "react"
+import { SafeAreaView, StyleSheet, View, TouchableOpacity, Dimensions, type ScaledSize } from "react-native"
+import { StatusBar } from "expo-status-bar"
+import { Audio } from "expo-av"
+import { Feather } from "@expo/vector-icons"
+import { useIsFocused } from "@react-navigation/native"
+import CharacterDisplay from "../ComponentesHero/CharacterDisplay"
+import CharacterList from "../ComponentesHero/CharacterList"
+import type { Character } from "../ComponentesHero/types"
 
 // ---------- Tipos ----------
 type CharacterWithSize = Character & {
-  imageSize?: { width: number; height: number };
-};
+  imageSize?: { width: number; height: number }
+}
 
 // ---------- Componente ----------
 export default function App() {
-  const isFocused = useIsFocused();                 // ← ¿Pantalla visible?
-  const soundRef = useRef<Audio.Sound | null>(null);
+  const isFocused = useIsFocused()
+  const soundRef = useRef<Audio.Sound | null>(null)
+  const [dimensions, setDimensions] = useState<ScaledSize>(Dimensions.get("window"))
+
+  // Detect screen size changes
+  useEffect(() => {
+    const subscription = Dimensions.addEventListener("change", ({ window }) => {
+      setDimensions(window)
+    })
+
+    return () => subscription.remove()
+  }, [])
+
+  // Calculate if device is a tablet based on screen size and pixel density
+  const isTablet = useCallback(() => {
+    const { width, height } = dimensions
+    const screenSize = Math.sqrt(width * width + height * height) / 160
+    return screenSize >= 7 // Common threshold for tablets
+  }, [dimensions])
 
   // ---------------- Datos de personajes -------------
   const characters: CharacterWithSize[] = [
@@ -53,61 +69,68 @@ export default function App() {
       imageSize: { width: 200, height: 150 },
       class: "Guerrera",
     },
-  ];
+  ]
 
-  const [selectedCharacter, setSelectedCharacter] =
-    useState<CharacterWithSize>(characters[0]);
-  const [isPlaying, setIsPlaying] = useState(true);
+  const [selectedCharacter, setSelectedCharacter] = useState<CharacterWithSize>(characters[0])
+  const [isPlaying, setIsPlaying] = useState(true)
 
   // ---------------- Funciones de audio --------------
   const playBackgroundSound = useCallback(async () => {
-    if (soundRef.current) return; // ya está cargado
+    if (soundRef.current) return // ya está cargado
 
     await Audio.setAudioModeAsync({
       playsInSilentModeIOS: true,
       shouldDuckAndroid: true,
-    });
+    })
 
-    const { sound } = await Audio.Sound.createAsync(
-      require("../../assets/SonidoJuego/sonidoFondo.mp3"),
-      { isLooping: true, volume: 0.5, shouldPlay: true }
-    );
+    const { sound } = await Audio.Sound.createAsync(require("../../assets/SonidoJuego/sonidoFondo.mp3"), {
+      isLooping: true,
+      volume: 0.5,
+      shouldPlay: true,
+    })
 
-    soundRef.current = sound;
-    setIsPlaying(true);
-  }, []);
+    soundRef.current = sound
+    setIsPlaying(true)
+  }, [])
 
   const stopSound = useCallback(async () => {
-    if (!soundRef.current) return;
+    if (!soundRef.current) return
 
-    await soundRef.current.stopAsync();
-    await soundRef.current.unloadAsync();
-    soundRef.current = null;
-    setIsPlaying(false);
-  }, []);
+    await soundRef.current.stopAsync()
+    await soundRef.current.unloadAsync()
+    soundRef.current = null
+    setIsPlaying(false)
+  }, [])
 
   // ------------- Manejar foco de pantalla -----------
   useEffect(() => {
-    if (isFocused) playBackgroundSound();
-    else stopSound();
+    if (isFocused) playBackgroundSound()
+    else stopSound()
 
     // Limpieza extra si el componente se desmonta
     return () => {
-      stopSound();
-    };
-  }, [isFocused, playBackgroundSound, stopSound]);
+      stopSound()
+    }
+  }, [isFocused, playBackgroundSound, stopSound])
 
   // ------------- Toggle manual (botón volumen) ------
   const togglePlayback = async () => {
-    if (!soundRef.current) return;
+    if (!soundRef.current) return
 
     if (isPlaying) {
-      await soundRef.current.pauseAsync();
+      await soundRef.current.pauseAsync()
     } else {
-      await soundRef.current.playAsync();
+      await soundRef.current.playAsync()
     }
-    setIsPlaying(!isPlaying);
-  };
+    setIsPlaying(!isPlaying)
+  }
+
+  // Calculate responsive sizes based on screen width
+  const getResponsiveSize = (size: number) => {
+    const { width } = dimensions
+    const baseWidth = 375 // iPhone 8 width as base
+    return (width / baseWidth) * size
+  }
 
   // --------------------- UI -------------------------
   return (
@@ -115,28 +138,43 @@ export default function App() {
       <StatusBar style="light" />
       <View style={styles.content}>
         <TouchableOpacity
-          style={styles.musicButton}
+          style={[
+            styles.musicButton,
+            {
+              width: getResponsiveSize(40),
+              height: getResponsiveSize(40),
+              borderRadius: getResponsiveSize(20),
+              top: getResponsiveSize(10),
+              right: getResponsiveSize(10),
+            },
+          ]}
           onPress={togglePlayback}
           activeOpacity={0.7}
         >
-          <Feather
-            name={isPlaying ? "volume-2" : "volume-x"}
-            size={24}
-            color="#FFD700"
-          />
+          <Feather name={isPlaying ? "volume-2" : "volume-x"} size={getResponsiveSize(24)} color="#FFD700" />
         </TouchableOpacity>
 
-        <CharacterDisplay
-          character={selectedCharacter}
-          imageSize={selectedCharacter.imageSize}
-        />
-        <CharacterList
-          characters={characters}
-          onSelectCharacter={setSelectedCharacter}
-        />
+        <View style={styles.characterContainer}>
+          <CharacterDisplay
+            character={selectedCharacter}
+            imageSize={
+              selectedCharacter.imageSize
+                ? {
+                    width: getResponsiveSize(selectedCharacter.imageSize.width),
+                    height: getResponsiveSize(selectedCharacter.imageSize.height),
+                  }
+                : undefined
+            }
+            isTablet={isTablet()}
+          />
+        </View>
+
+        <View style={styles.listContainer}>
+          <CharacterList characters={characters} onSelectCharacter={setSelectedCharacter} isTablet={isTablet()} />
+        </View>
       </View>
     </SafeAreaView>
-  );
+  )
 }
 
 // ------------------- Estilos ------------------------
@@ -147,19 +185,24 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+    justifyContent: "space-between",
+  },
+  characterContainer: {
+    flex: 3,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  listContainer: {
+    flex: 1,
+    marginBottom: 10,
   },
   musicButton: {
     position: "absolute",
-    top: 10,
-    right: 10,
     zIndex: 100,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
     backgroundColor: "rgba(0,0,0,0.5)",
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 1,
     borderColor: "rgba(255,215,0,0.3)",
   },
-});
+})
