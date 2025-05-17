@@ -62,6 +62,7 @@ const InsertarCoordenadasComponent: React.FC = () => {
 
   const saveImagesToLocalStorage = async (newImages: string[]) => {
     try {
+      console.log(newImages);
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newImages));
     } catch (error) {
       console.log('Error guardando imágenes en almacenamiento local:', error);

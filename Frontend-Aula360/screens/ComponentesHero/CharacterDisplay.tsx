@@ -7,6 +7,8 @@ import { LinearGradient } from "expo-linear-gradient"
 import { Feather } from "@expo/vector-icons"
 import { BlurView } from "expo-blur"
 import type { Character } from "./types"
+import { getSavedCharacterImage, saveCharacterImage } from "./saveCharacterImage"
+import { get } from "react-native/Libraries/TurboModule/TurboModuleRegistry"
 
 const { width, height } = Dimensions.get("window")
 
@@ -114,6 +116,16 @@ const CharacterDisplay: React.FC<CharacterDisplayProps> = ({ character, imageSiz
       tension: 40,
       useNativeDriver: true,
     }).start()
+  }
+
+  const handleSelect = async () => {
+    if (typeof character.image === "string") {
+      await saveCharacterImage(character.image, 'Hero')
+    } else {
+      await saveCharacterImage(character.name, 'Hero')
+    }
+
+    onSelect()
   }
 
   const translateY = floatAnim.interpolate({
@@ -250,7 +262,7 @@ const CharacterDisplay: React.FC<CharacterDisplayProps> = ({ character, imageSiz
         <TouchableOpacity
           style={styles.selectButtonContainer}
           activeOpacity={0.9}
-          onPress={onSelect}
+          onPress={handleSelect}
           onPressIn={handlePressIn}
           onPressOut={handlePressOut}
         >
