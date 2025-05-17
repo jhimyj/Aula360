@@ -20,6 +20,7 @@ import BackButton from "../ComponentesVillano/UI/back-button";
 import VillainCarousel from "../ComponentesVillano/villain-carousel";
 import VillainCard from "../ComponentesVillano/villain-card";
 import ActionButton from "../ComponentesVillano/UI/action-button";
+import { saveCharacterImage } from "../ComponentesHero/saveCharacterImage";
 
 // -------------------- Datos de villanos --------------------
 const villains = [
@@ -137,6 +138,8 @@ export default function VillainSelectionScreen({ navigation }) {
 
   const handleStartMission = () => {
     alert(`Iniciando misión con ${villains[selectedVillain].name}`);
+    saveCharacterImage(villains[selectedVillain].image, "Villano");
+    navigation.navigate("BattleScreen");
   };
 
   const handleMoreInfo = (villainId) => {
