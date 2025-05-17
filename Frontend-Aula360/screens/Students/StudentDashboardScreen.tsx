@@ -6,6 +6,7 @@ import { StatusBar } from "expo-status-bar"
 import { Audio } from "expo-av"
 import { Feather } from "@expo/vector-icons"
 import { useIsFocused } from "@react-navigation/native"
+import AsyncStorage from "@react-native-async-storage/async-storage"
 import CharacterDisplay from "../ComponentesHero/CharacterDisplay"
 import CharacterList from "../ComponentesHero/CharacterList"
 import type { Character } from "../ComponentesHero/types"
@@ -125,6 +126,56 @@ export default function App() {
     setIsPlaying(!isPlaying)
   }
 
+  // ------------- Guardar personaje seleccionado en AsyncStorage ------
+  const handleSelectCharacter = (character: CharacterWithSize) => {
+    setSelectedCharacter(character)
+    // Ya no guardamos en AsyncStorage aquí
+  }
+
+  const handleConfirmCharacter = async () => {
+    try {
+      // Guardar la información del personaje seleccionado
+      // Como no podemos guardar el objeto de imagen directamente, guardamos la ruta
+      // Creamos un objeto con la información necesaria
+      const characterInfo = {
+        id: selectedCharacter.id,
+        name: selectedCharacter.name,
+        // Guardamos la ruta como string para poder recuperarla después
+        imagePath: `../../assets/Personajes/${selectedCharacter.name}.png`,
+        description: selectedCharacter.description,
+        background: selectedCharacter.background,
+        class: selectedCharacter.class,
+      }
+
+      // Convertimos a JSON y guardamos
+      await AsyncStorage.setItem("selectedCharacter", JSON.stringify(characterInfo))
+      console.log(`Personaje ${selectedCharacter.name} guardado en AsyncStorage`)
+    } catch (error) {
+      console.error("Error al guardar el personaje:", error)
+    }
+  }
+
+  // Cargar el personaje seleccionado al iniciar
+  useEffect(() => {
+    const loadSelectedCharacter = async () => {
+      try {
+        const savedCharacter = await AsyncStorage.getItem("selectedCharacter")
+        if (savedCharacter) {
+          const characterInfo = JSON.parse(savedCharacter)
+          // Buscar el personaje en la lista por ID
+          const foundCharacter = characters.find((char) => char.id === characterInfo.id)
+          if (foundCharacter) {
+            setSelectedCharacter(foundCharacter)
+          }
+        }
+      } catch (error) {
+        console.error("Error al cargar el personaje:", error)
+      }
+    }
+
+    loadSelectedCharacter()
+  }, [])
+
   // Calculate responsive sizes based on screen width
   const getResponsiveSize = (size: number) => {
     const { width } = dimensions
@@ -165,12 +216,12 @@ export default function App() {
                   }
                 : undefined
             }
-            isTablet={isTablet()}
+            onSelect={handleConfirmCharacter}
           />
         </View>
 
         <View style={styles.listContainer}>
-          <CharacterList characters={characters} onSelectCharacter={setSelectedCharacter} isTablet={isTablet()} />
+          <CharacterList characters={characters} onSelectCharacter={handleSelectCharacter} isTablet={isTablet()} />
         </View>
       </View>
     </SafeAreaView>

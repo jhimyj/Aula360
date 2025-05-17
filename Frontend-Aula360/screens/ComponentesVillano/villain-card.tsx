@@ -7,7 +7,7 @@ import { Feather } from "@expo/vector-icons"
 
 const { width } = Dimensions.get("window")
 
-export default function VillainCard({ villain, onPress, onMorePress }) {
+export default function VillainCard({ villain, onPress, onMorePress, onSelect }) {
   const { name, image, description, power, danger, reach } = villain
   const [showDescription, setShowDescription] = useState(false)
   const [animation] = useState(new Animated.Value(0))
@@ -84,7 +84,22 @@ export default function VillainCard({ villain, onPress, onMorePress }) {
             {showDescription && <Text style={styles.description}>{description}</Text>}
           </Animated.View>
 
-         
+          {/* Botón de selección */}
+          <TouchableOpacity 
+            style={styles.selectButton} 
+            onPress={onSelect}
+            activeOpacity={0.7}
+          >
+            <LinearGradient
+              colors={["#4FD1C5", "#38B2AC"]}
+              style={styles.selectGradient}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+            >
+              <Feather name="check-circle" size={18} color="#0F2A5F" style={styles.selectIcon} />
+              <Text style={styles.selectText}>SELECCIONAR VILLANO</Text>
+            </LinearGradient>
+          </TouchableOpacity>
         </View>
       </LinearGradient>
     </TouchableOpacity>
@@ -204,19 +219,32 @@ const styles = StyleSheet.create({
     color: "#E2E8F0",
     lineHeight: 18,
   },
-  moreButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    alignSelf: "center",
-    backgroundColor: "rgba(66, 153, 225, 0.15)",
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 20,
+  selectButton: {
+    width: "100%",
+    height: 44,
+    borderRadius: 22,
+    overflow: "hidden",
+    marginTop: 10,
+    elevation: 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
   },
-  moreButtonText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#A3BFFA",
-    marginRight: 4,
+  selectGradient: {
+    width: "100%",
+    height: "100%",
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  selectIcon: {
+    marginRight: 8,
+  },
+  selectText: {
+    color: "#0F2A5F",
+    fontWeight: "bold",
+    fontSize: 14,
+    letterSpacing: 0.5,
   },
 })

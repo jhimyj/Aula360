@@ -11,10 +11,12 @@ import {
   StatusBar as RNStatusBar,
   Platform,
   ScaledSize,
+  Alert,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Audio } from "expo-av";
 import { useIsFocused } from "@react-navigation/native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import BackButton from "../ComponentesVillano/UI/back-button";
 import VillainCarousel from "../ComponentesVillano/villain-carousel";
@@ -64,6 +66,7 @@ export default function VillainSelectionScreen({ navigation }) {
   const [selectedVillain, setSelectedVillain] = useState(0);
   const [animateCard, setAnimateCard] = useState(false);
   const [isPlaying, setIsPlaying] = useState(true);
+  const [selectedVillainSaved, setSelectedVillainSaved] = useState(false);
 
   // Detect screen size changes
   useEffect(() => {
@@ -127,20 +130,93 @@ export default function VillainSelectionScreen({ navigation }) {
     return () => clearTimeout(t);
   }, [selectedVillain]);
 
+  // Cargar el villano seleccionado al iniciar
+  useEffect(() => {
+    const loadSelectedVillain = async () => {
+      try {
+        const savedVillain = await AsyncStorage.getItem('selectedVillain');
+        if (savedVillain) {
+          const villainInfo = JSON.parse(savedVillain);
+          // Buscar el villano en la lista por ID
+          const villainIndex = villains.findIndex(v => v.id === villainInfo.id);
+          if (villainIndex !== -1) {
+            setSelectedVillain(villainIndex);
+            setSelectedVillainSaved(true);
+          }
+        }
+      } catch (error) {
+        console.error('Error al cargar el villano:', error);
+      }
+    };
+    
+    loadSelectedVillain();
+  }, []);
+
   const handleBack = () => {
     navigation?.goBack?.();
   };
 
   const handleVillainSelect = (index) => {
     setSelectedVillain(index);
+    setSelectedVillainSaved(false); // Resetear el estado de guardado cuando se selecciona otro villano
   };
 
   const handleStartMission = () => {
-    alert(`Iniciando misión con ${villains[selectedVillain].name}`);
+    if (selectedVillainSaved) {
+      // Si ya hay un villano guardado, ir a la pantalla de batalla
+      navigation?.navigate?.('BattleScreen');
+    } else {
+      // Si no hay villano guardado, mostrar alerta
+      Alert.alert(
+        "Selecciona un villano",
+        "Debes seleccionar un villano antes de iniciar la misión",
+        [{ text: "Entendido", style: "default" }]
+      );
+    }
   };
 
   const handleMoreInfo = (villainId) => {
     alert(`Más información sobre ${villains.find((v) => v.id === villainId).name}`);
+  };
+
+  // Guardar el villano seleccionado en AsyncStorage
+  const handleSelectVillain = async () => {
+    try {
+      const villain = villains[selectedVillain];
+      
+      // Crear un objeto con la información necesaria
+      const villainInfo = {
+        id: villain.id,
+        name: villain.name,
+        // Guardamos la ruta como string para poder recuperarla después
+        imagePath: `../../assets/villanos/${villain.name}.png`,
+        description: villain.description,
+        power: villain.power,
+        danger: villain.danger,
+        reach: villain.reach
+      };
+      
+      // Convertir a JSON y guardar
+      await AsyncStorage.setItem('selectedVillain', JSON.stringify(villainInfo));
+      console.log(`Villano ${villain.name} guardado en AsyncStorage`);
+      
+      // Actualizar el estado para mostrar que se ha guardado
+      setSelectedVillainSaved(true);
+      
+      // Mostrar confirmación al usuario
+      Alert.alert(
+        "Villano seleccionado",
+        `Has seleccionado a ${villain.name} como tu oponente`,
+        [{ text: "¡A luchar!", style: "default" }]
+      );
+    } catch (error) {
+      console.error('Error al guardar el villano:', error);
+      Alert.alert(
+        "Error",
+        "No se pudo guardar el villano seleccionado",
+        [{ text: "Intentar de nuevo", style: "default" }]
+      );
+    }
   };
 
   // -------------------- UI --------------------------------
@@ -157,7 +233,7 @@ export default function VillainSelectionScreen({ navigation }) {
               paddingTop: dimensions.height * 0.01
             }
           ]}>
-            <BackButton onPress={handleBack} size={isTablet() ? 32 : 24} />
+            <BackButton onPress={handleBack} />
             <Text style={[
               styles.title,
               { fontSize: getResponsiveSize(22, 1.4) }
@@ -182,7 +258,6 @@ export default function VillainSelectionScreen({ navigation }) {
             <VillainCarousel
               onVillainSelect={handleVillainSelect}
               selectedIndex={selectedVillain}
-              itemWidth={dimensions.width * (isTablet() ? 0.65 : 0.6)}
             >
               {villains.map((villain) => (
                 <View key={villain.id} style={[
@@ -239,8 +314,7 @@ export default function VillainSelectionScreen({ navigation }) {
               villain={villains[selectedVillain]}
               onPress={() => {}}
               onMorePress={() => handleMoreInfo(villains[selectedVillain].id)}
-              isTablet={isTablet()}
-              scale={isTablet() ? 1.2 : 1}
+              onSelect={handleSelectVillain}
             />
           </View>
 
@@ -253,12 +327,11 @@ export default function VillainSelectionScreen({ navigation }) {
             }
           ]}>
             <ActionButton
-              title="¡INICIAR MISIÓN!"
+              title={selectedVillainSaved ? "¡INICIAR BATALLA!" : "SELECCIONA UN VILLANO"}
               onPress={handleStartMission}
-              primary
-              icon="play-circle"
-              size={isTablet() ? "large" : "medium"}
-              fontSize={getResponsiveSize(16, 1.3)}
+              primary={selectedVillainSaved}
+              icon={selectedVillainSaved ? "play-circle" : "alert-circle"}
+              disabled={!selectedVillainSaved}
             />
           </View>
         </View>
