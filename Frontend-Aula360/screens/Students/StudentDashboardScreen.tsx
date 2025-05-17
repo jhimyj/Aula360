@@ -43,7 +43,7 @@ export default function App() {
     {
       id: "1",
       name: "Qhapaq",
-      image: require("../../assets/Personajes/Qhapac.png"),
+      image: require("../../assets/images/chaman.png"),
       description: "Un Inca muy sabio y hábil",
       background: ["#8E44AD", "#9B59B6"],
       stats: { strength: 70, wisdom: 95, agility: 65, defense: 80 },
@@ -53,7 +53,7 @@ export default function App() {
     {
       id: "2",
       name: "Amaru",
-      image: require("../../assets/Personajes/Amaru.png"),
+      image: require("../../assets/Personajes/Amaru1.png"),
       description: "Una persona muy fuerte",
       background: ["#E74C3C", "#C0392B"],
       stats: { strength: 95, wisdom: 60, agility: 85, defense: 75 },
@@ -63,7 +63,7 @@ export default function App() {
     {
       id: "3",
       name: "Killa",
-      image: require("../../assets/Personajes/Killa.png"),
+      image: require("../../assets/Personajes/Guerrera.png"),
       description: "Una guerrera",
       background: ["#3498DB", "#2980B9"],
       stats: { strength: 75, wisdom: 80, agility: 90, defense: 65 },
