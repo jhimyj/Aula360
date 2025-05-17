@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useRef, useEffect, useState } from "react"
-import { View, Text, StyleSheet, TouchableOpacity, Animated, Dimensions, Easing } from "react-native"
+import { View, Text, StyleSheet, TouchableOpacity, Animated, Dimensions, Easing, Platform } from "react-native"
 import { LinearGradient } from "expo-linear-gradient"
 import { Feather } from "@expo/vector-icons"
 import { BlurView } from "expo-blur"
@@ -118,6 +118,14 @@ const CharacterDisplay: React.FC<CharacterDisplayProps> = ({ character, imageSiz
     }).start()
   }
 
+  const handleSeeMore = () => {
+    setShowDetailsDialog(true)
+  }
+
+  const handleCloseDialog = () => {
+    setShowDetailsDialog(false)
+  }
+
   const translateY = floatAnim.interpolate({
     inputRange: [0, 1],
     outputRange: [0, -15],
@@ -148,6 +156,9 @@ const CharacterDisplay: React.FC<CharacterDisplayProps> = ({ character, imageSiz
           ? "#3498DB"
           : "#7F8C8D"
 
+  // Determine if we're on a mobile device
+  const isMobile = Platform.OS === 'ios' || Platform.OS === 'android'
+
   return (
     <View style={styles.container}>
       <LinearGradient colors={backgroundColors} style={styles.background} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
@@ -169,7 +180,13 @@ const CharacterDisplay: React.FC<CharacterDisplayProps> = ({ character, imageSiz
         ))}
 
         <View style={styles.header}>
-          <TouchableOpacity style={styles.seeMoreButton} onPress={() => setShowDetailsDialog(true)} activeOpacity={0.7}>
+          <TouchableOpacity 
+            style={styles.seeMoreButton} 
+            onPress={handleSeeMore} 
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel="Ver más detalles del personaje"
+          >
             <Feather name="info" size={14} color="#FFFFFF" style={styles.infoIcon} />
             <Text style={styles.seeMoreText}>See More</Text>
           </TouchableOpacity>
@@ -256,6 +273,8 @@ const CharacterDisplay: React.FC<CharacterDisplayProps> = ({ character, imageSiz
           onPress={onSelect}
           onPressIn={handlePressIn}
           onPressOut={handlePressOut}
+          accessibilityRole="button"
+          accessibilityLabel="Seleccionar este personaje"
         >
           <Animated.View style={{ transform: [{ scale: buttonScaleAnim }], width: "100%" }}>
             <LinearGradient
@@ -274,7 +293,7 @@ const CharacterDisplay: React.FC<CharacterDisplayProps> = ({ character, imageSiz
         <CharacterDetailsDialog
           character={character}
           visible={showDetailsDialog}
-          onClose={() => setShowDetailsDialog(false)}
+          onClose={handleCloseDialog}
         />
       </LinearGradient>
     </View>
@@ -345,6 +364,8 @@ const styles = StyleSheet.create({
     borderColor: "rgba(255,255,255,0.2)",
     flexDirection: "row",
     alignItems: "center",
+    minWidth: 100, // Asegura un área de toque mínima para dispositivos móviles
+    justifyContent: "center", // Centra el contenido
   },
   infoIcon: {
     marginRight: 5,
@@ -419,8 +440,8 @@ const styles = StyleSheet.create({
   statsBlurContainer: {
     width: "90%",
     borderRadius: 20,
-    padding: 12, // Reducido de 15
-    marginBottom: 10, // Reducido de 15
+    padding: 12,
+    marginBottom: 10,
     overflow: "hidden",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.2)",
@@ -428,28 +449,28 @@ const styles = StyleSheet.create({
   characterName: {
     color: "#FFFFFF",
     fontWeight: "bold",
-    fontSize: 24, // Reducido de 28
+    fontSize: 24,
     textAlign: "center",
-    marginBottom: 2, // Reducido de 5
+    marginBottom: 2,
     textShadowColor: "rgba(0,0,0,0.5)",
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 3,
   },
   characterClass: {
     color: "rgba(255,255,255,0.8)",
-    fontSize: 14, // Reducido de 16
+    fontSize: 14,
     textAlign: "center",
-    marginBottom: 10, // Reducido de 15
+    marginBottom: 10,
     fontStyle: "italic",
   },
   statsGrid: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 10, // Reducido de 15
+    marginBottom: 10,
   },
   statBarContainer: {
     width: "23%",
-    marginBottom: 0, // Añadido para reducir espacio
+    marginBottom: 0,
   },
   labelContainer: {
     flexDirection: "row",
@@ -500,11 +521,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "rgba(0,0,0,0.5)",
-    paddingHorizontal: 10, // Reducido de 12
-    paddingVertical: 4, // Reducido de 6
+    paddingHorizontal: 10,
+    paddingVertical: 4,
     borderRadius: 15,
-    marginHorizontal: 3, // Reducido de 5
-    marginBottom: 3, // Reducido de 5
+    marginHorizontal: 3,
+    marginBottom: 3,
     borderWidth: 1,
     borderColor: "rgba(255,215,0,0.3)",
   },
@@ -515,8 +536,8 @@ const styles = StyleSheet.create({
   },
   selectButtonContainer: {
     width: "80%",
-    height: 45, // Reducido de 50
-    borderRadius: 22.5, // Ajustado a la mitad de la altura
+    height: 45,
+    borderRadius: 22.5,
     overflow: "hidden",
     elevation: 5,
     shadowColor: "#000",
@@ -524,7 +545,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     marginLeft: -40,
     shadowRadius: 5,
-    marginTop: 5, // Añadido para reducir espacio
+    marginTop: 5,
   },
   gradientButton: {
     width: "100%",
