@@ -1,12 +1,13 @@
 "use client"
 
 import type React from "react"
-import { useRef, useEffect } from "react"
+import { useRef, useEffect, useState } from "react"
 import { View, Text, StyleSheet, TouchableOpacity, Animated, Dimensions, Easing } from "react-native"
 import { LinearGradient } from "expo-linear-gradient"
 import { Feather } from "@expo/vector-icons"
 import { BlurView } from "expo-blur"
 import type { Character } from "./types"
+import CharacterDetailsDialog from "./CharacterDetailsDialog"
 
 const { width, height } = Dimensions.get("window")
 
@@ -20,6 +21,7 @@ interface CharacterDisplayProps {
 }
 
 const CharacterDisplay: React.FC<CharacterDisplayProps> = ({ character, imageSize, onSelect = () => {} }) => {
+  const [showDetailsDialog, setShowDetailsDialog] = useState(false)
   const floatAnim = useRef(new Animated.Value(0)).current
   const rotateAnim = useRef(new Animated.Value(0)).current
   const glowAnim = useRef(new Animated.Value(0)).current
@@ -167,9 +169,10 @@ const CharacterDisplay: React.FC<CharacterDisplayProps> = ({ character, imageSiz
         ))}
 
         <View style={styles.header}>
-          <View style={styles.levelBadge}>
-            <Text style={styles.levelText}>LVL {character.level || 1}</Text>
-          </View>
+          <TouchableOpacity style={styles.seeMoreButton} onPress={() => setShowDetailsDialog(true)} activeOpacity={0.7}>
+            <Feather name="info" size={14} color="#FFFFFF" style={styles.infoIcon} />
+            <Text style={styles.seeMoreText}>See More</Text>
+          </TouchableOpacity>
           <View style={styles.rarityBadge}>
             <Text style={styles.rarityText}>{character.rarity || "COMÚN"}</Text>
           </View>
@@ -266,6 +269,13 @@ const CharacterDisplay: React.FC<CharacterDisplayProps> = ({ character, imageSiz
             </LinearGradient>
           </Animated.View>
         </TouchableOpacity>
+
+        {/* Character Details Dialog */}
+        <CharacterDetailsDialog
+          character={character}
+          visible={showDetailsDialog}
+          onClose={() => setShowDetailsDialog(false)}
+        />
       </LinearGradient>
     </View>
   )
@@ -326,15 +336,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     marginBottom: 10,
   },
-  levelBadge: {
+  seeMoreButton: {
     backgroundColor: "rgba(0,0,0,0.6)",
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 15,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.2)",
+    flexDirection: "row",
+    alignItems: "center",
   },
-  levelText: {
+  infoIcon: {
+    marginRight: 5,
+  },
+  seeMoreText: {
     color: "#FFFFFF",
     fontWeight: "bold",
     fontSize: 12,
@@ -404,8 +419,8 @@ const styles = StyleSheet.create({
   statsBlurContainer: {
     width: "90%",
     borderRadius: 20,
-    padding: 15,
-    marginBottom: 15,
+    padding: 12, // Reducido de 15
+    marginBottom: 10, // Reducido de 15
     overflow: "hidden",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.2)",
@@ -413,27 +428,28 @@ const styles = StyleSheet.create({
   characterName: {
     color: "#FFFFFF",
     fontWeight: "bold",
-    fontSize: 28,
+    fontSize: 24, // Reducido de 28
     textAlign: "center",
-    marginBottom: 5,
+    marginBottom: 2, // Reducido de 5
     textShadowColor: "rgba(0,0,0,0.5)",
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 3,
   },
   characterClass: {
     color: "rgba(255,255,255,0.8)",
-    fontSize: 16,
+    fontSize: 14, // Reducido de 16
     textAlign: "center",
-    marginBottom: 15,
+    marginBottom: 10, // Reducido de 15
     fontStyle: "italic",
   },
   statsGrid: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 15,
+    marginBottom: 10, // Reducido de 15
   },
   statBarContainer: {
     width: "23%",
+    marginBottom: 0, // Añadido para reducir espacio
   },
   labelContainer: {
     flexDirection: "row",
@@ -484,11 +500,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "rgba(0,0,0,0.5)",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 10, // Reducido de 12
+    paddingVertical: 4, // Reducido de 6
     borderRadius: 15,
-    marginHorizontal: 5,
-    marginBottom: 5,
+    marginHorizontal: 3, // Reducido de 5
+    marginBottom: 3, // Reducido de 5
     borderWidth: 1,
     borderColor: "rgba(255,215,0,0.3)",
   },
@@ -499,25 +515,22 @@ const styles = StyleSheet.create({
   },
   selectButtonContainer: {
     width: "80%",
-    height: 50,
-    borderRadius: 25,
+    height: 45, // Reducido de 50
+    borderRadius: 22.5, // Ajustado a la mitad de la altura
     overflow: "hidden",
     elevation: 5,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
-    marginLeft: -40, // Ajusta el valor según cuánto quieres moverlo
-
-
-
+    marginLeft: -40,
     shadowRadius: 5,
+    marginTop: 5, // Añadido para reducir espacio
   },
   gradientButton: {
     width: "100%",
     height: "100%",
     flexDirection: "row",
-    justifyContent: "flex-start",  // <--- aquí
-
+    justifyContent: "flex-start",
     alignItems: "center",
     borderRadius: 25,
   },
@@ -529,7 +542,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     fontSize: 18,
     letterSpacing: 1,
-
   },
   particle: {
     position: "absolute",

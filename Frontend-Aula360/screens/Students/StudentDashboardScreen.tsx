@@ -84,7 +84,7 @@ export default function App() {
       shouldDuckAndroid: true,
     })
 
-    const { sound } = await Audio.Sound.createAsync(require("../../assets/SonidoJuego/sonidoFondo.mp3"), {
+    const { sound } = await Audio.Sound.createAsync(require("../../assets/SonidoJuego/SonidoFondoOriginal.mp3"), {
       isLooping: true,
       volume: 0.5,
       shouldPlay: true,
