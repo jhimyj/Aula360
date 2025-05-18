@@ -62,11 +62,3 @@ def lambda_handler(event, context):
         logger.error(f"Error del servidor: {e}")
         return Response(status_code=500, body={'message': 'Error interno del servidor'}).to_dict()
 
-if __name__ == '__main__':
-    event = {
-        'headers':{
-            'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImE0ZTEyZmNlLTVhZmMtNDExYy1iODRiLWQxNjVkMGViMDI4MyIsInJvbGUiOiJURUFDSEVSIiwidXNlcm5hbWUiOiJqdWFucCIsImV4cCI6MTc0NTU2NTY1M30._X-WYu-AR4CJUEAERI-Ckva_-mw8Ak1Nuxj1FsZzCvk',
-        }
-    }
-
-    print(lambda_handler(event, None))

@@ -3,7 +3,7 @@ import boto3
 from utils.response import Response
 from utils.token import get_token_instance
 from utils.config import ROOM_TABLE, ROLES_PERMITED_CREATE_ROOM
-from utils.dynamo_utils import  serialize_dynamo_to_dict
+from utils.dynamo_utils import serialize_dynamo_to_dict
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -70,14 +70,3 @@ def lambda_handler(event, context):
         return Response(status_code=500, body={'message': 'Error interno del servidor.'}).to_dict()
 
 
-if __name__ == "__main__":
-    event = {
-        "headers":{
-            "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImZjYmNkZmVmLTY2OGEtNGQ2Ni1iZTczLTQ4ZDRlYTdlMmQ1YiIsInJvbGUiOiJURUFDSEVSIiwidXNlcm5hbWUiOiJqdWFucDEiLCJleHAiOjE3NDU1NzkxNzZ9.xtJ4VS9oK29CiogtDgzKjhxJXY02VO8d61meY_7n3fs",
-        },
-         "pathParameters": {
-               "roomId":"6146ecb9-2f02-4eb9-8170-1d8d1ad8d48d"
-         }
-    }
-
-    print(lambda_handler(event,None))

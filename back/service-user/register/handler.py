@@ -29,7 +29,7 @@ def lambda_handler(event, context):
         if not body:
             return Response(status_code=400, body={'error': 'El body debe tener los parametros requeridos.'}).to_dict()
 
-        if not validator_register.validate(body):
+        if not validator_register.validate(data=body,param_field='body'):
             logger.error(f"Errores de validación: {validator_register.get_errors()}")
             return Response(status_code=400, body={'error': 'Fallo en la validación de datos',
                                                    'details': validator_register.get_errors()}).to_dict()
@@ -81,15 +81,3 @@ def lambda_handler(event, context):
         logger.error(f"Error del servidor: {e}")
         return Response(status_code=500, body={'error': 'Error interno del servidor'}).to_dict()
 
-# Solo test
-if __name__ == '__main__':
-    event = {
-        "body": json.dumps({
-            "name": "juan",
-            "username": "juanp1",
-            "password": "123456",
-            "last_name": "perez"
-        })
-    }
-
-    print(lambda_handler(event, None))
