@@ -1,8 +1,7 @@
 {
   "expo": {
-    "name": "Ecodegraders",
-    "slug": "mi-proyecto",
-    "jsEngine": "hermes",
+    "name": "Aula360",
+    "slug": "Aula360",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -21,15 +20,13 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.aldass.miproyecto"
+      "edgeToEdgeEnabled": true
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "extra": {
-      "eas": {
-        "projectId": "540d8b8b-d4fe-440b-b46b-728a88c69c98"
-      }
-    }
+    "plugins": [
+      "expo-font"
+    ]
   }
 }
