@@ -167,7 +167,7 @@ const BattleScreen = () => {
       // Como no podemos usar rutas dinámicas en require(), usamos un switch
       switch (villainName) {
         case "Corporatus":
-          return require("../../assets/villanos/Corporatus.png")
+          return require("../../assets/villanosBattle/Corporatus.png")
         case "Toxicus":
           return require("../../assets/Personajes/Killa-battle.png")
         case "Shadowman":

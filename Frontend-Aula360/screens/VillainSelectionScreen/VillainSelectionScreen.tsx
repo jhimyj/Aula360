@@ -28,7 +28,7 @@ const villains = [
   {
     id: 1,
     name: "Corporatus",
-    image: require("../../assets/villanos/Corporatus.png"),
+    image: require("../../assets/villanosSelection/Corporatus.png"),
     description:
       "El magnate corrupto que contamina el planeta por beneficio propio. Sus acciones han causado daños irreparables al ecosistema global y ha sobornado a políticos para evitar regulaciones ambientales.",
     power: 80,
@@ -38,7 +38,7 @@ const villains = [
   {
     id: 2,
     name: "Toxicus",
-    image: require("../../assets/villanos/El Demonio de la Avidez.png"),
+    image: require("../../assets/villanosSelection/El Demonio de la Avidez.png"),
     description:
       "Maestro de los desechos tóxicos y enemigo del medio ambiente. Sus experimentos han contaminado océanos enteros y creado zonas inhabitables en varios continentes.",
     power: 85,
@@ -48,7 +48,7 @@ const villains = [
   {
     id: 3,
     name: "Shadowman",
-    image: require("../../assets/villanos/Shadowman.png"),
+    image: require("../../assets/villanosSelection/Shadowman.png"),
     description:
       "Manipulador de las sombras que opera desde las tinieblas. Nadie conoce su verdadera identidad ni sus motivaciones, pero su red de espionaje se extiende por todo el mundo.",
     power: 75,
