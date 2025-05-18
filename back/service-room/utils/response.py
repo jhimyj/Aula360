@@ -1,5 +1,5 @@
 import json
-
+from utils.config import HEADERS_RESPONSE_DEFAULT
 class Response:
     """
     Clase para manejar respuestas estándar de la API.
@@ -12,10 +12,7 @@ class Response:
         self.status_code = status_code
         self.body = body if body else {}
         self.message = message
-        self.headers = headers or {
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Credentials': True
-        }
+        self.headers = headers or HEADERS_RESPONSE_DEFAULT
         
     def set_status(self, status_code: int):
         """
@@ -100,3 +97,4 @@ class Response:
             'headers': self.headers,
             'body': json.dumps(response_body)
         }
+
