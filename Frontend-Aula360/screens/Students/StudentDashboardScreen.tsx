@@ -134,24 +134,11 @@ export default function App() {
 
   const handleConfirmCharacter = async () => {
     try {
-      // Guardar la información del personaje seleccionado
-      // Como no podemos guardar el objeto de imagen directamente, guardamos la ruta
-      // Creamos un objeto con la información necesaria
-      const characterInfo = {
-        id: selectedCharacter.id,
-        name: selectedCharacter.name,
-        // Guardamos la ruta como string para poder recuperarla después
-        imagePath: `../../assets/Personajes/${selectedCharacter.name}.png`,
-        description: selectedCharacter.description,
-        background: selectedCharacter.background,
-        class: selectedCharacter.class,
-      }
-
-      // Convertimos a JSON y guardamos
-      await AsyncStorage.setItem("selectedCharacter", JSON.stringify(characterInfo))
-      console.log(`Personaje ${selectedCharacter.name} guardado en AsyncStorage`)
+      // Solo guardamos el nombre del personaje en AsyncStorage
+      await AsyncStorage.setItem("selectedCharacterName", selectedCharacter.name)
+      console.log(`Nombre del personaje ${selectedCharacter.name} guardado en AsyncStorage`)
     } catch (error) {
-      console.error("Error al guardar el personaje:", error)
+      console.error("Error al guardar el nombre del personaje:", error)
     }
   }
 
@@ -159,11 +146,10 @@ export default function App() {
   useEffect(() => {
     const loadSelectedCharacter = async () => {
       try {
-        const savedCharacter = await AsyncStorage.getItem("selectedCharacter")
-        if (savedCharacter) {
-          const characterInfo = JSON.parse(savedCharacter)
-          // Buscar el personaje en la lista por ID
-          const foundCharacter = characters.find((char) => char.id === characterInfo.id)
+        const savedCharacterName = await AsyncStorage.getItem("selectedCharacterName")
+        if (savedCharacterName) {
+          // Buscar el personaje en la lista por nombre
+          const foundCharacter = characters.find((char) => char.name === savedCharacterName)
           if (foundCharacter) {
             setSelectedCharacter(foundCharacter)
           }

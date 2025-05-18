@@ -8,9 +8,9 @@ import AsyncStorage from "@react-native-async-storage/async-storage"
 const { width, height } = Dimensions.get("window")
 
 const BattleScreen = () => {
-  // Estado para almacenar la información del personaje y villano seleccionados
-  const [selectedCharacter, setSelectedCharacter] = useState(null)
-  const [selectedVillain, setSelectedVillain] = useState(null)
+  // Estado para almacenar el nombre del personaje y villano seleccionados
+  const [characterName, setCharacterName] = useState<string | null>(null)
+  const [villainName, setVillainName] = useState<string | null>(null)
 
   // Animaciones para la entrada de personajes y efectos
   const [heroAnim] = useState(new Animated.Value(-width))
@@ -24,38 +24,30 @@ const BattleScreen = () => {
   const [battleRoyaleOpacity] = useState(new Animated.Value(1))
   const [showBattleRoyale, setShowBattleRoyale] = useState(true)
 
-  // Cargar el personaje y villano seleccionados desde AsyncStorage
+  // Cargar el nombre del personaje y villano seleccionados desde AsyncStorage
   useEffect(() => {
     const loadSelectedCharacterAndVillain = async () => {
       try {
-        // Cargar personaje
-        const savedCharacter = await AsyncStorage.getItem("selectedCharacter")
-        if (savedCharacter) {
-          const characterInfo = JSON.parse(savedCharacter)
-          setSelectedCharacter(characterInfo)
-          console.log("Personaje cargado en BattleScreen:", characterInfo.name)
+        // Cargar nombre del personaje
+        const savedCharacterName = await AsyncStorage.getItem("selectedCharacterName")
+        if (savedCharacterName) {
+          setCharacterName(savedCharacterName)
+          console.log("Nombre del personaje cargado en BattleScreen:", savedCharacterName)
         } else {
-          console.log("No hay personaje guardado en AsyncStorage")
+          console.log("No hay nombre de personaje guardado en AsyncStorage")
           // Si no hay personaje guardado, usamos uno por defecto
-          setSelectedCharacter({
-            name: "Personaje por defecto",
-            imagePath: "../../assets/Personajes/Qhapac.png",
-          })
+          setCharacterName("Qhapaq")
         }
 
-        // Cargar villano
-        const savedVillain = await AsyncStorage.getItem("selectedVillain")
-        if (savedVillain) {
-          const villainInfo = JSON.parse(savedVillain)
-          setSelectedVillain(villainInfo)
-          console.log("Villano cargado en BattleScreen:", villainInfo.name)
+        // Cargar nombre del villano
+        const savedVillainName = await AsyncStorage.getItem("selectedVillainName")
+        if (savedVillainName) {
+          setVillainName(savedVillainName)
+          console.log("Nombre del villano cargado en BattleScreen:", savedVillainName)
         } else {
-          console.log("No hay villano guardado en AsyncStorage")
+          console.log("No hay nombre de villano guardado en AsyncStorage")
           // Si no hay villano guardado, usamos uno por defecto
-          setSelectedVillain({
-            name: "Villano por defecto",
-            imagePath: "../../assets/villanos/Corporatus.png",
-          })
+          setVillainName("Corporatus")
         }
       } catch (error) {
         console.error("Error al cargar datos:", error)
@@ -149,40 +141,39 @@ const BattleScreen = () => {
     outputRange: ["-5deg", "5deg"],
   })
 
-  // Función para determinar qué imagen mostrar para el héroe
+  // Función para cargar dinámicamente la imagen del héroe basada en el nombre
   const getHeroImage = () => {
-    // Si tenemos un personaje seleccionado, intentamos usar su imagen
-    if (selectedCharacter) {
+    // Construimos el nombre de la imagen basado en el nombre del personaje y el contexto (batalla)
+    if (characterName) {
       // Como no podemos usar rutas dinámicas en require(), usamos un switch
-      switch (selectedCharacter.name) {
+      switch (characterName) {
         case "Qhapaq":
-          return require("../../assets/Personajes/Qhapac.png")
+          return require("../../assets/Personajes/Qhapaq-battle.png")
         case "Amaru":
-          return require("../../assets/Personajes/Amaru.png")
+          return require("../../assets/Personajes/Amaru-battle.png")
         case "Killa":
-          return require("../../assets/Personajes/Killa.png")
+          return require("../../assets/Personajes/Killa-battle.png")
         default:
-          return require("../../assets/images/villiancharacter1.png")
+          return require("../../assets/Personajes/Killa-battle.png")
       }
     }
     // Imagen por defecto si no hay personaje seleccionado
     return require("../../assets/images/villiancharacter1.png")
   }
 
-  // Función para determinar qué imagen mostrar para el villano
+  // Función para cargar dinámicamente la imagen del villano basada en el nombre
   const getVillainImage = () => {
-    // Si tenemos un villano seleccionado, intentamos usar su imagen
-    if (selectedVillain) {
+    if (villainName) {
       // Como no podemos usar rutas dinámicas en require(), usamos un switch
-      switch (selectedVillain.name) {
+      switch (villainName) {
         case "Corporatus":
           return require("../../assets/villanos/Corporatus.png")
         case "Toxicus":
-          return require("../../assets/villanos/El Demonio de la Avidez.png")
+          return require("../../assets/Personajes/Killa-battle.png")
         case "Shadowman":
-          return require("../../assets/villanos/Shadowman.png")
+          return require("../../assets/Personajes/Killa-battle.png")
         default:
-          return require("../../assets/images/Hero2.png")
+          return require("../../assets/Personajes/Killa-battle.png")
       }
     }
     // Imagen por defecto si no hay villano seleccionado
@@ -211,9 +202,9 @@ const BattleScreen = () => {
               style={styles.battleRoyaleGradient}
             >
               <Text style={styles.battleRoyaleText}>BATTLE ROYALE</Text>
-              {selectedCharacter && selectedVillain && (
+              {characterName && villainName && (
                 <Text style={styles.characterNameText}>
-                  {selectedCharacter.name} VS {selectedVillain.name}
+                  {characterName} VS {villainName}
                 </Text>
               )}
             </LinearGradient>
