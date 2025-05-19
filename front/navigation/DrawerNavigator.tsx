@@ -10,6 +10,9 @@ import Register from '../screens/auth/RegisterScreen';
 import BattleScreen from '../screens/Versus/BattleScreen';
 import Mision from '../screens/mision/mission-screen'
 import MissionGameScreen from '../screens/mission-game-screen/mission-game-screen'
+import compot from '../../front/screens/QuizScreen/ExampleUsage'
+import ResultsScreen from "../componentes/Quiz/results-screen"
+
 const Drawer = createDrawerNavigator();
 import { Image } from "react-native"
 
@@ -25,9 +28,8 @@ export default function DrawerNavigator() {
       <Drawer.Screen name="BattleScreen" component={BattleScreen} />
       <Drawer.Screen name="Mision" component={Mision} />
       <Drawer.Screen name="MissionGameScreen" component={MissionGameScreen} />
-
-
-
+      <Drawer.Screen name="Quiz" component={compot} />
+      <Drawer.Screen name="Results" component={ResultsScreen} options={{ title: "Resultados" }} />
     </Drawer.Navigator>
   );
 }
