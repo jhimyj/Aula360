@@ -270,7 +270,7 @@ const CharacterDisplay: React.FC<CharacterDisplayProps> = ({ character, imageSiz
         <TouchableOpacity
           style={styles.selectButtonContainer}
           activeOpacity={0.9}
-          onPress={handleSelect}
+          onPress={onSelect}
           onPressIn={handlePressIn}
           onPressOut={handlePressOut}
           accessibilityRole="button"

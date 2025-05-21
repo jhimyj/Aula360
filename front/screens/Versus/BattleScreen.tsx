@@ -31,7 +31,6 @@ const BattleScreen = () => {
       try {
         // Cargar nombre del personaje
         const savedCharacterName = await AsyncStorage.getItem("selectedCharacterName")
-
         if (savedCharacterName) {
           setCharacterName(savedCharacterName)
           console.log("Nombre del personaje cargado en BattleScreen:", savedCharacterName)
@@ -41,24 +40,15 @@ const BattleScreen = () => {
           setCharacterName("Qhapaq")
         }
 
-        // Cargar nombre del villano - primero intentamos con la clave específica
-        const savedVillainName = await AsyncStorage.getItem("selectedVillainName")
-
+        // Cargar nombre del villano
+        const savedVillainName = JSON.parse(await AsyncStorage.getItem("selectedVillain") || "{}")
         if (savedVillainName) {
           setVillainName(savedVillainName.name)
           console.log("Nombre del villano cargado en BattleScreen:", savedVillainName.name)          
         } else {
-          // Si no existe, intentamos obtenerlo del objeto completo
-          const savedVillain = await AsyncStorage.getItem("selectedVillain")
-          if (savedVillain) {
-            const villainData = JSON.parse(savedVillain)
-            setVillainName(villainData.name)
-            console.log("Nombre del villano extraído del objeto:", villainData.name)
-          } else {
-            console.log("No hay nombre de villano guardado en AsyncStorage")
-            // Si no hay villano guardado, usamos uno por defecto
-            setVillainName("Corporatus")
-          }
+          console.log("No hay nombre de villano guardado en AsyncStorage")
+          // Si no hay villano guardado, usamos uno por defecto
+          setVillainName("Corporatus")
         }
       } catch (error) {
         console.error("Error al cargar datos:", error)
@@ -172,26 +162,23 @@ const BattleScreen = () => {
     return require("../../assets/images/villiancharacter1.png")
   }
 
+  // Función para cargar dinámicamente la imagen del villano basada en el nombre
   const getVillainImage = () => {
     if (villainName) {
-      console.log("Cargando imagen para villano:", villainName)
       // Como no podemos usar rutas dinámicas en require(), usamos un switch
       switch (villainName) {
         case "Corporatus":
           return require("../../assets/villanosBattle/Corporatus.png")
         case "Toxicus":
-          // C:\Users\semin\OneDrive\Escritorio\Aula360REPOORIGINAL\Aula360\front\assets\villanosBattle\El Demonio de la Avidez.png
           return require("../../assets/villanosBattle/El Demonio de la Avidez.png")
         case "Shadowman":
-          // C:\Users\semin\OneDrive\Escritorio\Aula360REPOORIGINAL\Aula360\front\assets\villanosBattle\Shadowman.png
-          return require("../../assets/villanosBattle/Shadowman.png")
+          return require("../../assets/villanosBattle/Shadowman.png")          
         default:
-          console.log("Usando imagen por defecto para villano desconocido:", villainName)
-          return require("../../assets/villanosBattle/Corporatus.png")
+          return require("../../assets/Personajes/Killa-battle.png")
       }
     }
     // Imagen por defecto si no hay villano seleccionado
-    return require("../../assets/villanosBattle/Corporatus.png")
+    return require("../../assets/images/Hero2.png")
   }
 
   return (

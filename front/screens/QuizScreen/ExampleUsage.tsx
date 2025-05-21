@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useEffect } from "react"
+import { useFocusEffect } from '@react-navigation/native';
 import { View, StyleSheet } from "react-native"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import { MissionManager } from "../../componentes/Quiz/mission-manager"
@@ -177,7 +178,7 @@ const buildMissionsData = (characterName: CharacterName, villainName: VillainNam
         incorrectBackground: assets.backgroundImages[2],
         correctDescription: "¡Exacto! La Pachamama simboliza la relación entre el hombre y la naturaleza.",
         incorrectDescription:
-          "La Pachamama representa mucho más que rechazo a la modernización o solo una conexión espiritual.",
+          "La representa mucho más que rechazo a la modernización o solo una conexión espiritual.",
       },
       transition: {
         backgroundImage: assets.backgroundImages[2],

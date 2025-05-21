@@ -4,6 +4,7 @@ import { useState } from "react"
 import { View, Text, Image, StyleSheet, TouchableOpacity, Dimensions, Animated } from "react-native"
 import { LinearGradient } from "expo-linear-gradient"
 import { Feather } from "@expo/vector-icons"
+import VillainDetails from "./VillainDetails"
 
 const { width } = Dimensions.get("window")
 
@@ -100,6 +101,13 @@ export default function VillainCard({ villain, onPress, onMorePress, onSelect })
               <Text style={styles.selectText}>SELECCIONAR VILLANO</Text>
             </LinearGradient>
           </TouchableOpacity>
+
+          <VillainDetails
+          character={villain}
+          visible={showDescription}
+          onClose={toggleDescription}
+          />
+
         </View>
       </LinearGradient>
     </TouchableOpacity>

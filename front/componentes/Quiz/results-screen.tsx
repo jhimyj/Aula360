@@ -28,7 +28,7 @@ const ResultsScreen = ({ route, navigation }) => {
         <Text style={styles.messageText}>{getMessage()}</Text>
       </View>
 
-      <TouchableOpacity style={styles.button} onPress={() => navigation.navigate("Home")}>
+      <TouchableOpacity style={styles.button} onPress={() => navigation.navigate("StudentDashboard")}>
         <Text style={styles.buttonText}>Volver al Inicio</Text>
       </TouchableOpacity>
 
