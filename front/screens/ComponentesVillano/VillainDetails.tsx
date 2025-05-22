@@ -1,72 +1,85 @@
-"use client"
+"use client";
 
-import type React from "react"
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Modal, ScrollView, Platform } from "react-native"
-import { BlurView } from "expo-blur"
-import { Feather } from "@expo/vector-icons"
-import { Video } from "expo-av"
-import { LinearGradient } from "expo-linear-gradient"
-import type { Character } from "../ComponentesHero/types"
-import { useMemo } from "react"
+import React, { useMemo } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Dimensions,
+  Modal,
+  ScrollView,
+  Platform,
+} from "react-native";
+import { BlurView } from "expo-blur";
+import { Feather } from "@expo/vector-icons";
+import { Video } from "expo-av";
+import { LinearGradient } from "expo-linear-gradient";
+import type { Character } from "../ComponentesHero/types";
 
-const { width, height } = Dimensions.get("window")
+const { width, height } = Dimensions.get("window");
 
 interface CharacterDetailsDialogProps {
-  character: Character
-  visible: boolean
-  onClose: () => void
+  character: Character;
+  visible: boolean;
+  onClose: () => void;
 }
 
-const villainDetails: React.FC<CharacterDetailsDialogProps> = ({ character, visible, onClose }) => {
-  // Calculate if device is a tablet based on screen size
+const VillainDetails: React.FC<CharacterDetailsDialogProps> = ({
+  character,
+  visible,
+  onClose,
+}) => {
   const isTablet = useMemo(() => {
-    const screenSize = Math.sqrt(width * width + height * height) / (Platform.OS === "ios" ? 163 : 160)
-    return screenSize >= 7 // Common threshold for tablets
-  }, [])
+    const screenSize =
+      Math.sqrt(width * width + height * height) /
+      (Platform.OS === "ios" ? 163 : 160);
+    return screenSize >= 7;
+  }, []);
 
-  // Calculate optimal dialog dimensions based on device type
-  const dialogWidth = isTablet ? width * 0.7 : width * 0.9
-  const dialogMaxHeight = isTablet ? height * 0.8 : height * 0.85
+  const dialogWidth = isTablet ? width * 0.7 : width * 0.9;
+  const dialogMaxHeight = isTablet ? height * 0.8 : height * 0.85;
+  const videoHeight = isTablet ? 350 : width > height ? 200 : 250;
 
-  // Calculate optimal video height based on device type and orientation
-  const videoHeight = isTablet ? 350 : width > height ? 200 : 250
+  // Descripciones y videos según personaje
+  const descriptions: Record<string, string> = {
+    Corporatus:
+      "El magnate corrupto que contamina el planeta por beneficio propio. Sus acciones han causado daños irreparables al ecosistema global y ha sobornado a políticos para evitar regulaciones ambientales.",
+    Toxicus:
+      "Maestro de los desechos tóxicos y enemigo del medio ambiente. Sus experimentos han contaminado océanos enteros y creado zonas inhabitables en varios continentes.",
+    Shadowman:
+      "Manipulador de las sombras que opera desde las tinieblas. Nadie conoce su verdadera identidad ni sus motivaciones, pero su red de espionaje se extiende por todo el mundo.",
+  };
+  
+  const videos: Record<string, any> = {
+    Qhapaq: require("../../assets/videos/Mago-intro.mp4"),
+    Amaru: require("../../assets/videos/Amaru-intro.mp4"),
+    Killa: require("../../assets/videos/Killa-intro.mp4"),
+  };
 
-  // Get character description or use a default enhanced description based on character name
-  const getEnhancedDescription = () => {
-    if (character.name === "Qhapaq") {
-      return "Qhapaq es un sabio chamán inca con profundos conocimientos de medicina natural y rituales ancestrales. Su sabiduría le permite conectar con los espíritus de la naturaleza y utilizar su poder para sanar y proteger a su pueblo. Domina el arte de la herbología y puede predecir eventos futuros a través de sus visiones místicas."
-    } else if (character.name === "Amaru") {
-      return "Amaru es un poderoso guerrero con la fuerza de las montañas y el espíritu indomable del cóndor. Su valentía en batalla es legendaria, y su lealtad hacia sus compañeros es inquebrantable. Entrenado desde niño en las artes marciales incas, puede derrotar a enemigos que lo superan en número gracias a su astucia y fuerza sobrenatural."
-    } else if (character.name === "Killa") {
-      return "Killa, cuyo nombre significa 'Luna' en quechua, es una ágil y astuta guerrera. Su destreza con el arco y la espada la convierten en una formidable aliada en cualquier batalla. Bendecida por la diosa lunar, sus poderes se intensifican durante la noche, permitiéndole moverse como una sombra y atacar con precisión letal."
-    } else {
-      return (
-        character.description ||
-        "Un valiente héroe del imperio inca, dotado de habilidades extraordinarias y un corazón noble."
-      )
-    }
-  }
-
-  // Get the appropriate video source based on character name
-  const getVideoSource = () => {
-    if (character.name === "Qhapaq") {
-      return require("../../assets/videos/Mago-intro.mp4")
-    } else if (character.name === "Amaru") {
-      return require("../../assets/videos/Amaru-intro.mp4")
-    } else if (character.name === "Killa") {
-      return require("../../assets/videos/Killa-intro.mp4")
-    } else {
-      // Default video if character doesn't match
-      return require("../../assets/videos/Killa-intro.mp4")
-    }
-  }
+  const description =
+    descriptions[character.name] ||
+    character.description ||
+    "Un valiente héroe del imperio inca.";
+  const videoSource =
+    videos[character.name] || require("../../assets/videos/Killa-intro.mp4");
 
   return (
-    <Modal visible={visible} transparent={true} animationType="fade" onRequestClose={onClose}>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      onRequestClose={onClose}
+    >
       <View style={styles.modalOverlay}>
-        <View style={[styles.modalContainer, { width: dialogWidth, maxHeight: dialogMaxHeight }]}>
+        <View
+          style={[
+            styles.modalContainer,
+            { width: dialogWidth, maxHeight: dialogMaxHeight },
+          ]}
+        >
           <LinearGradient
-            colors={character.background || ["#6A3093", "#A044FF"]}
+            colors={["#1e3c72", "#2a5298"]} // azul degradado
             style={styles.modalContent}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
@@ -77,21 +90,15 @@ const villainDetails: React.FC<CharacterDetailsDialogProps> = ({ character, visi
                 <Feather name="x" size={24} color="#FFFFFF" />
               </TouchableOpacity>
             </View>
-
-            <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+            <ScrollView
+              style={styles.scrollContainer}
+              showsVerticalScrollIndicator={false}
+            >
               <BlurView intensity={20} style={styles.contentBlur} tint="dark">
-                <Text style={styles.subtitle}>{character.class || "Aventurero"}</Text>
-
-                <View style={styles.descriptionContainer}>
-                  <Text style={styles.description}>{getEnhancedDescription()}</Text>
-                </View>
-
+                <Text style={styles.description}>{description}</Text>
                 <View style={styles.videoContainer}>
                   <Video
-                    source={getVideoSource()}
-                    rate={1.0}
-                    volume={1.0}
-                    isMuted={false}
+                    source={videoSource}
                     resizeMode="cover"
                     shouldPlay={visible}
                     isLooping
@@ -99,13 +106,14 @@ const villainDetails: React.FC<CharacterDetailsDialogProps> = ({ character, visi
                     useNativeControls
                   />
                 </View>
-
-                {character.abilities && (
+                {character.abilities && character.abilities.length > 0 && (
                   <View style={styles.abilitiesSection}>
-                    <Text style={styles.abilitiesTitle}>Special Abilities</Text>
+                    <Text style={styles.abilitiesTitle}>
+                      Habilidades Especiales
+                    </Text>
                     <View style={styles.abilitiesContainer}>
-                      {character.abilities.map((ability, index) => (
-                        <View key={index} style={styles.abilityBadge}>
+                      {character.abilities.map((ability, idx) => (
+                        <View key={idx} style={styles.abilityBadge}>
                           <Feather name="zap" size={12} color="#FFD700" />
                           <Text style={styles.abilityText}>{ability}</Text>
                         </View>
@@ -119,8 +127,8 @@ const villainDetails: React.FC<CharacterDetailsDialogProps> = ({ character, visi
         </View>
       </View>
     </Modal>
-  )
-}
+  );
+};
 
 const styles = StyleSheet.create({
   modalOverlay: {
@@ -184,14 +192,12 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     fontStyle: "italic",
   },
-  descriptionContainer: {
-    marginBottom: 20,
-  },
   description: {
     color: "#FFFFFF",
     fontSize: 16,
     lineHeight: 24,
     textAlign: "center",
+    marginBottom: 20,
   },
   videoContainer: {
     width: "100%",
@@ -235,6 +241,6 @@ const styles = StyleSheet.create({
     marginLeft: 5,
     fontSize: 12,
   },
-})
+});
 
-export default villainDetails
+export default VillainDetails;

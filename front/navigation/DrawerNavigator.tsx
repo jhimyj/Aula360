@@ -11,7 +11,7 @@ import BattleScreen from '../screens/Versus/BattleScreen';
 import Mision from '../screens/mision/mission-screen'
 import MissionGameScreen from '../screens/mission-game-screen/mission-game-screen'
 import compot from '../../front/screens/QuizScreen/ExampleUsage'
-import ResultsScreen from "../componentes/Quiz/results-screen"
+import ResultsScreen from "../screens/ComponentesQuiz/results-screen"
 
 const Drawer = createDrawerNavigator();
 import { Image } from "react-native"
