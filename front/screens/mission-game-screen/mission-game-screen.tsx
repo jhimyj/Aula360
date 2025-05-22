@@ -25,14 +25,20 @@ const MissionGameScreen = ({ navigation }) => {
           if (savedName) {
             switch (savedName) {
               case "Qhapaq":
-              setVideoSource(require("..//../assets/EntradaMision/Qhapac-entrada-mision.mp4"))
-              break
-            case "Amaru":
-              setVideoSource(require("..//../assets/EntradaMision/Amaru-entrada-mision.mp4"))
-              break
-            case "Killa":
-              setVideoSource(require("..//../assets/EntradaMision/Killa-entrada-mision.mp4"))
-              break
+                setVideoSource(
+                  require("..//../assets/EntradaMision/Qhapac-entrada-mision.mp4")
+                );
+                break;
+              case "Amaru":
+                setVideoSource(
+                  require("..//../assets/EntradaMision/Amaru-entrada-mision.mp4")
+                );
+                break;
+              case "Killa":
+                setVideoSource(
+                  require("..//../assets/EntradaMision/Killa-entrada-mision.mp4")
+                );
+                break;
               default:
                 setVideoSource(require("../../assets/videos/Tunel.mp4"));
                 break;
@@ -67,7 +73,7 @@ const MissionGameScreen = ({ navigation }) => {
 
   // Navegar al finalizar el video
   const handlePlaybackEnd = () => {
-    navigation.goBack();
+    navigation.navigate("Quiz");
   };
 
   return (

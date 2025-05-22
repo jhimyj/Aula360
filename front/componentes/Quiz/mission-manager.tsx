@@ -1,10 +1,11 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { View, StyleSheet } from "react-native"
 import { MissionScreen } from "./mission-screen"
 import { FeedbackScreen } from "./feedback-screen"
 import { TransitionScreen } from "./transition-screen"
+import { CharacterFeedback } from "./character-feedback"
 
 // Tipo para imágenes (puede ser require local o URL)
 type ImageSource = number | { uri: string }
@@ -15,6 +16,7 @@ type MissionType = {
   missionNumber: number
   backgroundImage: ImageSource
   characterImage: ImageSource
+  villainImage: ImageSource
   question: string
   options: {
     id: string
@@ -52,6 +54,10 @@ export const MissionManager = ({ missions, onComplete }: MissionManagerProps) =>
   const [score, setScore] = useState(0)
   const [missionState, setMissionState] = useState<MissionState>("QUESTION")
   const [lastAnswerCorrect, setLastAnswerCorrect] = useState(false)
+  const [showCharacterFeedback, setShowCharacterFeedback] = useState(true)
+
+  console.log("Missions:", missions)
+
 
   // Verificar que haya misiones disponibles
   if (missions.length === 0) {
@@ -74,10 +80,18 @@ export const MissionManager = ({ missions, onComplete }: MissionManagerProps) =>
 
     // Guardar si la respuesta fue correcta para la pantalla de retroalimentación
     setLastAnswerCorrect(isCorrect)
-
-    // Cambiar al estado de retroalimentación
+    setShowCharacterFeedback(true)
     setMissionState("FEEDBACK")
   }
+
+  useEffect(() => {
+    if (missionState === "FEEDBACK" && showCharacterFeedback) {
+      const timer = setTimeout(() => {
+        setShowCharacterFeedback(false)
+      }, 2000)
+      return () => clearTimeout(timer)
+    }
+  }, [missionState, showCharacterFeedback])
 
   const handleFeedbackContinue = () => {
     // Si es la última misión, llamar a onComplete
@@ -116,7 +130,7 @@ export const MissionManager = ({ missions, onComplete }: MissionManagerProps) =>
           <MissionScreen
             missionNumber={currentMission.missionNumber}
             backgroundImage={currentMission.backgroundImage}
-            characterImage={currentMission.characterImage}
+            characterImage={currentMission.villainImage}
             question={currentMission.question}
             options={currentMission.options}
             onSubmit={handleSubmit}
@@ -135,16 +149,24 @@ export const MissionManager = ({ missions, onComplete }: MissionManagerProps) =>
 
       return (
         <View style={styles.container}>
-          <FeedbackScreen
-            isCorrect={lastAnswerCorrect}
-            correctImage={currentMission.feedback.correctImage}
-            incorrectImage={currentMission.feedback.incorrectImage}
-            correctBackground={currentMission.feedback.correctBackground}
-            incorrectBackground={currentMission.feedback.incorrectBackground}
-            correctDescription={currentMission.feedback.correctDescription}
-            incorrectDescription={currentMission.feedback.incorrectDescription}
-            onContinue={handleFeedbackContinue}
-          />
+          {showCharacterFeedback ? (
+            <CharacterFeedback
+              isCorrect={lastAnswerCorrect}
+              characterImage={currentMission.characterImage}
+              backgroundImage={currentMission.backgroundImage}
+            />
+          ) : (
+            <FeedbackScreen
+              isCorrect={lastAnswerCorrect}
+              correctImage={currentMission.feedback.correctImage}
+              incorrectImage={currentMission.feedback.incorrectImage}
+              correctBackground={currentMission.feedback.correctBackground}
+              incorrectBackground={currentMission.feedback.incorrectBackground}
+              correctDescription={currentMission.feedback.correctDescription}
+              incorrectDescription={currentMission.feedback.incorrectDescription}
+              onContinue={handleFeedbackContinue}
+            />
+          )}
         </View>
       )
 

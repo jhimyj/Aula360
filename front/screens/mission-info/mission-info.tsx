@@ -1,10 +1,10 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import React, { useState, useEffect } from "react"
 import { View, Text, StyleSheet, TouchableOpacity, Dimensions, StatusBar } from "react-native"
 import { Feather } from "@expo/vector-icons"
 import AsyncStorage from "@react-native-async-storage/async-storage"
-import { useNavigation } from "@react-navigation/native"
+import { useNavigation, useFocusEffect } from "@react-navigation/native"
 import MissionButton from "./mission-button"
 import { Video } from "expo-av"
 
@@ -63,27 +63,34 @@ const MissionInfo = ({ onStartMission, onClose }: MissionInfoProps) => {
   const { width, height } = Dimensions.get("window")
   const isTablet = width > 768
 
-  // Cargar datos al montar el componente
-  useEffect(() => {
-    const loadCharacterName = async () => {
-      try {
-        setLoading(true)
+  // Cargar datos al montar el componente y cada vez que la pantalla obtiene foco
+  useFocusEffect(
+    React.useCallback(() => {
+      let isActive = true
+      const loadCharacterName = async () => {
+        try {
+          setLoading(true)
 
-        // Cargar nombre del personaje seleccionado
-        const savedCharacterName = await AsyncStorage.getItem("selectedCharacterName")
-        if (savedCharacterName) {
-          setCharacterName(savedCharacterName)
+          // Cargar nombre del personaje seleccionado
+          const savedCharacterName = await AsyncStorage.getItem("selectedCharacterName")
+          if (isActive && savedCharacterName) {
+            setCharacterName(savedCharacterName)
+          }
+
+          setLoading(false)
+        } catch (error) {
+          console.error("Error al cargar nombre del personaje:", error)
+          setLoading(false)
         }
-
-        setLoading(false)
-      } catch (error) {
-        console.error("Error al cargar nombre del personaje:", error)
-        setLoading(false)
       }
-    }
 
-    loadCharacterName()
-  }, [])
+      loadCharacterName()
+
+      return () => {
+        isActive = false
+      }
+    }, [])
+  )
 
   // Add this near the top of the component, after the other useEffect hooks
   useEffect(() => {
@@ -94,21 +101,27 @@ const MissionInfo = ({ onStartMission, onClose }: MissionInfoProps) => {
     }
 
     // Set up event listener for dimension changes (orientation changes)
-    Dimensions.addEventListener("change", updateLayout)
+    const subscription = Dimensions.addEventListener("change", updateLayout)
 
     // Initial call
     updateLayout()
 
     // Clean up
     return () => {
-      // Remove event listener on unmount
-      Dimensions.removeEventListener("change", updateLayout)
+      // Remove event listener on unmount (compatible con RN >= 0.65)
+      subscription?.remove && subscription.remove()
     }
   }, [])
 
   // Reemplazar el useEffect que genera la misión con este código actualizado que también establece los colores del tema
   useEffect(() => {
     if (characterName) {
+      // Normalizar el nombre del personaje para evitar errores de espacios o mayúsculas
+      const normalizedCharacterName = characterName.trim();
+
+      // Depuración: mostrar el nombre normalizado
+      // console.log("characterName (raw):", characterName, "normalized:", normalizedCharacterName);
+
       // Definir misiones específicas para cada personaje
       let characterMission: Mission | null = null
       let themeColors: ThemeColors = {
@@ -118,7 +131,7 @@ const MissionInfo = ({ onStartMission, onClose }: MissionInfoProps) => {
         badge: "#FFE0CC",
       }
 
-      switch (characterName) {
+      switch (normalizedCharacterName) {
         case "Qhapaq":
           characterMission = {
             id: "mission-qhapaq-1",
