@@ -16,11 +16,36 @@ const MissionGameScreen = ({ navigation }) => {
   const videoRef = useRef(null)
   const [dimensions, setDimensions] = useState(Dimensions.get("window"))
 
-  // Actualizar dimensiones cuando cambia la orientación
-  useEffect(() => {
-    const updateDimensions = () => {
-      setDimensions(Dimensions.get("window"))
-    }
+
+  // Cargar el personaje seleccionado y configurar el video correspondiente
+  useFocusEffect(
+    React.useCallback(() => {
+      const loadCharacterData = async () => {
+        try {
+          const savedName = await AsyncStorage.getItem("selectedCharacterName");
+          console.log("Nombre del personaje guardado:", savedName);
+          if (savedName) {
+            switch (savedName) {
+              case "Qhapaq":
+                setVideoSource(
+                  require("..//../assets/EntradaMision/Qhapac-entrada-mision.mp4")
+                );
+                break;
+              case "Amaru":
+                setVideoSource(
+                  require("..//../assets/EntradaMision/Amaru-entrada-mision.mp4")
+                );
+                break;
+              case "Killa":
+                setVideoSource(
+                  require("..//../assets/EntradaMision/Killa-entrada-mision.mp4")
+                );
+                break;
+              default:
+                setVideoSource(require("../../assets/videos/Tunel.mp4"));
+                break;
+            }
+
 
     Dimensions.addEventListener("change", updateDimensions)
     return () => {
@@ -73,7 +98,7 @@ const MissionGameScreen = ({ navigation }) => {
 
   // Navegar al finalizar el video
   const handlePlaybackEnd = () => {
-    navigation.goBack();
+    navigation.navigate("Quiz");
   };
 
   return (

@@ -1,30 +1,38 @@
 // screens/auth/LoginScreen.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, StyleSheet, Image, Alert,
+  View, Text, TextInput, TouchableOpacity, StyleSheet, Image,
   KeyboardAvoidingView, Platform, Keyboard, TouchableWithoutFeedback,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useNavigation } from '@react-navigation/native';
-import { DrawerNavigationProp } from '@react-navigation/drawer';
-import { DrawerNavigatorParamList } from '../../navigation/DrawerNavigator';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { AuthStackParamList } from '../../navigation/AuthStack';
 
-type Navigation = DrawerNavigationProp<DrawerNavigatorParamList, 'Inicio'>;
+type Navigation = NativeStackNavigationProp<AuthStackParamList, 'Login'>;
 
 type Props = {
+  navigation: Navigation;
   setIsAuthenticated: (val: boolean) => void;
 };
 
-export default function LoginScreen({ setIsAuthenticated }: Props) {
-  const navigation = useNavigation<Navigation>();
+export default function LoginScreen({ navigation, setIsAuthenticated }: Props) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleLogin = async () => {
+    if (!username || !password) {
+      setErrorMessage('Por favor ingrese usuario y contraseña');
+      return;
+    }
+
+    setIsLoading(true);
+    setErrorMessage(null);
+
     try {
       const response = await axios.post(
         'https://9l68voxzvc.execute-api.us-east-1.amazonaws.com/dev/user/login',
@@ -33,18 +41,24 @@ export default function LoginScreen({ setIsAuthenticated }: Props) {
       );
 
       const { token } = response.data;
+      console.log(token)
       await AsyncStorage.setItem('userToken', token);
+      
+      console.log('Login exitoso, llamando setIsAuthenticated');
       setIsAuthenticated(true);
-      navigation.navigate('Inicio'); // Navega al Dashboard principal
+      
     } catch (error: any) {
       console.error('Error al iniciar sesión:', error.response?.data || error.message);
       setErrorMessage('Usuario o contraseña incorrectos');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  // Nueva función para continuar como alumno
+  // Función para continuar como alumno (sin autenticación)
   const handleContinueAsStudent = () => {
-    navigation.navigate('StudentDashboard'); // Navega a la pantalla del estudiante
+    console.log('Continuando como estudiante, llamando setIsAuthenticated');
+    setIsAuthenticated(true);
   };
 
   return (
@@ -63,6 +77,7 @@ export default function LoginScreen({ setIsAuthenticated }: Props) {
               style={styles.input}
               value={username}
               onChangeText={setUsername}
+              autoCapitalize="none"
             />
 
             <View style={styles.passwordContainer}>
@@ -80,8 +95,14 @@ export default function LoginScreen({ setIsAuthenticated }: Props) {
 
             {errorMessage && <Text style={styles.errorText}>{errorMessage}</Text>}
 
-            <TouchableOpacity style={styles.button} onPress={handleLogin}>
-              <Text style={styles.buttonText}>Iniciar Sesión</Text>
+            <TouchableOpacity 
+              style={[styles.button, isLoading && styles.buttonDisabled]} 
+              onPress={handleLogin}
+              disabled={isLoading}
+            >
+              <Text style={styles.buttonText}>
+                {isLoading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
+              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity onPress={() => navigation.navigate('Register')}>
@@ -185,6 +206,9 @@ const styles = StyleSheet.create({
     width: 300,
     alignItems: 'center',
     marginTop: 10,
+  },
+  buttonDisabled: {
+    backgroundColor: '#FFB366',
   },
   buttonText: {
     color: '#FFF',

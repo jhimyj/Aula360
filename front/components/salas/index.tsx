@@ -1,0 +1,1 @@
+export { SalasScreen as default } from './SalasScreen';

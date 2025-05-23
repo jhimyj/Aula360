@@ -1,3 +1,4 @@
+// screens/auth/RegisterScreen.tsx
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -16,25 +17,24 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AuthStackParamList } from '../../navigation/AuthStack';
 
+type Navigation = NativeStackNavigationProp<AuthStackParamList, 'Register'>;
+
 type Props = {
+  navigation: Navigation;
   setIsAuthenticated: (val: boolean) => void;
 };
 
-type Navigation = NativeStackNavigationProp<AuthStackParamList, 'Register'>;
-
-export default function RegisterScreen({ setIsAuthenticated }: Props) {
-  const navigation = useNavigation<Navigation>();
-
+export default function RegisterScreen({ navigation, setIsAuthenticated }: Props) {
   const [name, setName] = useState('');
   const [lastName, setLastName] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
@@ -62,13 +62,19 @@ export default function RegisterScreen({ setIsAuthenticated }: Props) {
       return;
     }
 
+    if (password.length < 6) {
+      Alert.alert('Error', 'La contraseña debe tener al menos 6 caracteres');
+      return;
+    }
+
     const requestBody = {
       name,
       last_name: lastName,
       username,
       password,
     };
-    console.log(requestBody)
+
+    setIsLoading(true);
 
     try {
       const response = await axios.post(
@@ -80,9 +86,17 @@ export default function RegisterScreen({ setIsAuthenticated }: Props) {
           },
         }
       );
-      console.log(' Respuesta de la API:', response.data);
+      
+      console.log('Respuesta de la API:', response.data);
+      
       if (response.status === 200) {
-        Alert.alert(
+        // Si el registro incluye un token, autenticar automáticamente
+        if (response.data.token) {
+          await AsyncStorage.setItem('userToken', response.data.token);
+          setIsAuthenticated(true);
+        } else {
+          // Si no hay token, mostrar mensaje y navegar al login
+          Alert.alert(
             'Registro exitoso',
             response.data.message || 'Usuario creado correctamente',
             [
@@ -92,12 +106,16 @@ export default function RegisterScreen({ setIsAuthenticated }: Props) {
               },
             ]
           );
+        }
       } else {
         Alert.alert('Error', 'No se pudo registrar el usuario. Inténtalo de nuevo.');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al registrar usuario:', error);
-      Alert.alert('Error', 'No se pudo registrar el usuario. Inténtalo de nuevo.');
+      const errorMessage = error.response?.data?.message || 'No se pudo registrar el usuario. Inténtalo de nuevo.';
+      Alert.alert('Error', errorMessage);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -145,6 +163,7 @@ export default function RegisterScreen({ setIsAuthenticated }: Props) {
                 value={username}
                 onChangeText={setUsername}
                 placeholderTextColor="#999"
+                autoCapitalize="none"
               />
 
               <View style={styles.passwordContainer}>
@@ -161,8 +180,14 @@ export default function RegisterScreen({ setIsAuthenticated }: Props) {
                 </TouchableOpacity>
               </View>
 
-              <TouchableOpacity style={styles.button} onPress={handleRegister}>
-                <Text style={styles.buttonText}>Crear Cuenta</Text>
+              <TouchableOpacity 
+                style={[styles.button, isLoading && styles.buttonDisabled]} 
+                onPress={handleRegister}
+                disabled={isLoading}
+              >
+                <Text style={styles.buttonText}>
+                  {isLoading ? 'Creando cuenta...' : 'Crear Cuenta'}
+                </Text>
               </TouchableOpacity>
 
               <TouchableOpacity onPress={() => navigation.navigate('Login')}>
@@ -250,6 +275,9 @@ const styles = StyleSheet.create({
     width: 300,
     alignItems: 'center',
     marginTop: 10,
+  },
+  buttonDisabled: {
+    backgroundColor: '#FFB366',
   },
   buttonText: {
     color: '#FFF',

@@ -1,10 +1,12 @@
 "use client"
 
-import { useState, useEffect } from "react"
+
+import React, { useState, useEffect } from "react"
 import { View, Text, StyleSheet, TouchableOpacity, Dimensions, StatusBar } from "react-native"
 import { Feather } from "@expo/vector-icons"
 import AsyncStorage from "@react-native-async-storage/async-storage"
-import { useNavigation } from "@react-navigation/native"
+import { useNavigation, useFocusEffect } from "@react-navigation/native"
+
 import MissionButton from "./mission-button"
 import { Video } from "expo-av"
 
@@ -63,26 +65,54 @@ const MissionInfo = ({ onStartMission, onClose }: MissionInfoProps) => {
   const { width, height } = Dimensions.get("window")
   const isTablet = width > 768
 
-  // Cargar datos al montar el componente
-  useEffect(() => {
-    const loadCharacterName = async () => {
-      try {
-        setLoading(true)
+  // Cargar datos al montar el componente y cada vez que la pantalla obtiene foco
+  useFocusEffect(
+    React.useCallback(() => {
+      let isActive = true
+      const loadCharacterName = async () => {
+        try {
+          setLoading(true)
 
-        // Cargar nombre del personaje seleccionado
-        const savedCharacterName = await AsyncStorage.getItem("selectedCharacterName")
-        if (savedCharacterName) {
-          setCharacterName(savedCharacterName)
+          // Cargar nombre del personaje seleccionado
+          const savedCharacterName = await AsyncStorage.getItem("selectedCharacterName")
+          if (isActive && savedCharacterName) {
+            setCharacterName(savedCharacterName)
+          }
+
+          setLoading(false)
+        } catch (error) {
+          console.error("Error al cargar nombre del personaje:", error)
+          setLoading(false)
         }
-
-        setLoading(false)
-      } catch (error) {
-        console.error("Error al cargar nombre del personaje:", error)
-        setLoading(false)
       }
+
+      loadCharacterName()
+
+      return () => {
+        isActive = false
+      }
+    }, [])
+  )
+
+  // Add this near the top of the component, after the other useEffect hooks
+  useEffect(() => {
+    // Function to update dimensions when screen size changes
+    const updateLayout = () => {
+      const { width, height } = Dimensions.get("window")
+      // You can set additional state here if needed for responsive layouts
     }
 
-    loadCharacterName()
+    // Set up event listener for dimension changes (orientation changes)
+    const subscription = Dimensions.addEventListener("change", updateLayout)
+
+    // Initial call
+    updateLayout()
+
+    // Clean up
+    return () => {
+      // Remove event listener on unmount (compatible con RN >= 0.65)
+      subscription?.remove && subscription.remove()
+    }
   }, [])
 
   // Add this near the top of the component, after the other useEffect hooks
@@ -109,6 +139,12 @@ const MissionInfo = ({ onStartMission, onClose }: MissionInfoProps) => {
   // Reemplazar el useEffect que genera la misión con este código actualizado que también establece los colores del tema
   useEffect(() => {
     if (characterName) {
+      // Normalizar el nombre del personaje para evitar errores de espacios o mayúsculas
+      const normalizedCharacterName = characterName.trim();
+
+      // Depuración: mostrar el nombre normalizado
+      // console.log("characterName (raw):", characterName, "normalized:", normalizedCharacterName);
+
       // Definir misiones específicas para cada personaje
       let characterMission: Mission | null = null
       let themeColors: ThemeColors = {
@@ -118,7 +154,7 @@ const MissionInfo = ({ onStartMission, onClose }: MissionInfoProps) => {
         badge: "#FFE0CC",
       }
 
-      switch (characterName) {
+      switch (normalizedCharacterName) {
         case "Qhapaq":
           characterMission = {
             id: "mission-qhapaq-1",
@@ -126,7 +162,9 @@ const MissionInfo = ({ onStartMission, onClose }: MissionInfoProps) => {
             description:
               "Qhapaq debe proteger las tierras sagradas de su pueblo de Corporatus, un enemigo mestizo que busca destruir las tradiciones y explotar la naturaleza con su tecnología moderna.",
             image: require("../../assets/Personajes/Amaru1.png"),
-            video: require("../../assets/MisionesGame/Mision-Qhapac.mp4"),
+
+            video: require("../../assets/MisionesGame/Qhapac-mision.mp4"),
+
             difficulty: "medium",
             rewards: {
               xp: 500,
@@ -154,7 +192,10 @@ const MissionInfo = ({ onStartMission, onClose }: MissionInfoProps) => {
             description:
               "Amaru debe enfrentarse a Toxicus, quien ha contaminado los ríos sagrados con sus desechos industriales. Su fuerza será clave para restaurar el equilibrio natural.",
             image: require("../../assets/Personajes/Amaru1.png"),
-            video: require("../../assets/EntradaMision/Amaru-entrada-mision.mp4"),
+
+            // C:\Users\semin\OneDrive\Escritorio\Aula360REPOORIGINAL\Aula360\front\assets\MisionesGame\Amaru-misión.mp4
+            video: require("../../assets/MisionesGame/Amaru-misión.mp4"),
+
             difficulty: "hard",
             rewards: {
               xp: 750,
