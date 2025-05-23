@@ -1,0 +1,123 @@
+service: service-student
+org: ${env:ORG}
+
+provider:
+  name: aws
+  runtime: python3.9
+  memorySize: 1024
+  timeout: 29
+  role: ${env:ROLE}
+  environment: #aca las variables de entorno
+    STUDENT_TABLE: ${env:STUDENT_TABLE}
+    STUDENT_GSI_INDEX_ROOMID_ID: ${env:STUDENT_GSI_INDEX_ROOMID_ID}
+    STUDENT_GSI_INDEX_USERNAME_ROOMID: ${env:STUDENT_GSI_INDEX_USERNAME_ROOMID}
+    HTTPS_SERVICE_ROOM: ${env:HTTPS_SERVICE_ROOM}
+    JWT_SECRET_KEY: ${env:JWT_SECRET_KEY}
+
+
+package:
+  individually: true
+  exclude:
+    - .serverless/**
+    - .venv/**
+    - .idea/**
+    - financial-data/**
+    - build_layer.sh
+    - user/**
+    - test1/**
+    - Dockerfile
+    - variables/**
+    - businesses_businessId_ai-parse/**
+    - "*.zip" #eres incluir otros ZIP que no sean necesarios
+    - README.md  # Ejemplo, si hay archivos de documentación que no necesitas
+    - serverless.yml
+    - requirements.txt
+
+# Definición del layer que contiene las dependencias comunes.
+layers: #si es que hay librerias externa
+  commonLib:
+    package:
+      artifact: layer_common_lib.zip
+    description: "Dependencias comunes para todas las Lambdas"
+
+functions:
+  create:
+    handler: create/handler.lambda_handler
+    layers:
+      - { Ref: CommonLibLambdaLayer }
+    events:
+      - http:
+          path: students/create
+          method: post
+          cors:
+            origin: '*'
+            methods:
+              - POST
+            headers:
+              - Content-Type
+              - Authorization
+              - X-Amz-Date
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+
+  login:
+    handler: login/handler.lambda_handler
+    layers:
+      - { Ref: CommonLibLambdaLayer }
+    events:
+      - http:
+          path: students/login
+          method: post
+          cors:
+            origin: '*'
+            methods:
+              - POST
+            headers:
+              - Content-Type
+              - Authorization
+              - X-Amz-Date
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+
+
+  me:
+    handler: me/handler.lambda_handler
+    layers:
+      - { Ref: CommonLibLambdaLayer }
+    events:
+      - http:
+          path: students/me
+          method: get
+          cors:
+            origin: '*'
+            methods:
+              - GET
+            headers:
+              - Content-Type
+              - Authorization
+              - X-Amz-Date
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+
+  all_room_id:
+    handler: all_room_id/handler.lambda_handler
+    layers:
+      - { Ref: CommonLibLambdaLayer }
+    events:
+      - http:
+          path: students/all/room/{room_id}
+          method: get
+          cors:
+            origin: '*'
+            methods:
+              - GET
+            headers:
+              - Content-Type
+              - Authorization
+              - X-Amz-Date
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
