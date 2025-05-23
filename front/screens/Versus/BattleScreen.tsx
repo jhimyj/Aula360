@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useFocusEffect } from '@react-navigation/native';
 import { View, Image, StyleSheet, Dimensions, ImageBackground, Animated, StatusBar, Platform, Text } from "react-native"
 import { LinearGradient } from "expo-linear-gradient"
 import AsyncStorage from "@react-native-async-storage/async-storage"
@@ -25,7 +26,7 @@ const BattleScreen = () => {
   const [showBattleRoyale, setShowBattleRoyale] = useState(true)
 
   // Cargar el nombre del personaje y villano seleccionados desde AsyncStorage
-  useEffect(() => {
+  useFocusEffect(() => {
     const loadSelectedCharacterAndVillain = async () => {
       try {
         // Cargar nombre del personaje
@@ -40,12 +41,14 @@ const BattleScreen = () => {
           setCharacterName("Qhapaq")
         }
 
+
         // Cargar nombre del villano - primero intentamos con la clave específica
         const savedVillainName = await AsyncStorage.getItem("selectedVillainName")
 
+
         if (savedVillainName) {
-          setVillainName(savedVillainName)
-          console.log("Nombre del villano cargado en BattleScreen:", savedVillainName)
+          setVillainName(savedVillainName.name)
+          console.log("Nombre del villano cargado en BattleScreen:", savedVillainName.name)          
         } else {
           // Si no existe, intentamos obtenerlo del objeto completo
           const savedVillain = await AsyncStorage.getItem("selectedVillain")
@@ -65,7 +68,7 @@ const BattleScreen = () => {
     }
 
     loadSelectedCharacterAndVillain()
-  }, [])
+  })
 
   useEffect(() => {
     // Animar el anuncio "Battle Royale" primero
@@ -179,11 +182,13 @@ const BattleScreen = () => {
         case "Corporatus":
           return require("../../assets/villanosBattle/Corporatus.png")
         case "Toxicus":
+
           // C:\Users\semin\OneDrive\Escritorio\Aula360REPOORIGINAL\Aula360\front\assets\villanosBattle\El Demonio de la Avidez.png
           return require("../../assets/villanosBattle/El Demonio de la Avidez.png")
         case "Shadowman":
           // C:\Users\semin\OneDrive\Escritorio\Aula360REPOORIGINAL\Aula360\front\assets\villanosBattle\Shadowman.png
           return require("../../assets/villanosBattle/Shadowman.png")
+
         default:
           console.log("Usando imagen por defecto para villano desconocido:", villainName)
           return require("../../assets/villanosBattle/Corporatus.png")

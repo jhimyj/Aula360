@@ -1,9 +1,11 @@
-"use client"
+"use client";
+
 
 import { useState, useEffect, useRef } from "react"
 import { StyleSheet, View, StatusBar, BackHandler, Dimensions } from "react-native"
 import { Video } from "expo-av" // ✅ CORRECTO
 import AsyncStorage from "@react-native-async-storage/async-storage"
+
 
 /**
  * Pantalla que muestra un video a pantalla completa según el personaje seleccionado
@@ -45,31 +47,34 @@ const MissionGameScreen = ({ navigation }) => {
             default:
               setVideoSource(require("..//../assets/videos/Tunel.mp4"))
           }
+        } catch (error) {
+          console.error("Error al cargar el nombre del personaje:", error);
         }
-      } catch (error) {
-        console.error("Error al cargar el nombre del personaje:", error)
-      }
-    }
+      };
 
-    loadCharacterData()
-  }, [])
+      loadCharacterData();
+    }, [])
+  );
 
   // Manejar el botón de retroceso en Android
   useEffect(() => {
-    const backHandler = BackHandler.addEventListener("hardwareBackPress", () => {
-      navigation.goBack()
-      return true
-    })
+    const backHandler = BackHandler.addEventListener(
+      "hardwareBackPress",
+      () => {
+        navigation.goBack();
+        return true;
+      }
+    );
 
     return () => {
-      backHandler.remove()
-    }
-  }, [navigation])
+      backHandler.remove();
+    };
+  }, [navigation]);
 
   // Navegar al finalizar el video
   const handlePlaybackEnd = () => {
-    navigation.goBack()
-  }
+    navigation.goBack();
+  };
 
   return (
     <View style={styles.absoluteContainer}>
@@ -92,9 +97,10 @@ const MissionGameScreen = ({ navigation }) => {
           />
         )}
       </View>
+
     </View>
-  )
-}
+  );
+};
 
 const styles = StyleSheet.create({
   absoluteContainer: {
@@ -123,6 +129,6 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
   },
-})
+});
 
-export default MissionGameScreen
+export default MissionGameScreen;
