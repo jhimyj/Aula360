@@ -1,20 +1,20 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { View, Text, Image, StyleSheet, TouchableOpacity, Dimensions, ScrollView } from "react-native"
-import { LinearGradient } from "expo-linear-gradient"
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions, StatusBar } from "react-native"
 import { Feather } from "@expo/vector-icons"
 import AsyncStorage from "@react-native-async-storage/async-storage"
-import { useNavigation } from '@react-navigation/native'  // Importar useNavigation
-import MissionHeader from "./mission-header"
+import { useNavigation } from "@react-navigation/native"
 import MissionButton from "./mission-button"
+import { Video } from "expo-av"
 
 // Tipos para las misiones
 interface Mission {
   id: string
   title: string
   description: string
-  image: any // Ruta de la imagen
+  image: any // Ruta de la imagen (mantener para compatibilidad)
+  video: any // Ruta del video
   difficulty: "easy" | "medium" | "hard"
   rewards: {
     xp: number
@@ -44,7 +44,7 @@ interface MissionInfoProps {
  * Carga dinámicamente el nombre del personaje desde AsyncStorage y muestra la misión correspondiente.
  */
 const MissionInfo = ({ onStartMission, onClose }: MissionInfoProps) => {
-  const navigation = useNavigation(); // Hook de navegación para redirigir
+  const navigation = useNavigation() // Hook de navegación para redirigir
 
   // Estados para almacenar datos
   const [characterName, setCharacterName] = useState<string | null>(null)
@@ -60,7 +60,7 @@ const MissionInfo = ({ onStartMission, onClose }: MissionInfoProps) => {
   })
 
   // Dimensiones de la pantalla para diseño responsivo
-  const { width } = Dimensions.get("window")
+  const { width, height } = Dimensions.get("window")
   const isTablet = width > 768
 
   // Cargar datos al montar el componente
@@ -85,6 +85,27 @@ const MissionInfo = ({ onStartMission, onClose }: MissionInfoProps) => {
     loadCharacterName()
   }, [])
 
+  // Add this near the top of the component, after the other useEffect hooks
+  useEffect(() => {
+    // Function to update dimensions when screen size changes
+    const updateLayout = () => {
+      const { width, height } = Dimensions.get("window")
+      // You can set additional state here if needed for responsive layouts
+    }
+
+    // Set up event listener for dimension changes (orientation changes)
+    Dimensions.addEventListener("change", updateLayout)
+
+    // Initial call
+    updateLayout()
+
+    // Clean up
+    return () => {
+      // Remove event listener on unmount
+      Dimensions.removeEventListener("change", updateLayout)
+    }
+  }, [])
+
   // Reemplazar el useEffect que genera la misión con este código actualizado que también establece los colores del tema
   useEffect(() => {
     if (characterName) {
@@ -105,6 +126,7 @@ const MissionInfo = ({ onStartMission, onClose }: MissionInfoProps) => {
             description:
               "Qhapaq debe proteger las tierras sagradas de su pueblo de Corporatus, un enemigo mestizo que busca destruir las tradiciones y explotar la naturaleza con su tecnología moderna.",
             image: require("../../assets/Personajes/Amaru1.png"),
+            video: require("../../assets/MisionesGame/Mision-Qhapac.mp4"),
             difficulty: "medium",
             rewards: {
               xp: 500,
@@ -132,6 +154,7 @@ const MissionInfo = ({ onStartMission, onClose }: MissionInfoProps) => {
             description:
               "Amaru debe enfrentarse a Toxicus, quien ha contaminado los ríos sagrados con sus desechos industriales. Su fuerza será clave para restaurar el equilibrio natural.",
             image: require("../../assets/Personajes/Amaru1.png"),
+            video: require("../../assets/EntradaMision/Amaru-entrada-mision.mp4"),
             difficulty: "hard",
             rewards: {
               xp: 750,
@@ -159,6 +182,8 @@ const MissionInfo = ({ onStartMission, onClose }: MissionInfoProps) => {
             description:
               "Killa debe usar su astucia para descubrir la identidad de Shadowman, quien se ha infiltrado en el consejo de ancianos para manipular las decisiones sobre el uso de los recursos naturales.",
             image: require("../../assets/Personajes/Amaru1.png"),
+            video: require("../../assets/MisionesGame/MIsion-killa.mp4"),
+
             difficulty: "easy",
             rewards: {
               xp: 450,
@@ -185,6 +210,7 @@ const MissionInfo = ({ onStartMission, onClose }: MissionInfoProps) => {
             title: "Defender el equilibrio natural",
             description: `${characterName} debe enfrentarse a las fuerzas que amenazan el equilibrio de la naturaleza y las tradiciones ancestrales.`,
             image: require("../../assets/Personajes/Amaru1.png"),
+            video: require("../../assets/videos/Tunel.mp4"),
             difficulty: "medium",
             rewards: {
               xp: 400,
@@ -222,91 +248,132 @@ const MissionInfo = ({ onStartMission, onClose }: MissionInfoProps) => {
 
   // Función para iniciar la misión
   const handleStartMission = () => {
-    navigation.navigate("MissionGameScreen")  // Navegar a MissionGameScreen
+    navigation.navigate("MissionGameScreen") // Navegar a MissionGameScreen
   }
 
   return (
-    <View style={styles.container}>
-      <LinearGradient colors={theme.primary} style={styles.sidebar} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} />
-      <View style={styles.content}>
-        <MissionHeader title="Información" onClose={onClose} accentColor={theme.text} />
+    <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "#000" }}>
+      <StatusBar hidden />
 
-        <View style={styles.tabsContainer}>
-          <LinearGradient colors={theme.primary} style={styles.activeTab} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
-            <Text style={styles.activeTabText}>Misión</Text>
-          </LinearGradient>
-          <TouchableOpacity style={styles.inactiveTab}>
-            <Text style={styles.inactiveTabText}>Objetivos</Text>
-          </TouchableOpacity>
-        </View>
+      {mission && (
+        <>
+          <Video
+            source={mission.video}
+            style={styles.fullScreenVideo}
+            resizeMode="cover"
+            shouldPlay
+            isLooping={true}
+            useNativeControls={false}
+          />
 
-        <View style={[styles.imageContainer, { backgroundColor: `${theme.badge}20` }]}>
-          {mission && <Image source={mission.image} style={styles.missionImage} resizeMode="contain" />}
-        </View>
+          <View style={styles.overlayContainer}>
+            <TouchableOpacity style={styles.closeButtonFullScreen} onPress={onClose}>
+              <Feather name="x" size={24} color="#FFFFFF" />
+            </TouchableOpacity>
 
-        <ScrollView style={styles.descriptionContainer}>
-          {mission && (
-            <>
-              <Text style={[styles.missionTitle, { color: theme.text }]}>{mission.title}</Text>
+            <Text style={styles.missionTitle}>{mission.title}</Text>
+            <Text style={styles.missionDescription}>{mission.description}</Text>
 
-              <Text style={[styles.missionDescription, { color: theme.text }]}>{mission.description}</Text>
-
-              <MissionButton
-                title="¡Iniciar misión!"
-                onPress={handleStartMission}  // Usar la función handleStartMission
-                style={styles.startButton}
-                colors={theme.primary}
-              />
-            </>
-          )}
-        </ScrollView>
-      </View>
+            <MissionButton
+              title="¡Iniciar misión!"
+              onPress={handleStartMission}
+              style={styles.startButton}
+              colors={theme.primary}
+            />
+          </View>
+        </>
+      )}
     </View>
   )
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    flexDirection: "row",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    overflow: "hidden",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
+  fullScreenContainer: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: "100%",
+    height: "100%",
+    backgroundColor: "#000",
   },
-  sidebar: {
-    width: 16,
+  fullScreenVideo: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: "100%",
     height: "100%",
   },
-  content: {
-    flex: 1,
-    padding: 16,
+  overlayContainer: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    padding: 20,
+    paddingTop: 40, // Extra padding for status bar
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    zIndex: 5,
+  },
+  closeButtonFullScreen: {
+    position: "absolute",
+    top: 40, // Position below status bar area
+    right: 20,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 10,
+  },
+  missionTitle: {
+    fontSize: 28,
+    fontWeight: "bold",
+    color: "#FFFFFF",
+    marginBottom: 16,
+    textShadowColor: "rgba(0, 0, 0, 0.75)",
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
+    marginTop: 40, // Add space for the close button
+  },
+  missionDescription: {
+    fontSize: 18,
+    color: "#FFFFFF",
+    lineHeight: 26,
+    marginBottom: 24,
+    textShadowColor: "rgba(0, 0, 0, 0.75)",
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
+  },
+  startButton: {
+    marginTop: 16,
+    alignSelf: "center",
+    width: "80%",
   },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#F5F5F5",
+    backgroundColor: "#000",
   },
   loadingText: {
     fontSize: 18,
-    color: "#333",
+    color: "#FFF",
     fontWeight: "600",
   },
   errorContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#F5F5F5",
+    backgroundColor: "#000",
     padding: 20,
   },
   errorText: {
     fontSize: 16,
-    color: "#333",
+    color: "#FFF",
     textAlign: "center",
     marginBottom: 20,
   },
@@ -317,115 +384,9 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "rgba(0,0,0,0.2)",
+    backgroundColor: "rgba(255,255,255,0.2)",
     justifyContent: "center",
     alignItems: "center",
-  },
-  tabsContainer: {
-    flexDirection: "row",
-    marginVertical: 12,
-  },
-  activeTab: {
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 20,
-    marginRight: 8,
-  },
-  activeTabText: {
-    color: "#FFFFFF",
-    fontWeight: "bold",
-    fontSize: 16,
-  },
-  inactiveTab: {
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    backgroundColor: "#EEEEEE",
-    borderRadius: 20,
-    marginRight: 8,
-  },
-  inactiveTabText: {
-    color: "#666666",
-    fontWeight: "500",
-    fontSize: 16,
-  },
-  imageContainer: {
-    width: "100%",
-    height: "50%", // Que ocupe la mitad del espacio disponible
-    borderRadius: 8,
-    overflow: "hidden",
-    marginBottom: 16,
-    justifyContent: "center", // Centrar la imagen verticalmente
-    alignItems: "center", // Centrar la imagen horizontalmente
-    backgroundColor: "transparent", // Fondo transparente
-  },
-  missionImage: {
-    width: "100%",
-    height: "100%",
-    resizeMode: "contain", // Mostrar la imagen completa sin recortes
-  },
-  missionTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#333333",
-    marginBottom: 12,
-  },
-  descriptionContainer: {
-    flex: 1,
-    marginBottom: 16,
-  },
-  difficultyContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  difficultyLabel: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#333",
-    marginRight: 8,
-  },
-  difficultyBadge: {
-    paddingVertical: 4,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-  },
-  difficultyText: {
-    fontWeight: "bold",
-    fontSize: 12,
-  },
-  missionDescription: {
-    fontSize: 16,
-    color: "#333333",
-    lineHeight: 24,
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: 8,
-  },
-  objectivesContainer: {
-    backgroundColor: "#F9F9F9",
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 16,
-  },
-  objectiveItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  objectiveIcon: {
-    marginRight: 8,
-  },
-  objectiveText: {
-    fontSize: 14,
-    color: "#333",
-    flex: 1,
-  },
-  startButton: {
-    marginTop: 8,
   },
 })
 
