@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useFocusEffect } from '@react-navigation/native';
 import { View, Image, StyleSheet, Dimensions, ImageBackground, Animated, StatusBar, Platform, Text } from "react-native"
 import { LinearGradient } from "expo-linear-gradient"
 import AsyncStorage from "@react-native-async-storage/async-storage"
@@ -25,7 +26,7 @@ const BattleScreen = () => {
   const [showBattleRoyale, setShowBattleRoyale] = useState(true)
 
   // Cargar el nombre del personaje y villano seleccionados desde AsyncStorage
-  useEffect(() => {
+  useFocusEffect(() => {
     const loadSelectedCharacterAndVillain = async () => {
       try {
         // Cargar nombre del personaje
@@ -40,10 +41,10 @@ const BattleScreen = () => {
         }
 
         // Cargar nombre del villano
-        const savedVillainName = await AsyncStorage.getItem("selectedVillainName")
+        const savedVillainName = JSON.parse(await AsyncStorage.getItem("selectedVillain") || "{}")
         if (savedVillainName) {
-          setVillainName(savedVillainName)
-          console.log("Nombre del villano cargado en BattleScreen:", savedVillainName)
+          setVillainName(savedVillainName.name)
+          console.log("Nombre del villano cargado en BattleScreen:", savedVillainName.name)          
         } else {
           console.log("No hay nombre de villano guardado en AsyncStorage")
           // Si no hay villano guardado, usamos uno por defecto
@@ -55,7 +56,7 @@ const BattleScreen = () => {
     }
 
     loadSelectedCharacterAndVillain()
-  }, [])
+  })
 
   useEffect(() => {
     // Animar el anuncio "Battle Royale" primero
@@ -169,9 +170,9 @@ const BattleScreen = () => {
         case "Corporatus":
           return require("../../assets/villanosBattle/Corporatus.png")
         case "Toxicus":
-          return require("../../assets/Personajes/Killa-battle.png")
+          return require("../../assets/villanosBattle/El Demonio de la Avidez.png")
         case "Shadowman":
-          return require("../../assets/Personajes/Killa-battle.png")
+          return require("../../assets/villanosBattle/Shadowman.png")          
         default:
           return require("../../assets/Personajes/Killa-battle.png")
       }
