@@ -139,7 +139,7 @@ const MissionInfo = ({ onStartMission, onClose }: MissionInfoProps) => {
             description:
               "Qhapaq debe proteger las tierras sagradas de su pueblo de Corporatus, un enemigo mestizo que busca destruir las tradiciones y explotar la naturaleza con su tecnología moderna.",
             image: require("../../assets/Personajes/Amaru1.png"),
-            video: require("../../assets/MisionesGame/Mision-Qhapac.mp4"),
+            video: require("../../assets/MisionesGame/Qhapac-mision.mp4"),
             difficulty: "medium",
             rewards: {
               xp: 500,
@@ -167,7 +167,8 @@ const MissionInfo = ({ onStartMission, onClose }: MissionInfoProps) => {
             description:
               "Amaru debe enfrentarse a Toxicus, quien ha contaminado los ríos sagrados con sus desechos industriales. Su fuerza será clave para restaurar el equilibrio natural.",
             image: require("../../assets/Personajes/Amaru1.png"),
-            video: require("../../assets/EntradaMision/Amaru-entrada-mision.mp4"),
+            // C:\Users\semin\OneDrive\Escritorio\Aula360REPOORIGINAL\Aula360\front\assets\MisionesGame\Amaru-misión.mp4
+            video: require("../../assets/MisionesGame/Amaru-misión.mp4"),
             difficulty: "hard",
             rewards: {
               xp: 750,
