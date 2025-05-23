@@ -1,10 +1,12 @@
 "use client"
 
 import React, { useState, useEffect } from "react"
+
 import { useFocusEffect } from '@react-navigation/native';
 import { View, StyleSheet } from "react-native"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import { MissionManager } from "../ComponentesQuiz/mission-manager"
+
 
 type CharacterName = "Qhapaq" | "Amaru" | "Killa"
 type VillainName = "Corporatus" | "Toxicus" | "Shadowman"
@@ -41,6 +43,7 @@ const villainIncorrectImages: Record<VillainName, any[]> = {
     require("../../assets/villanosBattle/Corporatus.png"),
   ],
   Toxicus: [
+
     require("../../assets/villanosBattle/El Demonio de la Avidez.png"),
     require("../../assets/villanosBattle/El Demonio de la Avidez.png"),
     require("../../assets/villanosBattle/El Demonio de la Avidez.png"),
@@ -49,6 +52,7 @@ const villainIncorrectImages: Record<VillainName, any[]> = {
     require("../../assets/villanosBattle/Shadowman.png"),
     require("../../assets/villanosBattle/Shadowman.png"),
     require("../../assets/villanosBattle/Shadowman.png"),
+
   ],
 }
 
@@ -65,9 +69,11 @@ const characterAssets: Record<
       require("../../assets/fondoQuiz/FondoQuiz-Qhapaq.png"),
     ],
     correctImages: [
+
       require("../../assets/images/chaman.png"),
       require("../../assets/images/chaman.png"),
       require("../../assets/images/chaman.png"),
+
     ],
   },
   Amaru: {
@@ -79,9 +85,11 @@ const characterAssets: Record<
 
     ],
     correctImages: [
+
       require("../../assets/Personajes/Amaru1.png"),
       require("../../assets/Personajes/Amaru1.png"),
       require("../../assets/Personajes/Amaru1.png"),
+
     ],
   },
   Killa: {
@@ -91,15 +99,18 @@ const characterAssets: Record<
       require("../../assets/fondoQuiz/FondoQuiz-Killa.png"),
     ],
     correctImages: [
+
       require("../../assets/Personajes/Guerrera.png"),
       require("../../assets/Personajes/Guerrera.png"),
       require("../../assets/Personajes/Guerrera.png"),
+
     ],
   },
 }
 
 const buildMissionsData = (characterName: CharacterName, villainName: VillainName) => {
   const assets = characterAssets[characterName]
+
   const charImgs = characterAssets[characterName].correctImages
   const vilImgs = villainCharacterImages[villainName]
   const incorrectImgs = villainIncorrectImages[villainName]
@@ -369,6 +380,7 @@ const buildMissionsData = (characterName: CharacterName, villainName: VillainNam
 
   // fallback (no debería ocurrir)
   return []
+
 }
 
 const QuizScreen = ({ navigation }) => {
@@ -381,8 +393,10 @@ const QuizScreen = ({ navigation }) => {
         const characterNameRaw = await AsyncStorage.getItem("selectedCharacterName")
         const villainNameRaw = await AsyncStorage.getItem("selectedVillainName")
 
+
         const characterName = characterNameRaw; // (characterNameRaw ?? "Qhapaq") as CharacterName
         const villainName = villainNameRaw; //(villainNameRaw ?? "Corporatus") as VillainName
+
 
         console.log("Personaje seleccionado:", characterName)
         console.log("Villano seleccionado:", villainName)

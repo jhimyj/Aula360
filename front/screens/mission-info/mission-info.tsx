@@ -1,10 +1,12 @@
 "use client"
 
+
 import React, { useState, useEffect } from "react"
 import { View, Text, StyleSheet, TouchableOpacity, Dimensions, StatusBar } from "react-native"
 import { Feather } from "@expo/vector-icons"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import { useNavigation, useFocusEffect } from "@react-navigation/native"
+
 import MissionButton from "./mission-button"
 import { Video } from "expo-av"
 
@@ -113,6 +115,27 @@ const MissionInfo = ({ onStartMission, onClose }: MissionInfoProps) => {
     }
   }, [])
 
+  // Add this near the top of the component, after the other useEffect hooks
+  useEffect(() => {
+    // Function to update dimensions when screen size changes
+    const updateLayout = () => {
+      const { width, height } = Dimensions.get("window")
+      // You can set additional state here if needed for responsive layouts
+    }
+
+    // Set up event listener for dimension changes (orientation changes)
+    Dimensions.addEventListener("change", updateLayout)
+
+    // Initial call
+    updateLayout()
+
+    // Clean up
+    return () => {
+      // Remove event listener on unmount
+      Dimensions.removeEventListener("change", updateLayout)
+    }
+  }, [])
+
   // Reemplazar el useEffect que genera la misión con este código actualizado que también establece los colores del tema
   useEffect(() => {
     if (characterName) {
@@ -139,7 +162,9 @@ const MissionInfo = ({ onStartMission, onClose }: MissionInfoProps) => {
             description:
               "Qhapaq debe proteger las tierras sagradas de su pueblo de Corporatus, un enemigo mestizo que busca destruir las tradiciones y explotar la naturaleza con su tecnología moderna.",
             image: require("../../assets/Personajes/Amaru1.png"),
+
             video: require("../../assets/MisionesGame/Qhapac-mision.mp4"),
+
             difficulty: "medium",
             rewards: {
               xp: 500,
@@ -167,8 +192,10 @@ const MissionInfo = ({ onStartMission, onClose }: MissionInfoProps) => {
             description:
               "Amaru debe enfrentarse a Toxicus, quien ha contaminado los ríos sagrados con sus desechos industriales. Su fuerza será clave para restaurar el equilibrio natural.",
             image: require("../../assets/Personajes/Amaru1.png"),
+
             // C:\Users\semin\OneDrive\Escritorio\Aula360REPOORIGINAL\Aula360\front\assets\MisionesGame\Amaru-misión.mp4
             video: require("../../assets/MisionesGame/Amaru-misión.mp4"),
+
             difficulty: "hard",
             rewards: {
               xp: 750,
