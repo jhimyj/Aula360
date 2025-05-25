@@ -1,11 +1,15 @@
 // components/CreateRoomCard/RoomCard.tsx
 import React, { useState, useRef } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Modal, Alert, Dimensions } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Modal, Alert, Dimensions, Clipboard, Share } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import QRCode from 'react-native-qrcode-svg';
+import * as MediaLibrary from 'expo-media-library';
+import * as FileSystem from 'expo-file-system';
+import { captureRef } from 'react-native-view-shot';
 import QuestionsModal from "../../components/Evaluation/QuestionsModal";
 
-const { width: screenWidth } = Dimensions.get('window');
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 export default function RoomCard({ 
   room, 
@@ -18,10 +22,13 @@ export default function RoomCard({
   const [showMenu, setShowMenu] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ top: 0, right: 0 });
   const [questionsModalVisible, setQuestionsModalVisible] = useState(false);
+  const [qrModalVisible, setQrModalVisible] = useState(false);
   const [questions, setQuestions] = useState([]);
   const [loadingQuestions, setLoadingQuestions] = useState(false);
   const [questionsError, setQuestionsError] = useState(null);
   const moreButtonRef = useRef(null);
+  const qrRef = useRef(null);
+  const qrViewRef = useRef(null);
 
   const handleMenuPress = () => {
     // Medir la posición del botón de tres puntos
@@ -88,12 +95,125 @@ export default function RoomCard({
     }
   };
 
+  // Función para mostrar el ID de la sala
+  const handleViewRoomId = () => {
+    Alert.alert(
+      'ID de la Sala',
+      `Nombre: ${room.name}\n\nID: ${room.id}`,
+      [
+        {
+          text: 'Copiar ID',
+          onPress: () => {
+            Clipboard.setString(room.id);
+            Alert.alert('✅ Copiado', 'El ID de la sala ha sido copiado al portapapeles');
+          }
+        },
+        {
+          text: 'Cerrar',
+          style: 'cancel'
+        }
+      ]
+    );
+  };
+
+  // Función para generar y mostrar el QR
+  const handleGenerateQR = () => {
+    setQrModalVisible(true);
+  };
+
+  // Función para capturar el QR como imagen
+  const captureQRImage = async () => {
+    try {
+      const uri = await captureRef(qrViewRef, {
+        format: 'png',
+        quality: 1,
+      });
+      return uri;
+    } catch (error) {
+      console.error('Error al capturar QR:', error);
+      throw error;
+    }
+  };
+
+  // Función para compartir el QR con imagen
+  const handleShareQRWithImage = async () => {
+    try {
+      // Capturar la imagen del QR
+      const qrImageUri = await captureQRImage();
+      
+      // Crear el mensaje para compartir
+      const roomInfo = {
+        id: room.id,
+        name: room.name,
+        course: room.course || '',
+        topic: room.topic || '',
+        description: room.description || ''
+      };
+
+      const shareMessage = `🎓 ¡Únete a LIA! 🚀\n\n📚 Sala: ${room.name}\n📖 Curso: ${room.course || 'No especificado'}\n🎯 Tema: ${room.topic || 'General'}\n\n🔑 ID: ${room.id}\n\n¡Escanea el código QR para unirte a la sala de estudio!`;
+
+      // Compartir con la imagen del QR
+      await Share.share({
+        message: shareMessage,
+        url: qrImageUri,
+        title: `LIA - Sala: ${room.name}`
+      });
+    } catch (error) {
+      console.error('Error al compartir QR:', error);
+      Alert.alert('Error', 'No se pudo compartir el código QR');
+    }
+  };
+
+  // Función para guardar QR en galería
+  const handleSaveQR = async () => {
+    try {
+      // Solicitar permisos
+      const { status } = await MediaLibrary.requestPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permisos', 'Se necesitan permisos para guardar la imagen');
+        return;
+      }
+
+      // Capturar la imagen del QR
+      const qrImageUri = await captureQRImage();
+      
+      // Guardar en la galería
+      await MediaLibrary.saveToLibraryAsync(qrImageUri);
+      
+      Alert.alert('✅ Guardado', 'El código QR ha sido guardado en tu galería');
+    } catch (error) {
+      console.error('Error al guardar QR:', error);
+      Alert.alert('Error', 'No se pudo guardar el código QR');
+    }
+  };
+
+  // Función para compartir solo texto
+  const handleShareText = async () => {
+    try {
+      const shareMessage = `🎓 ¡Únete a LIA! 🚀\n\n📚 Sala: ${room.name}\n📖 Curso: ${room.course || 'No especificado'}\n🎯 Tema: ${room.topic || 'General'}\n\n🔑 ID de la sala: ${room.id}\n\n¡Usa este ID para unirte a la sala de estudio!`;
+
+      await Share.share({
+        message: shareMessage,
+        title: `LIA - Sala: ${room.name}`
+      });
+    } catch (error) {
+      console.error('Error al compartir:', error);
+      Alert.alert('Error', 'No se pudo compartir la información de la sala');
+    }
+  };
+
   const handleMenuOption = async (option) => {
     setShowMenu(false);
     
     switch (option) {
       case 'view':
         onViewMore && onViewMore(room);
+        break;
+      case 'viewId':
+        handleViewRoomId();
+        break;
+      case 'generateQR':
+        handleGenerateQR();
         break;
       case 'questions':
         // Manejar la visualización de preguntas directamente aquí
@@ -261,6 +381,27 @@ export default function RoomCard({
             
             <TouchableOpacity 
               style={styles.popoverItem} 
+              onPress={() => handleMenuOption('viewId')}
+            >
+              <Feather name="hash" size={18} color="#4361EE" />
+              <Text style={styles.popoverItemText}>Ver ID</Text>
+            </TouchableOpacity>
+            
+            <View style={styles.popoverDivider} />
+            
+            {/* NUEVA OPCIÓN: Generar QR */}
+            <TouchableOpacity 
+              style={styles.popoverItem} 
+              onPress={() => handleMenuOption('generateQR')}
+            >
+              <Feather name="maximize" size={18} color="#4361EE" />
+              <Text style={styles.popoverItemText}>Generar QR</Text>
+            </TouchableOpacity>
+            
+            <View style={styles.popoverDivider} />
+            
+            <TouchableOpacity 
+              style={styles.popoverItem} 
               onPress={() => handleMenuOption('questions')}
             >
               <Feather name="help-circle" size={18} color="#4361EE" />
@@ -298,6 +439,106 @@ export default function RoomCard({
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
+      </Modal>
+
+      {/* Modal para mostrar el QR */}
+      <Modal
+        visible={qrModalVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setQrModalVisible(false)}
+      >
+        <View style={styles.qrModalOverlay}>
+          <View style={styles.qrModalContainer}>
+            {/* Header del modal */}
+            <View style={styles.qrModalHeader}>
+              <Text style={styles.qrModalTitle}>🚀 Código QR - LIA</Text>
+              <TouchableOpacity 
+                style={styles.qrCloseButton}
+                onPress={() => setQrModalVisible(false)}
+              >
+                <Feather name="x" size={24} color="#666" />
+              </TouchableOpacity>
+            </View>
+            
+            {/* Información de la sala */}
+            <View style={styles.qrRoomInfo}>
+              <Text style={styles.qrRoomName}>{room.name}</Text>
+              {room.course && (
+                <Text style={styles.qrRoomCourse}>{room.course}</Text>
+              )}
+              {room.topic && (
+                <Text style={styles.qrRoomTopic}>Tema: {room.topic}</Text>
+              )}
+            </View>
+            
+            {/* Código QR con captura */}
+            <View ref={qrViewRef} style={styles.qrCaptureContainer}>
+              <View style={styles.qrContainer}>
+                <QRCode
+                  value={room.id}
+                  size={200}
+                  color="#333"
+                  backgroundColor="#fff"
+                  logo={{
+                    uri: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiByeD0iOCIgZmlsbD0iIzQzNjFFRSIvPgo8dGV4dCB4PSIyMCIgeT0iMjYiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9IndoaXRlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5MSUE8L3RleHQ+Cjwvc3ZnPgo='
+                  }}
+                  logoSize={40}
+                  logoBackgroundColor="transparent"
+                  logoMargin={2}
+                  logoBorderRadius={8}
+                />
+              </View>
+              
+              {/* Texto LIA debajo del QR */}
+              <View style={styles.liaTextContainer}>
+                <Text style={styles.liaText}>LIA</Text>
+                <Text style={styles.liaSubtext}>Learning Intelligence Assistant</Text>
+              </View>
+            </View>
+            
+            {/* ID de la sala */}
+            <View style={styles.qrIdContainer}>
+              <Text style={styles.qrIdLabel}>ID de la sala:</Text>
+              <Text style={styles.qrIdText}>{room.id}</Text>
+            </View>
+            
+            {/* Botones de acción */}
+            <View style={styles.qrButtonsContainer}>
+              <TouchableOpacity 
+                style={styles.qrButton}
+                onPress={() => {
+                  Clipboard.setString(room.id);
+                  Alert.alert('✅ Copiado', 'El ID ha sido copiado al portapapeles');
+                }}
+              >
+                <Feather name="copy" size={16} color="#4361EE" />
+                <Text style={styles.qrButtonText}>Copiar</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.qrButton}
+                onPress={handleSaveQR}
+              >
+                <Feather name="download" size={16} color="#4361EE" />
+                <Text style={styles.qrButtonText}>Guardar</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={[styles.qrButton, styles.qrShareButton]}
+                onPress={handleShareQRWithImage}
+              >
+                <Feather name="share-2" size={16} color="#fff" />
+                <Text style={[styles.qrButtonText, styles.qrShareButtonText]}>Compartir</Text>
+              </TouchableOpacity>
+            </View>
+            
+            {/* Instrucciones */}
+            <Text style={styles.qrInstructions}>
+              🎓 Comparte este código QR para que otros se unan a tu sala de estudio en LIA
+            </Text>
+          </View>
+        </View>
       </Modal>
 
       {/* Modal para mostrar preguntas */}
@@ -499,5 +740,162 @@ const styles = StyleSheet.create({
   },
   deleteText: {
     color: '#FF4444',
+  },
+  // Estilos del modal QR
+  qrModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  qrModalContainer: {
+    backgroundColor: 'white',
+    borderRadius: 20,
+    padding: 24,
+    width: '100%',
+    maxWidth: 350,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.25,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  qrModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
+    marginBottom: 20,
+  },
+  qrModalTitle: {
+    fontSize: 18,
+    fontFamily: 'Poppins_600SemiBold',
+    color: '#333',
+    flex: 1,
+  },
+  qrCloseButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#F8F9FA',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  qrRoomInfo: {
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  qrRoomName: {
+    fontSize: 16,
+    fontFamily: 'Poppins_600SemiBold',
+    color: '#333',
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  qrRoomCourse: {
+    fontSize: 14,
+    fontFamily: 'Poppins_500Medium',
+    color: '#4361EE',
+    marginBottom: 2,
+  },
+  qrRoomTopic: {
+    fontSize: 12,
+    fontFamily: 'Poppins_400Regular',
+    color: '#666',
+  },
+  qrCaptureContainer: {
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    padding: 20,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    marginBottom: 20,
+  },
+  qrContainer: {
+    padding: 10,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+  },
+  liaTextContainer: {
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  liaText: {
+    fontSize: 18,
+    fontFamily: 'Poppins_700Bold',
+    color: '#4361EE',
+    letterSpacing: 2,
+  },
+  liaSubtext: {
+    fontSize: 10,
+    fontFamily: 'Poppins_400Regular',
+    color: '#666',
+    marginTop: 2,
+  },
+  qrIdContainer: {
+    alignItems: 'center',
+    marginBottom: 24,
+    paddingHorizontal: 16,
+  },
+  qrIdLabel: {
+    fontSize: 12,
+    fontFamily: 'Poppins_500Medium',
+    color: '#666',
+    marginBottom: 4,
+  },
+  qrIdText: {
+    fontSize: 11,
+    fontFamily: 'monospace',
+    color: '#333',
+    backgroundColor: '#F8F9FA',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    textAlign: 'center',
+  },
+  qrButtonsContainer: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 16,
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+  },
+  qrButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#4361EE',
+    backgroundColor: 'transparent',
+    minWidth: 80,
+    justifyContent: 'center',
+  },
+  qrShareButton: {
+    backgroundColor: '#4361EE',
+    borderColor: '#4361EE',
+  },
+  qrButtonText: {
+    marginLeft: 6,
+    fontSize: 12,
+    fontFamily: 'Poppins_500Medium',
+    color: '#4361EE',
+  },
+  qrShareButtonText: {
+    color: '#fff',
+  },
+  qrInstructions: {
+    fontSize: 12,
+    fontFamily: 'Poppins_400Regular',
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 18,
   },
 });

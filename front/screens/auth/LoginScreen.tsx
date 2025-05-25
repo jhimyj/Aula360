@@ -41,10 +41,13 @@ export default function LoginScreen({ navigation, setIsAuthenticated }: Props) {
       );
 
       const { token } = response.data;
-      console.log(token)
+      console.log('Token obtenido:', token);
       await AsyncStorage.setItem('userToken', token);
       
-      console.log('Login exitoso, llamando setIsAuthenticated');
+      // Guardar información de que el usuario está autenticado con token
+      await AsyncStorage.setItem('authMethod', 'token');
+      
+      console.log('Login exitoso con TOKEN, llamando setIsAuthenticated');
       setIsAuthenticated(true);
       
     } catch (error: any) {
@@ -55,10 +58,10 @@ export default function LoginScreen({ navigation, setIsAuthenticated }: Props) {
     }
   };
 
-  // Función para continuar como alumno (sin autenticación)
+  // Función para navegar a la autenticación de estudiantes
   const handleContinueAsStudent = () => {
-    console.log('Continuando como estudiante, llamando setIsAuthenticated');
-    setIsAuthenticated(true);
+    console.log('Navegando a autenticación de estudiante independiente');
+    navigation.navigate('StudentAuth');
   };
 
   return (
@@ -111,10 +114,16 @@ export default function LoginScreen({ navigation, setIsAuthenticated }: Props) {
               </Text>
             </TouchableOpacity>
 
-            {/* Botón de "Continuar como Alumno" */}
-            <TouchableOpacity style={styles.button} onPress={handleContinueAsStudent}>
+            {/* Botón de "Continuar como Alumno" - Ahora navega a StudentAuth */}
+            <TouchableOpacity 
+              style={[styles.studentButton]} 
+              onPress={handleContinueAsStudent}
+            >
               <Text style={styles.buttonText}>Continuar como Alumno</Text>
             </TouchableOpacity>
+            <Text style={styles.studentNote}>
+              *Acceso independiente para estudiantes
+            </Text>
           </View>
         </View>
       </TouchableWithoutFeedback>
@@ -207,6 +216,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 10,
   },
+  studentButton: {
+    backgroundColor: '#4CAF50', // Color verde para diferenciar
+    padding: 12,
+    borderRadius: 10,
+    width: 300,
+    alignItems: 'center',
+    marginTop: 20,
+  },
   buttonDisabled: {
     backgroundColor: '#FFB366',
   },
@@ -223,5 +240,11 @@ const styles = StyleSheet.create({
   textHighlight: {
     color: '#FF8C00',
     fontWeight: 'bold',
+  },
+  studentNote: {
+    marginTop: 5,
+    color: '#4CAF50',
+    fontSize: 12,
+    fontStyle: 'italic',
   },
 });
