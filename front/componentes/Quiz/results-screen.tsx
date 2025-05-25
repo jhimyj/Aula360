@@ -1,5 +1,6 @@
 "use client"
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native"
+import { removeSavedCharacterImage } from "../../screens/ComponentesHero/saveCharacterImage"
 
 const ResultsScreen = ({ route, navigation }) => {
   // Obtener los parámetros de la ruta
@@ -16,6 +17,11 @@ const ResultsScreen = ({ route, navigation }) => {
     return "¡Sigue intentando!"
   }
 
+  const handleLogout = () => {
+    removeSavedCharacterImage();
+    navigation.navigate("Home");
+  }
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Resultados</Text>
@@ -28,7 +34,7 @@ const ResultsScreen = ({ route, navigation }) => {
         <Text style={styles.messageText}>{getMessage()}</Text>
       </View>
 
-      <TouchableOpacity style={styles.button} onPress={() => navigation.navigate("Home")}>
+      <TouchableOpacity style={styles.button} onPress={handleLogout}>
         <Text style={styles.buttonText}>Volver al Inicio</Text>
       </TouchableOpacity>
 

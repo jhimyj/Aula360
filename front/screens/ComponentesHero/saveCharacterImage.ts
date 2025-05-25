@@ -15,3 +15,13 @@ export const getSavedCharacterImage = async (typeCharacter: string): Promise<str
     return null
   }
 }
+
+export const removeSavedCharacterImage = async () => {
+  try {
+    await AsyncStorage.removeItem('selectedCharacterName')
+    await AsyncStorage.removeItem('selectedVillain')
+    await AsyncStorage.removeItem('selectedVillainName')
+  } catch (error) {
+    console.error('Error eliminando la imagen del personaje:', error)
+  }
+}
