@@ -1,15 +1,25 @@
 "use client"
 
 import { useState, useRef, useEffect, useCallback } from "react"
-import { SafeAreaView, StyleSheet, View, TouchableOpacity, Dimensions, type ScaledSize } from "react-native"
+import { SafeAreaView, StyleSheet, View, TouchableOpacity, Dimensions, Alert, type ScaledSize } from "react-native"
 import { StatusBar } from "expo-status-bar"
 import { Audio } from "expo-av"
 import { Feather } from "@expo/vector-icons"
-import { useIsFocused } from "@react-navigation/native"
+import { useIsFocused, useNavigation, type NavigationProp } from "@react-navigation/native"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import CharacterDisplay from "../ComponentesHero/CharacterDisplay"
 import CharacterList from "../ComponentesHero/CharacterList"
 import type { Character } from "../ComponentesHero/types"
+
+// 🎯 ACTUALIZAR TIPOS PARA INCLUIR VILLAINSELECTION EN AUTHSTACK
+type RootStackParamList = {
+  Login: undefined
+  Register: undefined
+  StudentAuth: undefined
+  VillainSelection: undefined // 🎯 AHORA ESTÁ EN AUTHSTACK
+}
+
+type NavigationProps = NavigationProp<RootStackParamList>
 
 // ---------- Tipos ----------
 type CharacterWithSize = Character & {
@@ -17,10 +27,12 @@ type CharacterWithSize = Character & {
 }
 
 // ---------- Componente ----------
-export default function App() {
+export default function StudentDashboardScreen() {
   const isFocused = useIsFocused()
+  const navigation = useNavigation<NavigationProps>()
   const soundRef = useRef<Audio.Sound | null>(null)
   const [dimensions, setDimensions] = useState<ScaledSize>(Dimensions.get("window"))
+  const [isNavigating, setIsNavigating] = useState(false)
 
   // Detect screen size changes
   useEffect(() => {
@@ -31,11 +43,11 @@ export default function App() {
     return () => subscription.remove()
   }, [])
 
-  // Calculate if device is a tablet based on screen size and pixel density
+  // Calculate if device is a tablet
   const isTablet = useCallback(() => {
     const { width, height } = dimensions
     const screenSize = Math.sqrt(width * width + height * height) / 160
-    return screenSize >= 7 // Common threshold for tablets
+    return screenSize >= 7
   }, [dimensions])
 
   // ---------------- Datos de personajes -------------
@@ -75,40 +87,87 @@ export default function App() {
   const [selectedCharacter, setSelectedCharacter] = useState<CharacterWithSize>(characters[0])
   const [isPlaying, setIsPlaying] = useState(true)
 
+  useEffect(() => {
+    console.log("✅ Entraste a StudentDashboardScreen")
+    clearAllFlags()
+    setIsNavigating(false)
+  }, [])
+
+  // 🎯 FUNCIÓN PARA LIMPIAR FLAGS
+  const clearAllFlags = async () => {
+    try {
+      const keysToRemove = [
+        "showMissionInfo",
+        "isInMissionFlow",
+        "autoShowMission",
+        "missionVisible",
+        "currentScreen",
+        "navigationFlow",
+        "isInCharacterSelection",
+        "navigatingToVillain",
+        "missionAutoShow",
+        "showMission",
+        "missionState",
+        "gameState",
+      ]
+
+      for (const key of keysToRemove) {
+        await AsyncStorage.removeItem(key)
+      }
+
+      await AsyncStorage.setItem("screenState", "character_selection")
+      await AsyncStorage.setItem("navigationReady", "true")
+
+      console.log("🧹 TODOS los flags limpiados")
+    } catch (error) {
+      console.error("Error al limpiar flags:", error)
+    }
+  }
+
   // ---------------- Funciones de audio --------------
   const playBackgroundSound = useCallback(async () => {
-    if (soundRef.current) return // ya está cargado
+    if (soundRef.current) return
 
-    await Audio.setAudioModeAsync({
-      playsInSilentModeIOS: true,
-      shouldDuckAndroid: true,
-    })
+    try {
+      await Audio.setAudioModeAsync({
+        playsInSilentModeIOS: true,
+        shouldDuckAndroid: true,
+      })
 
-    const { sound } = await Audio.Sound.createAsync(require("../../assets/SonidoJuego/SonidoFondoOriginal.mp3"), {
-      isLooping: true,
-      volume: 0.5,
-      shouldPlay: true,
-    })
+      const { sound } = await Audio.Sound.createAsync(require("../../assets/SonidoJuego/SonidoFondoOriginal.mp3"), {
+        isLooping: true,
+        volume: 0.5,
+        shouldPlay: true,
+      })
 
-    soundRef.current = sound
-    setIsPlaying(true)
+      soundRef.current = sound
+      setIsPlaying(true)
+    } catch (error) {
+      console.error("Error al cargar el audio:", error)
+    }
   }, [])
 
   const stopSound = useCallback(async () => {
     if (!soundRef.current) return
 
-    await soundRef.current.stopAsync()
-    await soundRef.current.unloadAsync()
-    soundRef.current = null
-    setIsPlaying(false)
+    try {
+      await soundRef.current.stopAsync()
+      await soundRef.current.unloadAsync()
+      soundRef.current = null
+      setIsPlaying(false)
+    } catch (error) {
+      console.error("Error al detener el audio:", error)
+    }
   }, [])
 
   // ------------- Manejar foco de pantalla -----------
   useEffect(() => {
-    if (isFocused) playBackgroundSound()
-    else stopSound()
+    if (isFocused) {
+      playBackgroundSound()
+    } else {
+      stopSound()
+    }
 
-    // Limpieza extra si el componente se desmonta
     return () => {
       stopSound()
     }
@@ -118,40 +177,88 @@ export default function App() {
   const togglePlayback = async () => {
     if (!soundRef.current) return
 
-    if (isPlaying) {
-      await soundRef.current.pauseAsync()
-    } else {
-      await soundRef.current.playAsync()
+    try {
+      if (isPlaying) {
+        await soundRef.current.pauseAsync()
+      } else {
+        await soundRef.current.playAsync()
+      }
+      setIsPlaying(!isPlaying)
+    } catch (error) {
+      console.error("Error al cambiar reproducción:", error)
     }
-    setIsPlaying(!isPlaying)
   }
 
-  // ------------- Guardar personaje seleccionado en AsyncStorage ------
+  // ------------- Guardar personaje seleccionado ------
   const handleSelectCharacter = (character: CharacterWithSize) => {
     setSelectedCharacter(character)
-    // Ya no guardamos en AsyncStorage aquí
+    console.log(`🎯 Personaje seleccionado: ${character.name}`)
   }
 
+  // 🎯 FUNCIÓN SIMPLIFICADA PARA CONFIRMAR PERSONAJE
   const handleConfirmCharacter = async () => {
+    if (isNavigating) {
+      console.log("⚠️ Ya se está navegando, ignorando...")
+      return
+    }
+
     try {
-      // Solo guardamos el nombre del personaje en AsyncStorage
+      setIsNavigating(true)
+      console.log(`🎯 INICIANDO NAVEGACIÓN - Personaje: ${selectedCharacter.name}`)
+
+      // 🎯 GUARDAR EL PERSONAJE
       await AsyncStorage.setItem("selectedCharacterName", selectedCharacter.name)
-      console.log(`Nombre del personaje ${selectedCharacter.name} guardado en AsyncStorage`)
+      await AsyncStorage.setItem("blockMissionInfo", "true")
+      await AsyncStorage.setItem("screenState", "navigating_to_villain")
+
+      console.log(`✅ Personaje guardado: ${selectedCharacter.name}`)
+
+      // 🔍 VERIFICAR ESTADO DE NAVEGACIÓN
+      const state = navigation.getState()
+      console.log("📋 Estado de navegación:", JSON.stringify(state, null, 2))
+      console.log("📋 Rutas disponibles:", state?.routeNames)
+
+      // ✅ AHORA VILLAINSELECTION DEBERÍA ESTAR DISPONIBLE EN AUTHSTACK
+      if (!state?.routeNames?.includes("VillainSelection")) {
+        throw new Error("La ruta VillainSelection no está disponible en AuthStack")
+      }
+
+      // 🚀 NAVEGACIÓN DIRECTA
+      console.log("🚀 EJECUTANDO NAVEGACIÓN A VillainSelection...")
+      navigation.navigate("VillainSelection")
+      console.log("✅ NAVEGACIÓN EJECUTADA EXITOSAMENTE")
+
+      // Timeout para resetear flag
+      setTimeout(() => {
+        setIsNavigating(false)
+        console.log("🔄 Flag de navegación reseteado")
+      }, 2000)
     } catch (error) {
-      console.error("Error al guardar el nombre del personaje:", error)
+      console.error("❌ ERROR EN NAVEGACIÓN:", error)
+      setIsNavigating(false)
+
+      Alert.alert("Error de Navegación", `No se pudo navegar: ${error.message}`, [
+        {
+          text: "Reintentar",
+          onPress: () => {
+            setTimeout(() => handleConfirmCharacter(), 500)
+          },
+        },
+        { text: "Cancelar", style: "cancel" },
+      ])
     }
   }
 
-  // Cargar el personaje seleccionado al iniciar
+  // 🎯 CARGAR PERSONAJE
   useEffect(() => {
     const loadSelectedCharacter = async () => {
       try {
         const savedCharacterName = await AsyncStorage.getItem("selectedCharacterName")
         if (savedCharacterName) {
-          // Buscar el personaje en la lista por nombre
           const foundCharacter = characters.find((char) => char.name === savedCharacterName)
           if (foundCharacter) {
             setSelectedCharacter(foundCharacter)
+            console.log(`📱 Personaje cargado: ${foundCharacter.name}`)
           }
         }
       } catch (error) {
@@ -162,11 +269,33 @@ export default function App() {
     loadSelectedCharacter()
   }, [])
 
-  // Calculate responsive sizes based on screen width
+  // Calculate responsive sizes
   const getResponsiveSize = (size: number) => {
     const { width } = dimensions
-    const baseWidth = 375 // iPhone 8 width as base
+    const baseWidth = 375
     return (width / baseWidth) * size
+  }
+
+  // 🎯 FUNCIÓN DE DEBUG
+  const handleDebugInfo = async () => {
+    try {
+      const state = navigation.getState()
+      const debugInfo = {
+        currentRoute: state?.routes?.[state?.index]?.name,
+        availableRoutes: state?.routeNames,
+        hasVillainRoute: state?.routeNames?.includes("VillainSelection"),
+      }
+
+      console.log("🔍 DEBUG INFO:", JSON.stringify(debugInfo, null, 2))
+
+      Alert.alert(
+        "Debug Info",
+        `Ruta actual: ${debugInfo.currentRoute}\nRutas disponibles: ${debugInfo.availableRoutes?.join(", ")}\nTiene VillainSelection: ${debugInfo.hasVillainRoute ? "SÍ" : "NO"}`,
+        [{ text: "OK" }],
+      )
+    } catch (error) {
+      console.error("Error en debug:", error)
+    }
   }
 
   // --------------------- UI -------------------------
@@ -174,6 +303,7 @@ export default function App() {
     <SafeAreaView style={styles.container}>
       <StatusBar style="light" />
       <View style={styles.content}>
+        {/* Botón de volumen */}
         <TouchableOpacity
           style={[
             styles.musicButton,
@@ -189,6 +319,24 @@ export default function App() {
           activeOpacity={0.7}
         >
           <Feather name={isPlaying ? "volume-2" : "volume-x"} size={getResponsiveSize(24)} color="#FFD700" />
+        </TouchableOpacity>
+
+        {/* 🎯 BOTÓN DE DEBUG */}
+        <TouchableOpacity
+          style={[
+            styles.debugButton,
+            {
+              width: getResponsiveSize(40),
+              height: getResponsiveSize(40),
+              borderRadius: getResponsiveSize(20),
+              top: getResponsiveSize(10),
+              right: getResponsiveSize(60),
+            },
+          ]}
+          onPress={handleDebugInfo}
+          activeOpacity={0.7}
+        >
+          <Feather name="info" size={getResponsiveSize(20)} color="#00FF00" />
         </TouchableOpacity>
 
         <View style={styles.characterContainer}>
@@ -214,7 +362,6 @@ export default function App() {
   )
 }
 
-// ------------------- Estilos ------------------------
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -241,5 +388,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderWidth: 1,
     borderColor: "rgba(255,215,0,0.3)",
+  },
+  debugButton: {
+    position: "absolute",
+    zIndex: 100,
+    backgroundColor: "rgba(0,255,0,0.3)",
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "rgba(0,255,0,0.5)",
   },
 })

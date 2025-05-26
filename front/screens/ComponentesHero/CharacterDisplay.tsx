@@ -8,6 +8,7 @@ import { Feather } from "@expo/vector-icons"
 import { BlurView } from "expo-blur"
 import type { Character } from "./types"
 import CharacterDetailsDialog from "./CharacterDetailsDialog"
+import { useNavigation } from "@react-navigation/native"
 
 const { width, height } = Dimensions.get("window")
 
@@ -24,10 +25,25 @@ const CharacterDisplay: React.FC<CharacterDisplayProps> = ({ character, imageSiz
   const [showDetailsDialog, setShowDetailsDialog] = useState(false)
   const floatAnim = useRef(new Animated.Value(0)).current
   const rotateAnim = useRef(new Animated.Value(0)).current
+  const navigation = useNavigation()
+
   const glowAnim = useRef(new Animated.Value(0)).current
   const scaleAnim = useRef(new Animated.Value(0.95)).current
   const buttonScaleAnim = useRef(new Animated.Value(1)).current
   const particleAnim = useRef(new Animated.Value(0)).current
+  useEffect(() => {
+  const state = navigation.getState?.()
+  console.log("📍 Estado actual de navegació:", JSON.stringify(state, null, 2))
+
+  if (state?.routeNames) {
+    console.log("✅ Rutas disponibles:")
+    state.routeNames.forEach((name, index) => {
+      console.log(`- ${index + 1}. ${name}`)
+    })
+  } else {
+    console.warn("⚠️ No se encontraron rutas desde este contexto")
+  }
+}, [])
 
   useEffect(() => {
     // Initial entrance animation

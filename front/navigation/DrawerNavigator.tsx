@@ -1,202 +1,372 @@
-// navigation/DrawerNavigator.tsx
-import React from 'react';
-import { createDrawerNavigator } from '@react-navigation/drawer';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { TouchableOpacity, Text, Alert } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import Dashboard from '../screens/Dashboard/Dashboard';
-import Salas from '../components/salas/index';
-import StudentDashboardScreen from '../screens/Students/StudentDashboardScreen';
-import VillainSelectionScreen from "../screens/VillainSelectionScreen/VillainSelectionScreen";
-import BattleScreen from '../screens/Versus/BattleScreen';
+"use client"
 
-import Mision from '../screens/mision/mission-screen';
-import MissionGameScreen from '../screens/mission-game-screen/mission-game-screen';
-import compot from '../../front/screens/QuizScreen/ExampleUsage';
-import ResultsScreen from "../screens/ComponentesQuiz/results-screen";
-import AllRooms from '../screens/AllRooms/AllRooms';
-import UploadEvaluationScreen from '../screens/UploadEvaluation/UploadEvaluationScreen';
+import { useState, useEffect } from "react"
+import { createMaterialTopTabNavigator } from "@react-navigation/material-top-tabs"
+import { createStackNavigator } from "@react-navigation/stack"
+import AsyncStorage from "@react-native-async-storage/async-storage"
+import { TouchableOpacity, Text, Alert, View, ActivityIndicator } from "react-native"
+import { Ionicons } from "@expo/vector-icons"
+import Dashboard from "../screens/Dashboard/Dashboard"
+import Salas from "../components/salas/index"
+import StudentDashboardScreen from "../screens/Students/StudentDashboardScreen"
+import VillainSelectionScreen from "../screens/VillainSelectionScreen/VillainSelectionScreen"
+import BattleScreen from "../screens/Versus/BattleScreen"
+import ProfileScreen from "../screens/Profile/ProfileScreen"
+
+import Mision from "../screens/mision/mission-screen"
+import MissionGameScreen from "../screens/mission-game-screen/mission-game-screen"
+import compot from "../../front/screens/QuizScreen/ExampleUsage"
+import ResultsScreen from "../screens/ComponentesQuiz/results-screen"
+import AllRooms from "../screens/AllRooms/AllRooms"
+import UploadEvaluationScreen from "../screens/UploadEvaluation/UploadEvaluationScreen"
 
 export type DrawerNavigatorParamList = {
-  StudentDashboard: undefined;
-  Inicio: undefined;
-  Salas: undefined;
-  AllRooms: undefined;
-  UploadEvaluation: { roomId: string; roomName: string }; // Agregar esta línea
-  VillainSelection: undefined;
-  BattleScreen: undefined;
-  Mision: undefined;
-  MissionGameScreen: undefined;
-  Quiz: undefined;
-  Results: undefined;
-};
+  MainTabs: undefined
+  StudentDashboard: undefined
+  Inicio: undefined
+  Profile: undefined
+  Salas: undefined
+  AllRooms: undefined
+  UploadEvaluation: { roomId?: string; roomName?: string }
+  VillainSelection: undefined
+  BattleScreen: undefined
+  Mision: undefined
+  MissionGameScreen: undefined
+  Quiz: undefined
+  Results: undefined
+}
 
-const Drawer = createDrawerNavigator<DrawerNavigatorParamList>();
+const Tab = createMaterialTopTabNavigator()
+const Stack = createStackNavigator<DrawerNavigatorParamList>()
 
-// Crear un componente wrapper que maneje el logout
-function DrawerNavigatorContent({ setIsAuthenticated }: { setIsAuthenticated: (val: boolean) => void }) {
-  const handleLogout = async () => {
-    Alert.alert(
-      'Cerrar Sesión',
-      '¿Estás seguro de que quieres cerrar sesión?',
-      [
-        {
-          text: 'Cancelar',
-          style: 'cancel',
-        },
-        {
-          text: 'Cerrar Sesión',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await AsyncStorage.removeItem('userToken');
-              setIsAuthenticated(false);
-            } catch (error) {
-              console.error('Error al cerrar sesión:', error);
-            }
-          },
-        },
-      ]
-    );
-  };
+// 🎯 NAVEGADOR DE TABS PRINCIPALES (SOLO PANTALLAS PRINCIPALES)
+function TabNavigator({ userRole }: { userRole: string }) {
+  const isTeacher = () => userRole === "TEACHER"
+  const isStudent = () => userRole === "STUDENT"
 
   return (
-    <Drawer.Navigator
-      screenOptions={({ navigation }) => ({
-        headerStyle: {
-          backgroundColor: '#FF8C00',
+    <Tab.Navigator
+      screenOptions={{
+        tabBarActiveTintColor: "#FF8C00",
+        tabBarInactiveTintColor: "#666",
+        tabBarIndicatorStyle: {
+          backgroundColor: "#FF8C00",
+          height: 3,
         },
-        headerTintColor: '#fff',
+        tabBarStyle: {
+          backgroundColor: "#fff",
+          elevation: 4,
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 3.84,
+        },
+        tabBarLabelStyle: {
+          fontSize: 12,
+          fontWeight: "600",
+          textTransform: "none",
+        },
+        tabBarScrollEnabled: true,
+        tabBarItemStyle: {
+          width: "auto",
+          minWidth: 100,
+        },
+      }}
+    >
+      {/* 🎓 PANTALLA PRINCIPAL PARA ESTUDIANTES */}
+      {isStudent() && (
+        <Tab.Screen
+          name="StudentDashboard"
+          component={StudentDashboardScreen}
+          options={{
+            title: "🏠 Inicio",
+          }}
+        />
+      )}
+
+      {/* 🏫 DASHBOARD SOLO PARA PROFESORES */}
+      {isTeacher() && (
+        <Tab.Screen
+          name="Inicio"
+          component={Dashboard}
+          options={{
+            title: "🏠 Dashboard",
+          }}
+        />
+      )}
+
+      {/* 👤 PERFIL - DISPONIBLE PARA TODOS */}
+      <Tab.Screen
+        name="Profile"
+        component={ProfileScreen}
+        options={{
+          title: "👤 Perfil",
+        }}
+      />
+    </Tab.Navigator>
+  )
+}
+
+// 🔧 NAVEGADOR PRINCIPAL CON STACK PARA TODAS LAS PANTALLAS
+function MainNavigator({
+  userRole,
+  userInfo,
+  onLogout,
+}: {
+  userRole: string
+  userInfo: any
+  onLogout: () => void
+}) {
+  const isStudent = () => userRole === "STUDENT"
+
+  return (
+    <Stack.Navigator
+      initialRouteName="MainTabs"
+      screenOptions={{
+        headerStyle: {
+          backgroundColor: "#FF8C00",
+        },
+        headerTintColor: "#fff",
         headerTitleStyle: {
-          fontWeight: 'bold',
+          fontWeight: "bold",
+          fontSize: 20,
         },
         headerRight: () => (
-          <TouchableOpacity
-            onPress={handleLogout}
-            style={{ marginRight: 15, padding: 5 }}
-          >
+          <TouchableOpacity onPress={onLogout} style={{ marginRight: 15, padding: 5 }}>
             <Ionicons name="log-out-outline" size={24} color="#fff" />
           </TouchableOpacity>
         ),
-        drawerActiveTintColor: '#FF8C00',
-        drawerInactiveTintColor: '#333',
-      })}
+      }}
     >
-      <Drawer.Screen 
-        name="StudentDashboard" 
-        component={StudentDashboardScreen}
-        options={{ 
-          title: "Panel de Estudiante",
-          drawerIcon: ({ color, size }) => (
-            <Ionicons name="school-outline" size={size} color={color} />
+      {/* 🎯 PANTALLA PRINCIPAL CON TABS */}
+      <Stack.Screen
+        name="MainTabs"
+        options={{
+          title: isStudent() ? "Dashboard para Estudiantes" : "Dashboard para Profesores",
+          headerLeft: () => (
+            <View style={{ flexDirection: "row", alignItems: "center", marginLeft: 15 }}>
+              <Ionicons name={isStudent() ? "school" : "briefcase"} size={24} color="#fff" />
+            </View>
           ),
         }}
-      />
-      <Drawer.Screen 
-        name="Inicio" 
-        component={Dashboard}
-        options={{ 
-          title: "Dashboard",
-          drawerIcon: ({ color, size }) => (
-            <Ionicons name="home-outline" size={size} color={color} />
-          ),
-        }}
-      />
-      <Drawer.Screen 
-        name="Salas" 
+      >
+        {() => <TabNavigator userRole={userRole} />}
+      </Stack.Screen>
+
+      {/* 🎮 PANTALLAS DE JUEGO PARA ESTUDIANTES */}
+      {isStudent() && (
+        <>
+          <Stack.Screen
+            name="VillainSelection"
+            component={VillainSelectionScreen}
+            options={{
+              title: "👹 Selección de Villanos",
+              headerBackTitleVisible: false,
+            }}
+          />
+          <Stack.Screen
+            name="BattleScreen"
+            component={BattleScreen}
+            options={{
+              title: "⚔️ Batalla",
+              headerBackTitleVisible: false,
+            }}
+          />
+          <Stack.Screen
+            name="Mision"
+            component={Mision}
+            options={{
+              title: "🗺️ Misiones",
+              headerBackTitleVisible: false,
+            }}
+          />
+          <Stack.Screen
+            name="MissionGameScreen"
+            component={MissionGameScreen}
+            options={{
+              title: "🎮 Juego de Misión",
+              headerBackTitleVisible: false,
+            }}
+          />
+          <Stack.Screen
+            name="Quiz"
+            component={compot}
+            options={{
+              title: "❓ Quiz",
+              headerBackTitleVisible: false,
+            }}
+          />
+          <Stack.Screen
+            name="Results"
+            component={ResultsScreen}
+            options={{
+              title: "🏆 Resultados",
+              headerBackTitleVisible: false,
+            }}
+          />
+        </>
+      )}
+
+      {/* 🔧 PANTALLAS ADMINISTRATIVAS */}
+      <Stack.Screen
+        name="Salas"
         component={Salas}
         options={{
           title: "Crear Salas",
-          drawerIcon: ({ color, size }) => (
-            <Ionicons name="people-outline" size={size} color={color} />
-          ),
+          headerBackTitleVisible: false,
         }}
       />
-      <Drawer.Screen 
-        name="AllRooms" 
+      <Stack.Screen
+        name="AllRooms"
         component={AllRooms}
-        options={{ 
+        options={{
           title: "Todas las Salas",
-          drawerIcon: ({ color, size }) => (
-            <Ionicons name="list-outline" size={size} color={color} />
-          ),
+          headerBackTitleVisible: false,
         }}
       />
-      {/* Agregar la nueva pantalla UploadEvaluation */}
-      <Drawer.Screen 
-        name="UploadEvaluation" 
+      <Stack.Screen
+        name="UploadEvaluation"
         component={UploadEvaluationScreen}
-        options={{ 
+        initialParams={{ roomId: "", roomName: "" }}
+        options={{
           title: "Subir Evaluación",
-          drawerIcon: ({ color, size }) => (
-            <Ionicons name="cloud-upload-outline" size={size} color={color} />
-          ),
-          // Ocultar del drawer ya que se accede desde el dashboard
-          drawerItemStyle: { display: 'none' }
+          headerBackTitleVisible: false,
         }}
       />
-      <Drawer.Screen 
-        name="VillainSelection" 
-        component={VillainSelectionScreen}
-        options={{ 
-          title: "Selección de Villano",
-          drawerIcon: ({ color, size }) => (
-            <Ionicons name="skull-outline" size={size} color={color} />
-          ),
-        }}
-      />
-      <Drawer.Screen 
-        name="BattleScreen" 
-        component={BattleScreen}
-        options={{ 
-          title: "Batalla",
-          drawerIcon: ({ color, size }) => (
-            <Ionicons name="flash-outline" size={size} color={color} />
-          ),
-        }}
-      />
-      <Drawer.Screen 
-        name="Mision" 
-        component={Mision}
-        options={{ 
-          title: "Misiones",
-          drawerIcon: ({ color, size }) => (
-            <Ionicons name="map-outline" size={size} color={color} />
-          ),
-        }}
-      />
-      <Drawer.Screen 
-        name="MissionGameScreen" 
-        component={MissionGameScreen}
-        options={{ 
-          title: "Juego de Misión",
-          drawerIcon: ({ color, size }) => (
-            <Ionicons name="game-controller-outline" size={size} color={color} />
-          ),
-        }}
-      />
-      <Drawer.Screen 
-        name="Quiz" 
-        component={compot}
-        options={{ 
-          title: "Quiz",
-          drawerIcon: ({ color, size }) => (
-            <Ionicons name="help-circle-outline" size={size} color={color} />
-          ),
-        }}
-      />
-      <Drawer.Screen 
-        name="Results" 
-        component={ResultsScreen} 
-        options={{ 
-          title: "Resultados",
-          drawerIcon: ({ color, size }) => (
-            <Ionicons name="trophy-outline" size={size} color={color} />
-          ),
-        }} 
-      />
-    </Drawer.Navigator>
-  );
+    </Stack.Navigator>
+  )
 }
 
-export default DrawerNavigatorContent;
+// Crear un componente wrapper que maneje el logout Y LOS ROLES
+function DrawerNavigatorContent({ setIsAuthenticated }: { setIsAuthenticated: (val: boolean) => void }) {
+  // 🎯 ESTADOS PARA MANEJAR EL ROL
+  const [userRole, setUserRole] = useState<string | null>(null)
+  const [userInfo, setUserInfo] = useState<any>(null)
+  const [isLoading, setIsLoading] = useState(true)
+
+  // 🔍 FUNCIÓN PARA CARGAR EL ROL DESDE ASYNCSTORAGE
+  const loadUserRole = async () => {
+    try {
+      setIsLoading(true)
+
+      // Obtener el rol y la información del usuario
+      const role = await AsyncStorage.getItem("userRole")
+      const authMethod = await AsyncStorage.getItem("authMethod")
+      const userInfoString = await AsyncStorage.getItem("userInfo")
+
+      console.log("🔍 Cargando información del usuario:")
+      console.log("- Rol:", role)
+      console.log("- Método de auth:", authMethod)
+      console.log("- Info del usuario:", userInfoString)
+
+      if (role && userInfoString) {
+        const parsedUserInfo = JSON.parse(userInfoString)
+        setUserRole(role)
+        setUserInfo(parsedUserInfo)
+
+        console.log("✅ Usuario cargado:", {
+          role: role,
+          username: parsedUserInfo.username,
+          loginMethod: parsedUserInfo.loginMethod,
+        })
+      } else {
+        console.log("⚠️ No se encontró información del usuario")
+        setUserRole(null)
+        setUserInfo(null)
+      }
+    } catch (error) {
+      console.error("❌ Error al cargar el rol del usuario:", error)
+      setUserRole(null)
+      setUserInfo(null)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // 🔄 CARGAR ROL AL MONTAR EL COMPONENTE
+  useEffect(() => {
+    loadUserRole()
+  }, [])
+
+  // 🧹 FUNCIÓN PARA LIMPIAR DATOS DE USUARIO
+  const clearUserRole = async () => {
+    try {
+      await AsyncStorage.multiRemove(["userRole", "userInfo", "userToken", "studentToken", "studentData", "authMethod"])
+      setUserRole(null)
+      setUserInfo(null)
+      console.log("🧹 Información del usuario limpiada")
+    } catch (error) {
+      console.error("❌ Error al limpiar información del usuario:", error)
+    }
+  }
+
+  const handleLogout = async () => {
+    Alert.alert("Cerrar Sesión", "¿Estás seguro de que quieres cerrar sesión?", [
+      {
+        text: "Cancelar",
+        style: "cancel",
+      },
+      {
+        text: "Cerrar Sesión",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            // 🧹 LIMPIAR TODA LA INFORMACIÓN DEL USUARIO
+            await clearUserRole()
+            setIsAuthenticated(false)
+          } catch (error) {
+            console.error("Error al cerrar sesión:", error)
+          }
+        },
+      },
+    ])
+  }
+
+  // 🔄 MOSTRAR LOADING MIENTRAS SE CARGA EL ROL
+  if (isLoading) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+          backgroundColor: "#F8FAFC",
+        }}
+      >
+        <ActivityIndicator size="large" color="#FF8C00" />
+        <Text
+          style={{
+            marginTop: 10,
+            fontSize: 16,
+            color: "#666",
+            fontWeight: "500",
+          }}
+        >
+          Cargando perfil...
+        </Text>
+      </View>
+    )
+  }
+
+  if (!userRole) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+          backgroundColor: "#F8FAFC",
+        }}
+      >
+        <Text style={{ fontSize: 16, color: "#666" }}>Error al cargar el perfil</Text>
+      </View>
+    )
+  }
+
+  console.log("🎯 Renderizando MainNavigator para rol:", userRole)
+  console.log("👤 Info del usuario:", userInfo?.username)
+
+  return <MainNavigator userRole={userRole} userInfo={userInfo} onLogout={handleLogout} />
+}
+
+export default DrawerNavigatorContent

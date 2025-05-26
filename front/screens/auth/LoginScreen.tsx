@@ -42,16 +42,46 @@ export default function LoginScreen({ navigation, setIsAuthenticated }: Props) {
 
       const { token } = response.data;
       console.log('Token obtenido:', token);
+      
+      // Decodificar el token para obtener información del usuario
+      let userRole = 'TEACHER'; // Rol por defecto
+      let userId = null;
+      let userInfo = null;
+      
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        userRole = payload.role || 'TEACHER';
+        userId = payload.id;
+        userInfo = {
+          id: payload.id,
+          username: payload.username || username,
+          role: userRole,
+          loginMethod: 'credentials'
+        };
+        console.log('Información del usuario decodificada:', userInfo);
+      } catch (decodeError) {
+        console.warn('No se pudo decodificar el token, usando valores por defecto');
+        userInfo = {
+          username: username,
+          role: 'TEACHER',
+          loginMethod: 'credentials'
+        };
+      }
+      
+      // Guardar toda la información de autenticación
       await AsyncStorage.setItem('userToken', token);
-      
-      // Guardar información de que el usuario está autenticado con token
       await AsyncStorage.setItem('authMethod', 'token');
+      await AsyncStorage.setItem('userRole', userRole);
+      await AsyncStorage.setItem('userInfo', JSON.stringify(userInfo));
       
-      console.log('Login exitoso con TOKEN, llamando setIsAuthenticated');
+      console.log('✅ Login exitoso como TEACHER con TOKEN');
+      console.log('📋 Rol asignado:', userRole);
+      console.log('👤 Usuario:', userInfo.username);
+      
       setIsAuthenticated(true);
       
     } catch (error: any) {
-      console.error('Error al iniciar sesión:', error.response?.data || error.message);
+      console.error('❌ Error al iniciar sesión:', error.response?.data || error.message);
       setErrorMessage('Usuario o contraseña incorrectos');
     } finally {
       setIsLoading(false);
@@ -60,7 +90,7 @@ export default function LoginScreen({ navigation, setIsAuthenticated }: Props) {
 
   // Función para navegar a la autenticación de estudiantes
   const handleContinueAsStudent = () => {
-    console.log('Navegando a autenticación de estudiante independiente');
+    console.log('🎓 Navegando a autenticación de estudiante');
     navigation.navigate('StudentAuth');
   };
 
@@ -104,22 +134,29 @@ export default function LoginScreen({ navigation, setIsAuthenticated }: Props) {
               disabled={isLoading}
             >
               <Text style={styles.buttonText}>
-                {isLoading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
+                {isLoading ? 'Iniciando sesión...' : 'Iniciar Sesión como Profesor'}
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity onPress={() => navigation.navigate('Register')}>
               <Text style={styles.text}>
-                ¿No tienes cuenta? <Text style={styles.textHighlight}>Regístrate</Text>
+                ¿No tienes cuenta? <Text style={styles.textHighlight}>Regístrate como Profesor</Text>
               </Text>
             </TouchableOpacity>
 
-            {/* Botón de "Continuar como Alumno" - Ahora navega a StudentAuth */}
+            {/* Separador visual */}
+            <View style={styles.separator}>
+              <View style={styles.separatorLine} />
+              <Text style={styles.separatorText}>O</Text>
+              <View style={styles.separatorLine} />
+            </View>
+
+            {/* Botón de "Continuar como Alumno" */}
             <TouchableOpacity 
               style={[styles.studentButton]} 
               onPress={handleContinueAsStudent}
             >
-              <Text style={styles.buttonText}>Continuar como Alumno</Text>
+              <Text style={styles.buttonText}>🎓 Continuar como Alumno</Text>
             </TouchableOpacity>
             <Text style={styles.studentNote}>
               *Acceso independiente para estudiantes
@@ -216,13 +253,30 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 10,
   },
+  separator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: 300,
+    marginVertical: 20,
+  },
+  separatorLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#E0E0E0',
+  },
+  separatorText: {
+    marginHorizontal: 15,
+    color: '#999',
+    fontSize: 14,
+    fontWeight: '500',
+  },
   studentButton: {
-    backgroundColor: '#4CAF50', // Color verde para diferenciar
+    backgroundColor: '#4CAF50',
     padding: 12,
     borderRadius: 10,
     width: 300,
     alignItems: 'center',
-    marginTop: 20,
+    marginTop: 5,
   },
   buttonDisabled: {
     backgroundColor: '#FFB366',

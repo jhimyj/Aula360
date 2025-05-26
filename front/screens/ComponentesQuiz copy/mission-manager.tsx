@@ -56,7 +56,7 @@ export const MissionManager = ({ missions, onComplete }: MissionManagerProps) =>
   const [lastAnswerCorrect, setLastAnswerCorrect] = useState(false)
   const [showCharacterFeedback, setShowCharacterFeedback] = useState(true)
 
-  console.log("Missions:", missions)
+  console.log("Missiones:", missions)
 
 
   // Verificar que haya misiones disponibles

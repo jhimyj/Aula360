@@ -24,6 +24,8 @@ const MissionGameScreen = ({ navigation }) => {
   useFocusEffect(
     React.useCallback(() => {
       const loadCharacterData = async () => {
+        console.log("🚀 MissionGameScreen montado");
+
         try {
           const savedName = await AsyncStorage.getItem("selectedCharacterName");
           console.log("Nombre del personaje guardado:", savedName);
@@ -83,6 +85,8 @@ const MissionGameScreen = ({ navigation }) => {
 
   // Navegar al finalizar el video
   const handlePlaybackEnd = () => {
+    console.log("✅ Video finalizado, navegando a Quiz");
+
     navigation.navigate("Quiz");
   };
 
