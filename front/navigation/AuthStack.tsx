@@ -5,8 +5,9 @@ import StudentAuthScreen from "../screens/auth/StudentAuthScreen"
 import VillainSelectionScreen from "../screens/VillainSelectionScreen/VillainSelectionScreen"
 import MissionGameScreen from "../screens/mission-game-screen/mission-game-screen"
 import Mision from "../screens/mision/mission-screen"
-import BattleScreen from "../screens/Versus/BattleScreen" // 🎯 NUEVO IMPORT AGREGADO
-import compot from "../../front/screens/QuizScreen/ExampleUsage" // 🎯 NUEVO IMPORT AGREGADO
+import BattleScreen from "../screens/Versus/BattleScreen"
+import compot from "../../front/screens/QuizScreen/ExampleUsage"
+import ResultsScreen from "../screens/ComponentesQuiz/results-screen" // 🎯 IMPORT AGREGADO
 import AsyncStorage from "@react-native-async-storage/async-storage"
 
 export type AuthStackParamList = {
@@ -16,8 +17,9 @@ export type AuthStackParamList = {
   VillainSelection: undefined
   MissionGameScreen: undefined
   Mision: undefined
-  BattleScreen: undefined // 🎯 NUEVO TIPO AGREGADO
-  Quiz: undefined // 🎯 NUEVO TIPO AGREGADO
+  BattleScreen: undefined
+  Quiz: undefined
+  Results: undefined // 🎯 NUEVO TIPO AGREGADO
 }
 
 const Stack = createNativeStackNavigator<AuthStackParamList>()
@@ -214,6 +216,23 @@ export default function AuthStack({ setIsAuthenticated }: { setIsAuthenticated: 
         options={{
           headerShown: true,
           title: "❓ Quiz",
+          headerStyle: {
+            backgroundColor: "#FF8C00",
+          },
+          headerTintColor: "#fff",
+          headerTitleStyle: {
+            fontWeight: "bold",
+          },
+        }}
+      />
+
+      {/* 🏆 PANTALLA DE RESULTADOS - NUEVA ADICIÓN */}
+      <Stack.Screen 
+        name="Results" 
+        component={ResultsScreen}
+        options={{
+          headerShown: true,
+          title: "🏆 Resultados",
           headerStyle: {
             backgroundColor: "#FF8C00",
           },
