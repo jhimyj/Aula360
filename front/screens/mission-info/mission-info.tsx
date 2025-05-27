@@ -62,9 +62,9 @@ const MissionInfo = ({ onStartMission, onClose }: MissionInfoProps) => {
   const isTablet = width > 768
   const routeNames = useNavigationState((state) => state.routeNames)
 
-useEffect(() => {
-  console.log("📍 Rutas disponibles desde MissionInf:", routeNames)
-}, [routeNames])
+  useEffect(() => {
+    console.log("📍 Rutas disponibles desde MissionInfo:", routeNames)
+  }, [routeNames])
 
   useFocusEffect(
     React.useCallback(() => {
@@ -178,14 +178,44 @@ useEffect(() => {
     }
   }, [characterName])
 
-  const handleStartMission = () => {
-    navigation.navigate("MissionGameScreen")
+  // 🎯 FUNCIÓN ACTUALIZADA PARA NAVEGAR A BATTLESCREEN
+  const handleStartMission = async () => {
+    try {
+      console.log("🎮 Iniciando misión - Navegando a BattleScreen...")
+      
+      // 🎯 GUARDAR DATOS ADICIONALES PARA LA BATALLA
+      await AsyncStorage.multiSet([
+        ["missionStarted", "true"],
+        ["battleMode", "mission"],
+        ["currentMission", JSON.stringify(mission)],
+        ["missionPhase", "battle"],
+        ["gameState", "in_battle"]
+      ])
+
+      console.log("✅ Datos de misión guardados")
+      console.log("🚀 Navegando a BattleScreen...")
+
+      // 🎯 NAVEGAR A BATTLESCREEN EN LUGAR DE MISSIONGAMESCREEN
+      navigation.navigate("BattleScreen")
+      
+      console.log("✅ Navegación a BattleScreen ejecutada")
+
+      // 🎯 EJECUTAR CALLBACK ORIGINAL SI EXISTE
+      if (onStartMission) {
+        onStartMission()
+      }
+
+    } catch (error) {
+      console.error("❌ Error al iniciar misión:", error)
+      // Fallback: intentar navegar de todas formas
+      navigation.navigate("BattleScreen")
+    }
   }
 
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>Cargando misió...</Text>
+        <Text style={styles.loadingText}>Cargando misión...</Text>
       </View>
     )
   }

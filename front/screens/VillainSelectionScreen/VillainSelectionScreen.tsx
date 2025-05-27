@@ -161,10 +161,32 @@ export default function VillainSelectionScreen({ navigation }) {
     setSelectedVillainSaved(false) // Resetear el estado de guardado cuando se selecciona otro villano
   }
 
-  const handleStartMission = () => {
+  // 🎯 FUNCIÓN ACTUALIZADA PARA NAVEGAR A MISSIONGAMESCREEN
+  const handleStartMission = async () => {
     if (selectedVillainSaved) {
-      // Si ya hay un villano guardado, ir a la pantalla de batalla
-      navigation?.navigate?.("BattleScreen")
+      try {
+        // 🎯 GUARDAR DATOS ADICIONALES PARA EL JUEGO
+        await AsyncStorage.multiSet([
+          ["gameMode", "mission"],
+          ["battleReady", "true"],
+          ["missionStarted", "true"],
+          ["gameState", "starting_mission"]
+        ])
+
+        console.log("🎮 Iniciando misión con villano:", villains[selectedVillain].name)
+        console.log("🚀 Navegando a MissionGameScreen...")
+
+        // 🎯 NAVEGAR A MISSIONGAMESCREEN EN LUGAR DE BATTLESCREEN
+        navigation?.navigate?.("MissionGameScreen")
+        
+        console.log("✅ Navegación a MissionGameScreen ejecutada")
+      } catch (error) {
+        console.error("❌ Error al iniciar misión:", error)
+        Alert.alert("Error", "No se pudo iniciar la misión", [
+          { text: "Reintentar", onPress: handleStartMission },
+          { text: "Cancelar", style: "cancel" }
+        ])
+      }
     } else {
       // Si no hay villano guardado, mostrar alerta
       Alert.alert("Selecciona un villano", "Debes seleccionar un villano antes de iniciar la misión", [
@@ -177,12 +199,12 @@ export default function VillainSelectionScreen({ navigation }) {
     alert(`Más información sobre ${villains.find((v) => v.id === villainId).name}`)
   }
 
-  // Guardar el villano seleccionado en AsyncStorage
+  // 🎯 FUNCIÓN MEJORADA PARA GUARDAR VILLANO
   const handleSelectVillain = async () => {
     try {
       const villain = villains[selectedVillain]
 
-      // Crear un objeto con la información necesaria
+      // 🎯 CREAR OBJETO COMPLETO CON INFORMACIÓN DEL VILLANO
       const villainInfo = {
         id: villain.id,
         name: villain.name,
@@ -190,27 +212,36 @@ export default function VillainSelectionScreen({ navigation }) {
         power: villain.power,
         danger: villain.danger,
         reach: villain.reach,
+        image: villain.image, // Agregar referencia a la imagen
+        selectedAt: new Date().toISOString() // Timestamp de selección
       }
 
-      // Convertir a JSON y guardar
-      await AsyncStorage.setItem("selectedVillain", JSON.stringify(villainInfo))
+      // 🎯 GUARDAR MÚLTIPLES DATOS RELACIONADOS
+      await AsyncStorage.multiSet([
+        ["selectedVillain", JSON.stringify(villainInfo)],
+        ["selectedVillainName", villain.name],
+        ["selectedVillainId", villain.id.toString()],
+        ["villainSelectionComplete", "true"]
+      ])
 
-      // Guardar el nombre del villano por separado para facilitar su acceso
-      await AsyncStorage.setItem("selectedVillainName", villain.name)
-
-      console.log(`Villano ${villain.name} guardado en AsyncStorage`)
+      console.log(`✅ Villano ${villain.name} guardado completamente en AsyncStorage`)
 
       // Actualizar el estado para mostrar que se ha guardado
       setSelectedVillainSaved(true)
 
-      // Mostrar confirmación al usuario
-      Alert.alert("Villano seleccionado", `Has seleccionado a ${villain.name} como tu oponente`, [
-        { text: "¡A luchar!", style: "default" },
-      ])
+      // 🎯 MOSTRAR CONFIRMACIÓN MEJORADA
+      Alert.alert(
+        "Villano seleccionado", 
+        `Has seleccionado a ${villain.name} como tu oponente.\n\n¡Prepárate para la misión!`, 
+        [
+          { text: "¡A la batalla!", style: "default" },
+        ]
+      )
     } catch (error) {
-      console.error("Error al guardar el villano:", error)
+      console.error("❌ Error al guardar el villano:", error)
       Alert.alert("Error", "No se pudo guardar el villano seleccionado", [
-        { text: "Intentar de nuevo", style: "default" },
+        { text: "Intentar de nuevo", onPress: handleSelectVillain },
+        { text: "Cancelar", style: "cancel" }
       ])
     }
   }
@@ -320,7 +351,7 @@ export default function VillainSelectionScreen({ navigation }) {
             ]}
           >
             <ActionButton
-              title={selectedVillainSaved ? "¡INICIAR BATALLA!" : "SELECCIONA UN VILLANO"}
+              title={selectedVillainSaved ? "¡INICIAR MISIÓN!" : "SELECCIONA UN VILLANO"}
               onPress={handleStartMission}
               primary={selectedVillainSaved}
               icon={selectedVillainSaved ? "play-circle" : "alert-circle"}

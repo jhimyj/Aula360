@@ -85,9 +85,9 @@ const MissionGameScreen = ({ navigation }) => {
 
   // Navegar al finalizar el video
   const handlePlaybackEnd = () => {
-    console.log("✅ Video finalizado, navegando a Quiz");
+    console.log("✅ Video finalizado, navegando a mission");
 
-    navigation.navigate("Quiz");
+    navigation.navigate("Mision");
   };
 
   return (

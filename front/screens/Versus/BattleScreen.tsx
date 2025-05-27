@@ -1,14 +1,32 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { View, Image, StyleSheet, Dimensions, ImageBackground, Animated, StatusBar, Platform, Text } from "react-native"
 import { LinearGradient } from "expo-linear-gradient"
 import AsyncStorage from "@react-native-async-storage/async-storage"
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack"
 
 const { width, height } = Dimensions.get("window")
 
+// 🎯 TIPOS DE NAVEGACIÓN PARA INCLUIR QUIZ
+type RootStackParamList = {
+  Login: undefined
+  Register: undefined
+  StudentAuth: undefined
+  VillainSelection: undefined
+  MissionGameScreen: undefined
+  Mision: undefined
+  BattleScreen: undefined
+  Quiz: undefined
+}
+
+type NavigationProps = NativeStackNavigationProp<RootStackParamList>
+
 const BattleScreen = () => {
+  // 🎯 HOOK DE NAVEGACIÓN
+  const navigation = useNavigation<NavigationProps>()
+
   // Estado para almacenar el nombre del personaje y villano seleccionados
   const [characterName, setCharacterName] = useState<string | null>(null)
   const [villainName, setVillainName] = useState<string | null>(null)
@@ -41,10 +59,8 @@ const BattleScreen = () => {
           setCharacterName("Qhapaq")
         }
 
-
         // Cargar nombre del villano - primero intentamos con la clave específica
         const savedVillainName = await AsyncStorage.getItem("selectedVillainName")
-
 
         if (savedVillainName) {
           setVillainName(savedVillainName.name)
@@ -69,6 +85,35 @@ const BattleScreen = () => {
 
     loadSelectedCharacterAndVillain()
   })
+
+  // 🎯 FUNCIÓN PARA NAVEGAR AL QUIZ DESPUÉS DE LA ANIMACIÓN
+  const navigateToQuiz = async () => {
+    try {
+      console.log("🎮 Batalla completada - Navegando a Quiz...")
+      
+      // 🎯 GUARDAR DATOS DE LA BATALLA PARA EL QUIZ
+      await AsyncStorage.multiSet([
+        ["battleCompleted", "true"],
+        ["quizMode", "post_battle"],
+        ["battleResult", "completed"],
+        ["gamePhase", "quiz"],
+        ["gameState", "in_quiz"]
+      ])
+
+      console.log("✅ Datos de batalla guardados")
+      console.log("🚀 Navegando a Quiz...")
+
+      // 🎯 NAVEGAR AL QUIZ
+      navigation.navigate("Quiz")
+      
+      console.log("✅ Navegación a Quiz ejecutada")
+
+    } catch (error) {
+      console.error("❌ Error al navegar al quiz:", error)
+      // Fallback: intentar navegar de todas formas
+      navigation.navigate("Quiz")
+    }
+  }
 
   useEffect(() => {
     // Animar el anuncio "Battle Royale" primero
@@ -112,7 +157,12 @@ const BattleScreen = () => {
             useNativeDriver: true,
           }),
         ]),
-      ]).start()
+      ]).start(() => {
+        // 🎯 DESPUÉS DE COMPLETAR TODAS LAS ANIMACIONES, NAVEGAR AL QUIZ
+        setTimeout(() => {
+          navigateToQuiz()
+        }, 2000) // Esperar 2 segundos adicionales para que el usuario vea la batalla
+      })
     })
 
     // Animación continua para el efecto de rotación del VS
@@ -182,13 +232,9 @@ const BattleScreen = () => {
         case "Corporatus":
           return require("../../assets/villanosBattle/Corporatus.png")
         case "Toxicus":
-
-          // C:\Users\semin\OneDrive\Escritorio\Aula360REPOORIGINAL\Aula360\front\assets\villanosBattle\El Demonio de la Avidez.png
           return require("../../assets/villanosBattle/El Demonio de la Avidez.png")
         case "Shadowman":
-          // C:\Users\semin\OneDrive\Escritorio\Aula360REPOORIGINAL\Aula360\front\assets\villanosBattle\Shadowman.png
           return require("../../assets/villanosBattle/Shadowman.png")
-
         default:
           console.log("Usando imagen por defecto para villano desconocido:", villainName)
           return require("../../assets/villanosBattle/Corporatus.png")

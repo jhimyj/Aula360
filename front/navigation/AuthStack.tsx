@@ -2,14 +2,22 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack"
 import LoginScreen from "../screens/auth/LoginScreen"
 import RegisterScreen from "../screens/auth/RegisterScreen"
 import StudentAuthScreen from "../screens/auth/StudentAuthScreen"
-import VillainSelectionScreen from "../screens/VillainSelectionScreen/VillainSelectionScreen" // 🎯 AGREGAR IMPORT
+import VillainSelectionScreen from "../screens/VillainSelectionScreen/VillainSelectionScreen"
+import MissionGameScreen from "../screens/mission-game-screen/mission-game-screen"
+import Mision from "../screens/mision/mission-screen"
+import BattleScreen from "../screens/Versus/BattleScreen" // 🎯 NUEVO IMPORT AGREGADO
+import compot from "../../front/screens/QuizScreen/ExampleUsage" // 🎯 NUEVO IMPORT AGREGADO
 import AsyncStorage from "@react-native-async-storage/async-storage"
 
 export type AuthStackParamList = {
   Login: undefined
   Register: undefined
   StudentAuth: undefined
-  VillainSelection: undefined // 🎯 AGREGAR TIPO
+  VillainSelection: undefined
+  MissionGameScreen: undefined
+  Mision: undefined
+  BattleScreen: undefined // 🎯 NUEVO TIPO AGREGADO
+  Quiz: undefined // 🎯 NUEVO TIPO AGREGADO
 }
 
 const Stack = createNativeStackNavigator<AuthStackParamList>()
@@ -148,13 +156,81 @@ export default function AuthStack({ setIsAuthenticated }: { setIsAuthenticated: 
         )}
       </Stack.Screen>
 
-      {/* 🎯 PANTALLA DE VILLANOS AGREGADA TEMPORALMENTE PARA PROTOTIPO */}
+      {/* 🎯 PANTALLA DE VILLANOS */}
       <Stack.Screen 
         name="VillainSelection" 
         component={VillainSelectionScreen}
         options={{
           headerShown: true,
           title: "👹 Selección de Villanos",
+          headerStyle: {
+            backgroundColor: "#FF8C00",
+          },
+          headerTintColor: "#fff",
+          headerTitleStyle: {
+            fontWeight: "bold",
+          },
+        }}
+      />
+
+      {/* 🗺️ PANTALLA DE MISIONES */}
+      <Stack.Screen 
+        name="Mision" 
+        component={Mision}
+        options={{
+          headerShown: true,
+          title: "🗺️ Misiones",
+          headerStyle: {
+            backgroundColor: "#FF8C00",
+          },
+          headerTintColor: "#fff",
+          headerTitleStyle: {
+            fontWeight: "bold",
+          },
+        }}
+      />
+
+      {/* ⚔️ PANTALLA DE BATALLA */}
+      <Stack.Screen 
+        name="BattleScreen" 
+        component={BattleScreen}
+        options={{
+          headerShown: true,
+          title: "⚔️ Batalla",
+          headerStyle: {
+            backgroundColor: "#FF8C00",
+          },
+          headerTintColor: "#fff",
+          headerTitleStyle: {
+            fontWeight: "bold",
+          },
+        }}
+      />
+
+      {/* ❓ PANTALLA DE QUIZ */}
+      <Stack.Screen 
+        name="Quiz" 
+        component={compot}
+        options={{
+          headerShown: true,
+          title: "❓ Quiz",
+          headerStyle: {
+            backgroundColor: "#FF8C00",
+          },
+          headerTintColor: "#fff",
+          headerTitleStyle: {
+            fontWeight: "bold",
+          },
+        }}
+      />
+
+      {/* 🎮 PANTALLA DE JUEGO DE MISIÓN */}
+      <Stack.Screen 
+        name="MissionGameScreen" 
+        component={MissionGameScreen}
+        options={{
+          headerShown: true,
+          title: "🎮 Juego de Misión",
           headerStyle: {
             backgroundColor: "#FF8C00",
           },

@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Aula360",
-    "slug": "Aula360",
+    "slug": "app3",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -20,13 +20,20 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "ycom.aula360.app"
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
       "expo-font"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "6fca3991-f93f-41e2-824c-2ee543d2e4c8"
+      }
+    },
+    "owner": "aldairadrian"
   }
 }
