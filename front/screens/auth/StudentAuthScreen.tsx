@@ -143,6 +143,7 @@ export default function StudentAuthScreen({ setIsAuthenticated, onBack }: Props)
         await AsyncStorage.setItem("authMethod", "student_with_token")
         await AsyncStorage.setItem("userRole", "STUDENT") // 🎯 ROL PRINCIPAL
         await AsyncStorage.setItem("userInfo", JSON.stringify(studentInfo)) // 🎯 INFO COMPLETA
+        await AsyncStorage.setItem('roomId', studentInfo.room_id);
 
         // 🎯 ASIGNAR PERSONAJE POR DEFECTO PARA MISIONES
         await AsyncStorage.setItem("selectedCharacterName", "Qhapaq")
@@ -210,7 +211,7 @@ export default function StudentAuthScreen({ setIsAuthenticated, onBack }: Props)
       await AsyncStorage.setItem("authMethod", "student_with_token")
       await AsyncStorage.setItem("userRole", "STUDENT") // 🎯 ROL PRINCIPAL
       await AsyncStorage.setItem("userInfo", JSON.stringify(studentInfo)) // 🎯 INFO COMPLETA
-      
+      await AsyncStorage.setItem("roomId", roomId) // 🔥 AGREGAR ESTA LÍNEA
       // 🎯 ASIGNAR PERSONAJE POR DEFECTO SI NO EXISTE
       const existingCharacter = await AsyncStorage.getItem("selectedCharacterName")
       if (!existingCharacter) {

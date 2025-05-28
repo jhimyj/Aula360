@@ -1,13 +1,29 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { View, Text, Image, ImageBackground, TouchableOpacity, StyleSheet, Dimensions, Animated } from "react-native"
+import { useState, useEffect, useRef } from "react"
+import {
+  View,
+  Text,
+  Image,
+  ImageBackground,
+  TouchableOpacity,
+  StyleSheet,
+  Dimensions,
+  Animated,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  TouchableWithoutFeedback,
+  Keyboard,
+} from "react-native"
 
 // Tipos para las propiedades
 type OptionType = {
   id: string
   text: string
   isCorrect?: boolean
+  isOpenEnded?: boolean
 }
 
 // Tipo para imágenes (puede ser require local o URL)
@@ -18,8 +34,9 @@ type MissionScreenProps = {
   backgroundImage: ImageSource
   characterImage: ImageSource
   question: string
+  questionType?: "MULTIPLE_CHOICE_SINGLE" | "OPEN_ENDED"
   options: OptionType[]
-  onSubmit?: (selectedOption: string, isCorrect: boolean) => void
+  onSubmit?: (selectedOption: string, isCorrect: boolean, userAnswer?: string) => void
 }
 
 const { width } = Dimensions.get("window")
@@ -29,13 +46,17 @@ export const MissionScreen = ({
   backgroundImage,
   characterImage,
   question,
+  questionType = "MULTIPLE_CHOICE_SINGLE",
   options,
   onSubmit,
 }: MissionScreenProps) => {
   const [selectedOption, setSelectedOption] = useState<string | null>(null)
+  const [userAnswer, setUserAnswer] = useState<string>("")
   const [answered, setAnswered] = useState<boolean>(false)
   const [isCorrect, setIsCorrect] = useState<boolean>(false)
   const [fadeAnim] = useState(new Animated.Value(0))
+  const [isFocused, setIsFocused] = useState<boolean>(false)
+  const textInputRef = useRef<TextInput>(null)
 
   useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -46,22 +67,61 @@ export const MissionScreen = ({
   }, [])
 
   const handleOptionPress = (optionId: string) => {
-    if (!answered) {
+    if (!answered && questionType === "MULTIPLE_CHOICE_SINGLE") {
       setSelectedOption(optionId)
     }
   }
 
+  const handleTextInputFocus = () => {
+    console.log("📝 TextInput recibió foco")
+    setIsFocused(true)
+  }
+
+  const handleTextInputBlur = () => {
+    console.log("📝 TextInput perdió foco")
+    setIsFocused(false)
+  }
+
+  const handleTextInputPress = () => {
+    console.log("📝 TextInput fue presionado")
+    if (textInputRef.current && !answered) {
+      textInputRef.current.focus()
+    }
+  }
+
   const handleSubmit = () => {
-    if (selectedOption && !answered) {
-      // Encontrar la opción seleccionada
-      const selected = options.find((option) => option.id === selectedOption)
-      const correct = selected?.isCorrect || false
+    console.log("🚀 ENVIANDO RESPUESTA:")
+    console.log("- questionType:", questionType)
+    console.log("- selectedOption:", selectedOption)
+    console.log("- userAnswer:", userAnswer)
+    console.log("- answered:", answered)
 
-      setIsCorrect(correct)
-      setAnswered(true)
+    if (questionType === "MULTIPLE_CHOICE_SINGLE") {
+      if (selectedOption && !answered) {
+        // Encontrar la opción seleccionada
+        const selected = options.find((option) => option.id === selectedOption)
+        const correct = selected?.isCorrect || false
 
-      if (onSubmit) {
-        onSubmit(selectedOption, correct)
+        console.log("✅ Enviando respuesta de opción múltiple:", { selectedOption, correct })
+
+        setIsCorrect(correct)
+        setAnswered(true)
+
+        if (onSubmit) {
+          onSubmit(selectedOption, correct)
+        }
+      }
+    } else if (questionType === "OPEN_ENDED") {
+      if (userAnswer.trim() && !answered) {
+        console.log("✅ Enviando respuesta abierta:", userAnswer)
+
+        // Para preguntas abiertas, siempre consideramos la respuesta como "correcta"
+        setIsCorrect(true)
+        setAnswered(true)
+
+        if (onSubmit) {
+          onSubmit("OPEN", true, userAnswer)
+        }
       }
     }
   }
@@ -80,62 +140,169 @@ export const MissionScreen = ({
     }
   }
 
+  const renderOptions = () => {
+    console.log("🔍 RENDERIZANDO OPCIONES:")
+    console.log("- questionType:", questionType)
+
+    if (questionType === "OPEN_ENDED") {
+      console.log("✏️ Renderizando SOLO campo de texto para pregunta abierta (sin opciones)")
+      return (
+        <View style={styles.openEndedContainer}>
+          <TouchableWithoutFeedback onPress={handleTextInputPress}>
+            <View style={styles.textInputWrapper}>
+              <TextInput
+                ref={textInputRef}
+                style={[
+                  styles.openEndedInput,
+                  isFocused && styles.openEndedInputFocused,
+                  answered && styles.openEndedInputDisabled,
+                ]}
+                placeholder="Escribe tu respuesta aquí..."
+                placeholderTextColor="#999"
+                multiline={true}
+                numberOfLines={6}
+                value={userAnswer}
+                onChangeText={(text) => {
+                  console.log("📝 Texto cambiado:", text)
+                  setUserAnswer(text)
+                }}
+                onFocus={handleTextInputFocus}
+                onBlur={handleTextInputBlur}
+                editable={!answered}
+                textAlignVertical="top"
+                autoCorrect={true}
+                spellCheck={true}
+                returnKeyType="default"
+                blurOnSubmit={false}
+              />
+              {!userAnswer && !isFocused && (
+                <View style={styles.placeholderOverlay}>
+                  <Text style={styles.placeholderText}>💭 Escribe tu respuesta aquí</Text>
+                </View>
+              )}
+            </View>
+          </TouchableWithoutFeedback>
+
+          {/* Indicador de caracteres */}
+          <Text style={styles.characterCount}>{userAnswer.length} caracteres</Text>
+        </View>
+      )
+    } else if (questionType === "MULTIPLE_CHOICE_SINGLE") {
+      console.log("📝 Renderizando opciones de opción múltiple")
+      return (
+        <ScrollView style={styles.optionsContainer} showsVerticalScrollIndicator={false} nestedScrollEnabled={true}>
+          {options.map((option) => (
+            <TouchableOpacity
+              key={option.id}
+              style={getOptionStyle(option.id, option.isCorrect)}
+              onPress={() => handleOptionPress(option.id)}
+              disabled={answered}
+            >
+              <Text
+                style={[
+                  styles.optionLabel,
+                  answered && option.isCorrect && styles.correctOptionText,
+                  answered && selectedOption === option.id && !option.isCorrect && styles.incorrectOptionText,
+                ]}
+              >
+                {option.id}.
+              </Text>
+              <Text
+                style={[
+                  styles.optionText,
+                  answered && option.isCorrect && styles.correctOptionText,
+                  answered && selectedOption === option.id && !option.isCorrect && styles.incorrectOptionText,
+                ]}
+              >
+                {option.text}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      )
+    }
+
+    // Fallback por defecto
+    console.log("❌ Tipo de pregunta no reconocido, renderizando campo de texto por defecto")
+    return (
+      <View style={styles.openEndedContainer}>
+        <TouchableWithoutFeedback onPress={handleTextInputPress}>
+          <View style={styles.textInputWrapper}>
+            <TextInput
+              ref={textInputRef}
+              style={[
+                styles.openEndedInput,
+                isFocused && styles.openEndedInputFocused,
+                answered && styles.openEndedInputDisabled,
+              ]}
+              placeholder="Escribe tu respuesta aquí..."
+              placeholderTextColor="#999"
+              multiline={true}
+              numberOfLines={6}
+              value={userAnswer}
+              onChangeText={setUserAnswer}
+              onFocus={handleTextInputFocus}
+              onBlur={handleTextInputBlur}
+              editable={!answered}
+              textAlignVertical="top"
+              autoCorrect={true}
+              spellCheck={true}
+            />
+          </View>
+        </TouchableWithoutFeedback>
+      </View>
+    )
+  }
+
   return (
     <ImageBackground source={backgroundImage} style={styles.background} resizeMode="cover">
-      <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
-        {/* Título de la misión */}
-        <Text style={styles.missionTitle}>Misión {missionNumber}</Text>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.keyboardAvoidingView}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+      >
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <ScrollView contentContainerStyle={styles.scrollContainer}>
+            <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
+              {/* Título de la misión */}
+              <Text style={styles.missionTitle}>Misión {missionNumber}</Text>
 
-        {/* Imagen del personaje */}
-        <Image source={characterImage} style={styles.characterImage} />
+              {/* Imagen del personaje */}
+              <Image source={characterImage} style={styles.characterImage} />
 
-        {/* Contenedor de la pregunta */}
-        <View style={styles.questionContainer}>
-          <Text style={styles.questionText}>{question}</Text>
+              {/* Contenedor de la pregunta */}
+              <View style={styles.questionContainer}>
+                <Text style={styles.questionText}>{question}</Text>
 
-          {/* Opciones */}
-          <View style={styles.optionsContainer}>
-            {options.map((option) => (
-              <TouchableOpacity
-                key={option.id}
-                style={getOptionStyle(option.id, option.isCorrect)}
-                onPress={() => handleOptionPress(option.id)}
-                disabled={answered}
-              >
-                <Text
+                {/* Opciones o campo de texto según el tipo */}
+                {renderOptions()}
+              </View>
+
+              {/* Botón de enviar */}
+              {!answered && (
+                <TouchableOpacity
                   style={[
-                    styles.optionLabel,
-                    answered && option.isCorrect && styles.correctOptionText,
-                    answered && selectedOption === option.id && !option.isCorrect && styles.incorrectOptionText,
+                    styles.submitButton,
+                    (questionType === "MULTIPLE_CHOICE_SINGLE" && !selectedOption) ||
+                    (questionType === "OPEN_ENDED" && !userAnswer.trim())
+                      ? styles.disabledButton
+                      : null,
                   ]}
+                  onPress={handleSubmit}
+                  disabled={
+                    (questionType === "MULTIPLE_CHOICE_SINGLE" && !selectedOption) ||
+                    (questionType === "OPEN_ENDED" && !userAnswer.trim())
+                  }
                 >
-                  {option.id}.
-                </Text>
-                <Text
-                  style={[
-                    styles.optionText,
-                    answered && option.isCorrect && styles.correctOptionText,
-                    answered && selectedOption === option.id && !option.isCorrect && styles.incorrectOptionText,
-                  ]}
-                >
-                  {option.text}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-
-        {/* Botón de enviar */}
-        {!answered && (
-          <TouchableOpacity
-            style={[styles.submitButton, !selectedOption && styles.disabledButton]}
-            onPress={handleSubmit}
-            disabled={!selectedOption}
-          >
-            <Text style={styles.submitButtonText}>Enviar</Text>
-          </TouchableOpacity>
-        )}
-      </Animated.View>
+                  <Text style={styles.submitButtonText}>
+                    {questionType === "OPEN_ENDED" ? "Enviar Respuesta" : "Enviar"}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </Animated.View>
+          </ScrollView>
+        </TouchableWithoutFeedback>
+      </KeyboardAvoidingView>
     </ImageBackground>
   )
 }
@@ -145,10 +312,17 @@ const styles = StyleSheet.create({
     flex: 1,
     width: "100%",
   },
+  keyboardAvoidingView: {
+    flex: 1,
+  },
+  scrollContainer: {
+    flexGrow: 1,
+  },
   container: {
     flex: 1,
     alignItems: "center",
     paddingTop: 20,
+    paddingBottom: 40,
   },
   missionTitle: {
     fontSize: 28,
@@ -171,22 +345,27 @@ const styles = StyleSheet.create({
     padding: 15,
     width: width * 0.85,
     marginBottom: 20,
+    maxHeight: width * 0.8, // Limitar altura para preguntas con muchas opciones
   },
   questionText: {
     fontSize: 16,
     marginBottom: 15,
     textAlign: "center",
+    fontWeight: "500",
+    color: "#333",
   },
   optionsContainer: {
     width: "100%",
+    maxHeight: width * 0.5, // Permitir scroll si hay muchas opciones
   },
   optionButton: {
     backgroundColor: "#E0E0E0",
     borderRadius: 10,
-    padding: 12,
-    marginVertical: 5,
+    padding: 10, // Reducir padding para acomodar más opciones
+    marginVertical: 3, // Reducir margen vertical
     flexDirection: "row",
     alignItems: "center",
+    minHeight: 45, // Altura mínima para mantener usabilidad
   },
   selectedOption: {
     backgroundColor: "#4CAF50",
@@ -201,10 +380,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "bold",
     marginRight: 8,
+    minWidth: 20, // Ancho mínimo para las letras A, B, C, D, E
   },
   optionText: {
     fontSize: 14,
     flex: 1,
+    flexWrap: "wrap", // Permitir que el texto se ajuste
   },
   correctOptionText: {
     color: "white",
@@ -227,5 +408,56 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 16,
     fontWeight: "bold",
+  },
+  // Estilos mejorados para preguntas abiertas
+  openEndedContainer: {
+    width: "100%",
+    marginTop: 10,
+  },
+  textInputWrapper: {
+    position: "relative",
+    width: "100%",
+  },
+  openEndedInput: {
+    backgroundColor: "#FFFFFF",
+    borderWidth: 2,
+    borderColor: "#E0E0E0",
+    borderRadius: 12,
+    padding: 15,
+    minHeight: 150,
+    maxHeight: 200,
+    textAlignVertical: "top",
+    fontSize: 16,
+    color: "#333",
+    fontFamily: Platform.OS === "ios" ? "System" : "Roboto",
+    lineHeight: 22,
+  },
+  openEndedInputFocused: {
+    borderColor: "#4CAF50",
+    backgroundColor: "#F8FFF8",
+  },
+  openEndedInputDisabled: {
+    backgroundColor: "#F5F5F5",
+    borderColor: "#CCC",
+    color: "#666",
+  },
+  placeholderOverlay: {
+    position: "absolute",
+    top: 15,
+    left: 15,
+    right: 15,
+    pointerEvents: "none",
+  },
+  placeholderText: {
+    fontSize: 16,
+    color: "#999",
+    fontStyle: "italic",
+  },
+  characterCount: {
+    fontSize: 12,
+    color: "#666",
+    textAlign: "right",
+    marginTop: 5,
+    fontStyle: "italic",
   },
 })

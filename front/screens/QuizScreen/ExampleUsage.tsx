@@ -1,15 +1,38 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
-
-import { useFocusEffect } from '@react-navigation/native';
-import { View, StyleSheet } from "react-native"
+import { useState, useEffect } from "react"
+import { View, StyleSheet, Alert } from "react-native"
 import AsyncStorage from "@react-native-async-storage/async-storage"
+import axios from "axios"
 import { MissionManager } from "../ComponentesQuiz/mission-manager"
-
 
 type CharacterName = "Qhapaq" | "Amaru" | "Killa"
 type VillainName = "Corporatus" | "Toxicus" | "Shadowman"
+
+// Tipos para las preguntas del API
+type ApiQuestion = {
+  id: string
+  text: string
+  type: "MULTIPLE_CHOICE_SINGLE" | "OPEN_ENDED"
+  config: {
+    options?: string[]
+    correct_option?: number // Índice de la opción correcta (si existe)
+  }
+  score: number
+  difficulty: "EASY" | "MEDIUM" | "HARD"
+  tags?: string[]
+  room_id: string
+  created_at: string
+  updated_at: string
+}
+
+type ApiResponse = {
+  success: boolean
+  code: string
+  message: string
+  data: ApiQuestion[]
+  request_id: string
+}
 
 // Imágenes del villano para cada misión (3 por villano)
 const villainCharacterImages: Record<VillainName, any[]> = {
@@ -17,33 +40,27 @@ const villainCharacterImages: Record<VillainName, any[]> = {
     require("../../assets/PersonajesQuiz/Corporatus/CorporatusLevel-1.png"),
     require("../../assets/PersonajesQuiz/Corporatus/CorporatusLevel-2.png"),
     require("../../assets/PersonajesQuiz/Corporatus/CorporatusLevel-3.png"),
-
   ],
   Toxicus: [
     require("../../assets/PersonajesQuiz/Toxicus/ToxicusLevel-1.png"),
     require("../../assets/PersonajesQuiz/Toxicus/ToxicusLevel-2.png"),
     require("../../assets/PersonajesQuiz/Toxicus/ToxicusLevel-3.png"),
-
   ],
   Shadowman: [
     require("../../assets/PersonajesQuiz/Shadowman/ShadowmanLevel-1.png"),
     require("../../assets/PersonajesQuiz/Shadowman/ShadowmanLevel-2.png"),
     require("../../assets/PersonajesQuiz/Shadowman/ShadowmanLevel-3.png"),
-
   ],
 }
 
 // Imágenes incorrectas para cada villano y misión (3 por villano)
 const villainIncorrectImages: Record<VillainName, any[]> = {
   Corporatus: [
-    // C:\Users\semin\OneDrive\Escritorio\Aula360REPOORIGINAL\Aula360\front\assets\PersonajesQuiz\Corporatus\CoporatusLevel-2.png
     require("../../assets/PersonajesQuiz/Corporatus/CorporatusLevel-1.png"),
     require("../../assets/PersonajesQuiz/Corporatus/CorporatusLevel-2.png"),
-
     require("../../assets/villanosBattle/Corporatus.png"),
   ],
   Toxicus: [
-
     require("../../assets/villanosBattle/El Demonio de la Avidez.png"),
     require("../../assets/villanosBattle/El Demonio de la Avidez.png"),
     require("../../assets/villanosBattle/El Demonio de la Avidez.png"),
@@ -52,28 +69,21 @@ const villainIncorrectImages: Record<VillainName, any[]> = {
     require("../../assets/villanosBattle/Shadowman.png"),
     require("../../assets/villanosBattle/Shadowman.png"),
     require("../../assets/villanosBattle/Shadowman.png"),
-
   ],
 }
 
 // Fondos y correctImages por personaje (3 por personaje)
-const characterAssets: Record<
-  CharacterName,
-  { backgroundImages: any[]; correctImages: any[] }
-> = {
+const characterAssets: Record<CharacterName, { backgroundImages: any[]; correctImages: any[] }> = {
   Qhapaq: {
     backgroundImages: [
-        // C:\Users\semin\OneDrive\Escritorio\Aula360REPOORIGINAL\Aula360\front\assets\fondoQuiz\FondoQuiz-Qhapaq.png
       require("../../assets/fondoQuiz/FondoQuiz-Qhapaq.png"),
       require("../../assets/fondoQuiz/FondoQuiz-Qhapaq.png"),
       require("../../assets/fondoQuiz/FondoQuiz-Qhapaq.png"),
     ],
     correctImages: [
-
       require("../../assets/images/chaman.png"),
       require("../../assets/images/chaman.png"),
       require("../../assets/images/chaman.png"),
-
     ],
   },
   Amaru: {
@@ -81,15 +91,11 @@ const characterAssets: Record<
       require("../../assets/fondoQuiz/FondoQuiz-Amaru.png"),
       require("../../assets/fondoQuiz/FondoQuiz-Amaru.png"),
       require("../../assets/fondoQuiz/FondoQuiz-Amaru.png"),
-
-
     ],
     correctImages: [
-
       require("../../assets/Personajes/Amaru1.png"),
       require("../../assets/Personajes/Amaru1.png"),
       require("../../assets/Personajes/Amaru1.png"),
-
     ],
   },
   Killa: {
@@ -99,288 +105,269 @@ const characterAssets: Record<
       require("../../assets/fondoQuiz/FondoQuiz-Killa.png"),
     ],
     correctImages: [
-
       require("../../assets/Personajes/Guerrera.png"),
       require("../../assets/Personajes/Guerrera.png"),
       require("../../assets/Personajes/Guerrera.png"),
-
     ],
   },
 }
 
-const buildMissionsData = (characterName: CharacterName, villainName: VillainName) => {
-  const assets = characterAssets[characterName]
+// Función para obtener preguntas del API
+const fetchQuestionsFromAPI = async (roomId: string): Promise<ApiQuestion[]> => {
+  try {
+    console.log("🔍 Obteniendo preguntas del API para room:", roomId)
 
+    // Obtener el token del estudiante del localStorage
+    const studentToken = await AsyncStorage.getItem("studentToken")
+
+    if (!studentToken) {
+      throw new Error("No se encontró el token del estudiante. Por favor, inicia sesión nuevamente.")
+    }
+
+    console.log("🔑 Token del estudiante obtenido para la petición")
+
+    const response = await axios.get<ApiResponse>(
+      `https://fmrdkboi63.execute-api.us-east-1.amazonaws.com/dev/questions/all/room/${roomId}`,
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${studentToken}`,
+        },
+      },
+    )
+
+    // 🔍 LOGS DETALLADOS DE LA RESPUESTA
+    console.log("=".repeat(50))
+    console.log("📡 RESPUESTA COMPLETA DEL ENDPOINT:")
+    console.log("=".repeat(50))
+    console.log("Status:", response.status)
+    console.log("Headers:", JSON.stringify(response.headers, null, 2))
+    console.log("Data completa:", JSON.stringify(response.data, null, 2))
+    console.log("=".repeat(50))
+
+    if (response.data.success && response.data.data) {
+      console.log(`📚 Se obtuvieron ${response.data.data.length} preguntas`)
+
+      // 🔍 LOG DETALLADO DE CADA PREGUNTA
+      response.data.data.forEach((question, index) => {
+        console.log(`\n📝 PREGUNTA ${index + 1}:`)
+        console.log("- ID:", question.id)
+        console.log("- Texto:", question.text)
+        console.log("- Tipo:", question.type)
+        console.log("- Dificultad:", question.difficulty)
+        console.log("- Score:", question.score)
+        console.log("- Tags:", question.tags)
+        console.log("- Config:", JSON.stringify(question.config, null, 2))
+        console.log("- Room ID:", question.room_id)
+        console.log("- Creado:", question.created_at)
+        console.log("- Actualizado:", question.updated_at)
+        console.log("-".repeat(30))
+      })
+
+      return response.data.data
+    } else {
+      console.error("❌ Respuesta del API no exitosa:", response.data)
+      throw new Error(response.data.message || "Error al obtener preguntas")
+    }
+  } catch (error: any) {
+    console.error("💥 Error al obtener preguntas del API:", error)
+
+    // 🔍 LOG DETALLADO DEL ERROR
+    if (error.response) {
+      console.log("=".repeat(50))
+      console.log("❌ ERROR DE RESPUESTA:")
+      console.log("=".repeat(50))
+      console.error("- Status:", error.response.status)
+      console.error("- Status Text:", error.response.statusText)
+      console.error("- Headers:", JSON.stringify(error.response.headers, null, 2))
+      console.error("- Data:", JSON.stringify(error.response.data, null, 2))
+      console.log("=".repeat(50))
+
+      if (error.response.status === 401 || error.response.status === 403) {
+        throw new Error("Token de autenticación inválido. Por favor, inicia sesión nuevamente.")
+      }
+
+      throw new Error(error.response.data?.message || `Error del servidor: ${error.response.status}`)
+    } else if (error.request) {
+      console.log("=".repeat(50))
+      console.log("❌ ERROR DE REQUEST:")
+      console.log("=".repeat(50))
+      console.error("Request:", error.request)
+      console.log("=".repeat(50))
+      throw new Error("No se pudo conectar con el servidor")
+    } else {
+      console.log("=".repeat(50))
+      console.log("❌ ERROR GENERAL:")
+      console.log("=".repeat(50))
+      console.error("Message:", error.message)
+      console.log("=".repeat(50))
+      throw new Error(error.message || "Error desconocido")
+    }
+  }
+}
+
+// Función para construir misiones a partir de las preguntas del API
+const buildMissionsFromAPI = async (characterName: CharacterName, villainName: VillainName) => {
+  const assets = characterAssets[characterName]
   const charImgs = characterAssets[characterName].correctImages
   const vilImgs = villainCharacterImages[villainName]
   const incorrectImgs = villainIncorrectImages[villainName]
 
-  if (villainName === "Corporatus") {
-    return [
-      {
-        id: 1,
-        missionNumber: 1,
-        backgroundImage: assets.backgroundImages[0],
-        villainImage: vilImgs[0],
-        characterImage: charImgs[0],
-        question: "¿Cuál es el nombre del río más largo del mundo?",
-        options: [
-          { id: "A", text: "Nilo", isCorrect: false },
-          { id: "B", text: "Amazonas", isCorrect: true },
-          { id: "C", text: "Misisipi", isCorrect: false },
-        ],
-        feedback: {
-          correctImage: assets.correctImages[0],
-          incorrectImage: incorrectImgs[0],
-          correctBackground: assets.backgroundImages[0],
-          incorrectBackground: assets.backgroundImages[0],
-          correctDescription:
-            "¡Excelente! El río Amazonas es el río más largo del mundo con aproximadamente 6,800 km de longitud.",
-          incorrectDescription:
-            "Aunque por mucho tiempo se pensó que era el Nilo, el Amazonas es el río más largo del mundo.",
-        },
+  try {
+    // Obtener room_id del localStorage
+    const roomId = await AsyncStorage.getItem("roomId")
+
+    if (!roomId) {
+      throw new Error("No se encontró el Room ID")
+    }
+
+    console.log("🏠 Room ID obtenido del localStorage:", roomId)
+
+    // Obtener preguntas del API
+    const apiQuestions = await fetchQuestionsFromAPI(roomId)
+
+    if (apiQuestions.length === 0) {
+      throw new Error("No se encontraron preguntas para este room")
+    }
+
+    // Limitar a máximo 3 preguntas para mantener la estructura visual
+    const questionsToUse = apiQuestions.slice(0, 3)
+
+    console.log("🎯 PROCESANDO PREGUNTAS PARA MISIONES:")
+    console.log(`- Total de preguntas recibidas: ${apiQuestions.length}`)
+    console.log(`- Preguntas que se usarán: ${questionsToUse.length}`)
+
+    return questionsToUse.map((apiQuestion, index) => {
+      console.log(`\n🔄 PROCESANDO PREGUNTA ${index + 1}:`)
+      console.log("- Tipo original:", apiQuestion.type)
+      console.log("- Config original:", JSON.stringify(apiQuestion.config, null, 2))
+
+      // Preparar opciones según el tipo de pregunta
+      let options = []
+
+      if (apiQuestion.type === "OPEN_ENDED") {
+        // Para preguntas abiertas, NO crear opciones - dejar array vacío
+        options = []
+        console.log("✏️ PREGUNTA ABIERTA - NO se crean opciones")
+        console.log("- Tipo de pregunta:", apiQuestion.type)
+        console.log("- Config de la pregunta:", JSON.stringify(apiQuestion.config, null, 2))
+      } else if (apiQuestion.type === "MULTIPLE_CHOICE_SINGLE" && apiQuestion.config.options) {
+        // Para preguntas de opción múltiple con respuesta única
+        const correctOptionIndex =
+          apiQuestion.config.correct_option !== undefined ? apiQuestion.config.correct_option : 0
+
+        console.log("- Opción correcta (índice):", correctOptionIndex)
+        console.log("- Opciones disponibles:", apiQuestion.config.options)
+
+        // Soportar hasta 5 opciones (A, B, C, D, E)
+        options = apiQuestion.config.options.slice(0, 5).map((optionText, optIndex) => ({
+          id: String.fromCharCode(65 + optIndex), // A, B, C, D, E
+          text: optionText,
+          isCorrect: optIndex === correctOptionIndex,
+        }))
+
+        console.log(
+          "- Opciones procesadas:",
+          options.map((o) => `${o.id}: ${o.text} (${o.isCorrect ? "CORRECTA" : "incorrecta"})`),
+        )
+      } else if (apiQuestion.type === "MULTIPLE_CHOICE_MULTIPLE" && apiQuestion.config.options) {
+        // Para preguntas de opción múltiple con múltiples respuestas correctas
+        const correctOptionIndex = 0
+
+        console.log("- Tipo de pregunta con múltiples respuestas correctas")
+        console.log("- Tratando como pregunta de opción única para compatibilidad")
+        console.log("- Opciones disponibles:", apiQuestion.config.options)
+
+        // Convertimos a formato de opción única para mantener compatibilidad
+        options = apiQuestion.config.options.slice(0, 5).map((optionText, optIndex) => ({
+          id: String.fromCharCode(65 + optIndex), // A, B, C, D, E
+          text: optionText,
+          isCorrect: optIndex === correctOptionIndex, // Asumimos primera opción como correcta
+        }))
+
+        console.log(
+          "- Opciones procesadas:",
+          options.map((o) => `${o.id}: ${o.text} (${o.isCorrect ? "CORRECTA" : "incorrecta"})`),
+        )
+      } else {
+        // Si el tipo no es reconocido, tratamos como pregunta abierta por defecto
+        console.log("- Tipo de pregunta no reconocido:", apiQuestion.type)
+        console.log("- Tratando como pregunta abierta por defecto")
+        options = []
+      }
+
+      console.log(`✅ Pregunta ${index + 1} procesada exitosamente`)
+
+      // ... resto del código igual
+      const getTransitionTitle = () => {
+        if (apiQuestion.tags && apiQuestion.tags.length > 0) {
+          return `Explorando ${apiQuestion.tags[0]}`
+        }
+        switch (apiQuestion.difficulty) {
+          case "EASY":
+            return "Pregunta Básica"
+          case "MEDIUM":
+            return "Pregunta Intermedia"
+          case "HARD":
+            return "Pregunta Avanzada"
+          default:
+            return "Nueva Pregunta"
+        }
+      }
+
+      const getTransitionDescription = () => {
+        if (apiQuestion.tags && apiQuestion.tags.length > 0) {
+          return `Pon a prueba tus conocimientos sobre ${apiQuestion.tags.join(", ")}`
+        }
+        return "Prepárate para responder esta pregunta"
+      }
+
+      // Generar feedback personalizado basado en el tipo de pregunta
+      const getFeedback = () => {
+        if (apiQuestion.type === "MULTIPLE_CHOICE_SINGLE") {
+          return {
+            correctImage: assets.correctImages[index % assets.correctImages.length],
+            incorrectImage: incorrectImgs[index % incorrectImgs.length],
+            correctBackground: assets.backgroundImages[index % assets.backgroundImages.length],
+            incorrectBackground: assets.backgroundImages[index % assets.backgroundImages.length],
+            correctDescription: "¡Excelente! Has respondido correctamente.",
+            incorrectDescription: "No te preocupes, sigue intentando. ¡Puedes hacerlo mejor!",
+          }
+        } else {
+          // Para preguntas abiertas, siempre mostramos feedback positivo
+          return {
+            correctImage: assets.correctImages[index % assets.correctImages.length],
+            incorrectImage: assets.correctImages[index % assets.correctImages.length], // Usamos la misma imagen
+            correctBackground: assets.backgroundImages[index % assets.backgroundImages.length],
+            incorrectBackground: assets.backgroundImages[index % assets.backgroundImages.length],
+            correctDescription: "¡Gracias por tu respuesta! Continuemos con la siguiente pregunta.",
+            incorrectDescription: "¡Gracias por tu respuesta! Continuemos con la siguiente pregunta.",
+          }
+        }
+      }
+
+      return {
+        id: index + 1,
+        missionNumber: index + 1,
+        backgroundImage: assets.backgroundImages[index % assets.backgroundImages.length],
+        villainImage: vilImgs[index % vilImgs.length],
+        characterImage: charImgs[index % charImgs.length],
+        question: apiQuestion.text,
+        questionType: apiQuestion.type, // 🔥 USAR DIRECTAMENTE EL TIPO DE LA API
+        options: options, // Array vacío para OPEN_ENDED, opciones reales para MULTIPLE_CHOICE
+        feedback: getFeedback(),
         transition: {
-          backgroundImage: assets.backgroundImages[0],
-          image: vilImgs[0],
-          title: "Explorando la Naturaleza",
-          description: "Prepárate para poner a prueba tus conocimientos sobre geografía.",
+          backgroundImage: assets.backgroundImages[index % assets.backgroundImages.length],
+          image: vilImgs[index % vilImgs.length],
+          title: getTransitionTitle(),
+          description: getTransitionDescription(),
         },
-      },
-      {
-        id: 2,
-        missionNumber: 2,
-        backgroundImage: assets.backgroundImages[1],
-        villainImage: vilImgs[1],
-        characterImage: charImgs[1],
-        question: "¿Cuál es el planeta más grande del sistema solar?",
-        options: [
-          { id: "A", text: "Tierra", isCorrect: false },
-          { id: "B", text: "Saturno", isCorrect: false },
-          { id: "C", text: "Júpiter", isCorrect: true },
-        ],
-        feedback: {
-          correctImage: assets.correctImages[1],
-          incorrectImage: incorrectImgs[1],
-          correctBackground: assets.backgroundImages[1],
-          incorrectBackground: assets.backgroundImages[1],
-          correctDescription: "¡Correcto! Júpiter es el planeta más grande del sistema solar.",
-          incorrectDescription:
-            "Saturno es grande, pero Júpiter es el planeta más grande del sistema solar.",
-        },
-        transition: {
-          backgroundImage: assets.backgroundImages[1],
-          image: vilImgs[1],
-          title: "Explorando el Espacio",
-          description: "Vamos a descubrir los planetas del sistema solar.",
-        },
-      },
-      {
-        id: 3,
-        missionNumber: 3,
-        backgroundImage: assets.backgroundImages[2],
-        villainImage: vilImgs[2],
-        characterImage: charImgs[2],
-        question:
-          '¿Qué simboliza la "Pachamama" (madre tierra) en las obras de José María Arguedas?',
-        options: [
-          { id: "A", text: "Conexión espiritual con los dioses", isCorrect: false },
-          { id: "B", text: "Rechazo a la modernización", isCorrect: false },
-          { id: "C", text: "Relación entre hombre y naturaleza", isCorrect: true },
-        ],
-        feedback: {
-          correctImage: assets.correctImages[2],
-          incorrectImage: incorrectImgs[2],
-          correctBackground: assets.backgroundImages[2],
-          incorrectBackground: assets.backgroundImages[2],
-          correctDescription: "¡Exacto! La Pachamama simboliza la relación entre el hombre y la naturaleza.",
-          incorrectDescription:
-            "La representa mucho más que rechazo a la modernización o solo una conexión espiritual.",
-        },
-        transition: {
-          backgroundImage: assets.backgroundImages[2],
-          image: vilImgs[2],
-          title: "Explorando la Cultura Andina",
-          description: "Conoce la cosmovisión andina y sus símbolos.",
-        },
-      },
-    ]
+      }
+    })
+  } catch (error) {
+    console.error("💥 Error en buildMissionsFromAPI:", error)
+    throw error
   }
-
-  if (villainName === "Toxicus") {
-    return [
-      {
-        id: 1,
-        missionNumber: 1,
-        backgroundImage: assets.backgroundImages[0],
-        villainImage: vilImgs[0],
-        characterImage: charImgs[0],
-        question: "¿Cuál es el gas más abundante en la atmósfera terrestre?",
-        options: [
-          { id: "A", text: "Oxígeno", isCorrect: false },
-          { id: "B", text: "Nitrógeno", isCorrect: true },
-          { id: "C", text: "Dióxido de carbono", isCorrect: false },
-        ],
-        feedback: {
-          correctImage: assets.correctImages[0],
-          incorrectImage: incorrectImgs[0],
-          correctBackground: assets.backgroundImages[0],
-          incorrectBackground: assets.backgroundImages[0],
-          correctDescription: "¡Correcto! El nitrógeno compone aproximadamente el 78% de la atmósfera.",
-          incorrectDescription: "El oxígeno es importante, pero el nitrógeno es el más abundante.",
-        },
-        transition: {
-          backgroundImage: assets.backgroundImages[0],
-          image: vilImgs[0],
-          title: "Cuidando el Aire",
-          description: "Aprende sobre la composición del aire que respiramos.",
-        },
-      },
-      {
-        id: 2,
-        missionNumber: 2,
-        backgroundImage: assets.backgroundImages[1],
-        villainImage: vilImgs[1],
-        characterImage: charImgs[1],
-        question: "¿Qué sustancia es la principal causa de la lluvia ácida?",
-        options: [
-          { id: "A", text: "Dióxido de azufre", isCorrect: true },
-          { id: "B", text: "Ozono", isCorrect: false },
-          { id: "C", text: "Metano", isCorrect: false },
-        ],
-        feedback: {
-          correctImage: assets.correctImages[1],
-          incorrectImage: incorrectImgs[1],
-          correctBackground: assets.backgroundImages[1],
-          incorrectBackground: assets.backgroundImages[1],
-          correctDescription: "¡Bien hecho! El dióxido de azufre es el principal responsable de la lluvia ácida.",
-          incorrectDescription: "El ozono y el metano no causan lluvia ácida como el dióxido de azufre.",
-        },
-        transition: {
-          backgroundImage: assets.backgroundImages[1],
-          image: vilImgs[1],
-          title: "Problemas Ambientales",
-          description: "Descubre los efectos de la contaminación en el planeta.",
-        },
-      },
-      {
-        id: 3,
-        missionNumber: 3,
-        backgroundImage: assets.backgroundImages[2],
-        villainImage: vilImgs[2],
-        characterImage: charImgs[2],
-        question: "¿Cuál es el principal efecto del plástico en los océanos?",
-        options: [
-          { id: "A", text: "Aumenta la temperatura del agua", isCorrect: false },
-          { id: "B", text: "Contamina y daña la vida marina", isCorrect: true },
-          { id: "C", text: "Produce más oxígeno", isCorrect: false },
-        ],
-        feedback: {
-          correctImage: assets.correctImages[2],
-          incorrectImage: incorrectImgs[2],
-          correctBackground: assets.backgroundImages[2],
-          incorrectBackground: assets.backgroundImages[2],
-          correctDescription: "¡Exacto! El plástico contamina y afecta gravemente a la vida marina.",
-          incorrectDescription: "El mayor problema es la contaminación y daño a los seres vivos del mar.",
-        },
-        transition: {
-          backgroundImage: assets.backgroundImages[2],
-          image: vilImgs[2],
-          title: "Océanos en Peligro",
-          description: "Reflexiona sobre el impacto del plástico en los océanos.",
-        },
-      },
-    ]
-  }
-
-  if (villainName === "Shadowman") {
-    return [
-      {
-        id: 1,
-        missionNumber: 1,
-        backgroundImage: assets.backgroundImages[0],
-        villainImage: vilImgs[0],
-        characterImage: charImgs[0],
-        question: "¿Qué es la huella de carbono?",
-        options: [
-          { id: "A", text: "La marca que dejan los zapatos", isCorrect: false },
-          { id: "B", text: "La cantidad de gases de efecto invernadero emitidos", isCorrect: true },
-          { id: "C", text: "La sombra de una persona", isCorrect: false },
-        ],
-        feedback: {
-          correctImage: assets.correctImages[0],
-          incorrectImage: incorrectImgs[0],
-          correctBackground: assets.backgroundImages[0],
-          incorrectBackground: assets.backgroundImages[0],
-          correctDescription: "¡Correcto! Es la cantidad de gases de efecto invernadero que emitimos.",
-          incorrectDescription: "No es una marca física, sino una medida de contaminación.",
-        },
-        transition: {
-          backgroundImage: assets.backgroundImages[0],
-          image: vilImgs[0],
-          title: "Sombra Ambiental",
-          description: "Aprende sobre el impacto de nuestras acciones en el planeta.",
-        },
-      },
-      {
-        id: 2,
-        missionNumber: 2,
-        backgroundImage: assets.backgroundImages[1],
-        villainImage: vilImgs[1],
-        characterImage: charImgs[1],
-        question: "¿Qué acción ayuda a reducir la huella de carbono?",
-        options: [
-          { id: "A", text: "Usar bicicleta", isCorrect: true },
-          { id: "B", text: "Dejar luces encendidas", isCorrect: false },
-          { id: "C", text: "Consumir más plástico", isCorrect: false },
-        ],
-        feedback: {
-          correctImage: assets.correctImages[1],
-          incorrectImage: incorrectImgs[1],
-          correctBackground: assets.backgroundImages[1],
-          incorrectBackground: assets.backgroundImages[1],
-          correctDescription: "¡Bien! Usar bicicleta reduce las emisiones de gases contaminantes.",
-          incorrectDescription: "Dejar luces encendidas y consumir plástico aumentan la huella de carbono.",
-        },
-        transition: {
-          backgroundImage: assets.backgroundImages[1],
-          image: vilImgs[1],
-          title: "Acciones Positivas",
-          description: "Descubre cómo puedes ayudar al medio ambiente.",
-        },
-      },
-      {
-        id: 3,
-        missionNumber: 3,
-        backgroundImage: assets.backgroundImages[2],
-        villainImage: vilImgs[2],
-        characterImage: charImgs[2],
-        question: "¿Qué recurso es fundamental para la vida y debe ser cuidado?",
-        options: [
-          { id: "A", text: "Agua", isCorrect: true },
-          { id: "B", text: "Petróleo", isCorrect: false },
-          { id: "C", text: "Oro", isCorrect: false },
-        ],
-        feedback: {
-          correctImage: assets.correctImages[2],
-          incorrectImage: incorrectImgs[2],
-          correctBackground: assets.backgroundImages[2],
-          incorrectBackground: assets.backgroundImages[2],
-          correctDescription: "¡Exacto! El agua es esencial para la vida y debemos protegerla.",
-          incorrectDescription: "El agua es más importante para la vida que el oro o el petróleo.",
-        },
-        transition: {
-          backgroundImage: assets.backgroundImages[2],
-          image: vilImgs[2],
-          title: "Cuidando el Agua",
-          description: "Reflexiona sobre la importancia del agua en nuestras vidas.",
-        },
-      },
-    ]
-  }
-
-  // fallback (no debería ocurrir)
-  return []
-
 }
 
 const QuizScreen = ({ navigation }) => {
@@ -388,30 +375,42 @@ const QuizScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const loadCharacterAndVillain = async () => {
+    const loadQuestionsAndBuildMissions = async () => {
       try {
+        setLoading(true)
+
         const characterNameRaw = await AsyncStorage.getItem("selectedCharacterName")
         const villainNameRaw = await AsyncStorage.getItem("selectedVillainName")
 
-
-        const characterName = characterNameRaw; // (characterNameRaw ?? "Qhapaq") as CharacterName
-        const villainName = villainNameRaw; //(villainNameRaw ?? "Corporatus") as VillainName
-
+        const characterName = (characterNameRaw || "Qhapaq") as CharacterName
+        const villainName = (villainNameRaw || "Corporatus") as VillainName
 
         console.log("Personaje seleccionado:", characterName)
         console.log("Villano seleccionado:", villainName)
 
-        const missions = buildMissionsData(characterName, villainName)
+        // Obtener misiones con preguntas del API
+        const missions = await buildMissionsFromAPI(characterName, villainName)
         setMissionsData(missions)
-      } catch (error) {
-        console.error("Error cargando personaje o villano:", error)
-        const missions = buildMissionsData("Qhapaq", "Corporatus")
-        setMissionsData(missions)
+      } catch (error: any) {
+        console.error("Error cargando preguntas:", error)
+
+        // Mostrar alerta de error
+        Alert.alert("Error al cargar preguntas", error.message || "No se pudieron cargar las preguntas", [
+          {
+            text: "Reintentar",
+            onPress: () => loadQuestionsAndBuildMissions(),
+          },
+          {
+            text: "Volver",
+            onPress: () => navigation.goBack(),
+          },
+        ])
       } finally {
         setLoading(false)
       }
     }
-    loadCharacterAndVillain()
+
+    loadQuestionsAndBuildMissions()
   }, [])
 
   const handleComplete = (score: number, totalMissions: number) => {
