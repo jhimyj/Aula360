@@ -20,6 +20,10 @@ import ResultsScreen from "../screens/ComponentesQuiz/results-screen"
 import AllRooms from "../screens/AllRooms/AllRooms"
 import UploadEvaluationScreen from "../screens/UploadEvaluation/UploadEvaluationScreen"
 
+// 🔥 NUEVAS IMPORTACIONES PARA ESTUDIANTES
+import RoomSelectorForStudents from "../componentes/Students/RoomSelectorForStudents"
+import StudentListScreen from "../componentes/Students/StudentListScreen"
+
 export type DrawerNavigatorParamList = {
   MainTabs: undefined
   StudentDashboard: undefined
@@ -34,6 +38,9 @@ export type DrawerNavigatorParamList = {
   MissionGameScreen: undefined
   Quiz: undefined
   Results: undefined
+  // 🔥 NUEVAS RUTAS PARA ESTUDIANTES
+  RoomSelectorForStudents: undefined
+  StudentList: { roomId: string; roomName: string }
 }
 
 const Tab = createMaterialTopTabNavigator()
@@ -118,6 +125,7 @@ function MainNavigator({
   onLogout: () => void
 }) {
   const isStudent = () => userRole === "STUDENT"
+  const isTeacher = () => userRole === "TEACHER"
 
   return (
     <Stack.Navigator
@@ -207,29 +215,66 @@ function MainNavigator({
         </>
       )}
 
-      {/* 🔧 PANTALLAS ADMINISTRATIVAS */}
+      {/* 🔧 PANTALLAS ADMINISTRATIVAS PARA PROFESORES */}
+      {isTeacher() && (
+        <>
+          <Stack.Screen
+            name="Salas"
+            component={Salas}
+            options={{
+              title: "🏫 Crear Salas",
+              headerBackTitleVisible: false,
+            }}
+          />
+          <Stack.Screen
+            name="AllRooms"
+            component={AllRooms}
+            options={{
+              title: "📚 Todas las Salas",
+              headerBackTitleVisible: false,
+            }}
+          />
+          <Stack.Screen
+            name="UploadEvaluation"
+            component={UploadEvaluationScreen}
+            initialParams={{ roomId: "", roomName: "" }}
+            options={{
+              title: "📤 Subir Evaluación",
+              headerBackTitleVisible: false,
+            }}
+          />
+          {/* 🔥 NUEVAS PANTALLAS PARA VER ESTUDIANTES */}
+          <Stack.Screen
+            name="RoomSelectorForStudents"
+            component={RoomSelectorForStudents}
+            options={{
+              title: "👥 Seleccionar Sala",
+              headerBackTitleVisible: false,
+              headerStyle: {
+                backgroundColor: "#4361EE", // Color diferente para distinguir
+              },
+            }}
+          />
+          <Stack.Screen
+            name="StudentList"
+            component={StudentListScreen}
+            options={{
+              title: "👨‍🎓 Lista de Estudiantes",
+              headerBackTitleVisible: false,
+              headerStyle: {
+                backgroundColor: "#4361EE", // Color diferente para distinguir
+              },
+            }}
+          />
+        </>
+      )}
+
+      {/* 🌐 PANTALLAS COMPARTIDAS (ACCESIBLES PARA AMBOS ROLES) */}
       <Stack.Screen
-        name="Salas"
-        component={Salas}
+        name="Profile"
+        component={ProfileScreen}
         options={{
-          title: "Crear Salas",
-          headerBackTitleVisible: false,
-        }}
-      />
-      <Stack.Screen
-        name="AllRooms"
-        component={AllRooms}
-        options={{
-          title: "Todas las Salas",
-          headerBackTitleVisible: false,
-        }}
-      />
-      <Stack.Screen
-        name="UploadEvaluation"
-        component={UploadEvaluationScreen}
-        initialParams={{ roomId: "", roomName: "" }}
-        options={{
-          title: "Subir Evaluación",
+          title: "👤 Mi Perfil",
           headerBackTitleVisible: false,
         }}
       />
@@ -291,7 +336,16 @@ function DrawerNavigatorContent({ setIsAuthenticated }: { setIsAuthenticated: (v
   // 🧹 FUNCIÓN PARA LIMPIAR DATOS DE USUARIO
   const clearUserRole = async () => {
     try {
-      await AsyncStorage.multiRemove(["userRole", "userInfo", "userToken", "studentToken", "studentData", "authMethod"])
+      await AsyncStorage.multiRemove([
+        "userRole",
+        "userInfo",
+        "userToken",
+        "studentToken",
+        "teacherToken", // 🔥 AGREGAR TEACHER TOKEN
+        "studentData",
+        "authMethod",
+        "roomId", // 🔥 LIMPIAR ROOM ID TAMBIÉN
+      ])
       setUserRole(null)
       setUserInfo(null)
       console.log("🧹 Información del usuario limpiada")
@@ -314,8 +368,9 @@ function DrawerNavigatorContent({ setIsAuthenticated }: { setIsAuthenticated: (v
             // 🧹 LIMPIAR TODA LA INFORMACIÓN DEL USUARIO
             await clearUserRole()
             setIsAuthenticated(false)
+            console.log("👋 Sesión cerrada exitosamente")
           } catch (error) {
-            console.error("Error al cerrar sesión:", error)
+            console.error("❌ Error al cerrar sesión:", error)
           }
         },
       },
@@ -356,9 +411,31 @@ function DrawerNavigatorContent({ setIsAuthenticated }: { setIsAuthenticated: (v
           justifyContent: "center",
           alignItems: "center",
           backgroundColor: "#F8FAFC",
+          padding: 20,
         }}
       >
-        <Text style={{ fontSize: 16, color: "#666" }}>Error al cargar el perfil</Text>
+        <Ionicons name="alert-circle-outline" size={48} color="#FF6B6B" />
+        <Text style={{ fontSize: 18, color: "#333", fontWeight: "600", marginTop: 16, textAlign: "center" }}>
+          Error al cargar el perfil
+        </Text>
+        <Text style={{ fontSize: 14, color: "#666", marginTop: 8, textAlign: "center" }}>
+          No se pudo determinar tu rol de usuario
+        </Text>
+        <TouchableOpacity
+          style={{
+            backgroundColor: "#FF8C00",
+            paddingHorizontal: 24,
+            paddingVertical: 12,
+            borderRadius: 8,
+            marginTop: 20,
+          }}
+          onPress={async () => {
+            await clearUserRole()
+            setIsAuthenticated(false)
+          }}
+        >
+          <Text style={{ color: "#fff", fontWeight: "600" }}>Volver al login</Text>
+        </TouchableOpacity>
       </View>
     )
   }
