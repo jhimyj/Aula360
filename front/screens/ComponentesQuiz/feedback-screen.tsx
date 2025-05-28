@@ -1,6 +1,16 @@
 "use client"
 import { useEffect, useState } from "react"
-import { View, Text, Image, ImageBackground, StyleSheet, Dimensions, TouchableOpacity, Animated } from "react-native"
+import {
+  View,
+  Text,
+  Image,
+  ImageBackground,
+  StyleSheet,
+  Dimensions,
+  TouchableOpacity,
+  Animated,
+  ScrollView,
+} from "react-native"
 
 // Tipo para imágenes (puede ser require local o URL)
 type ImageSource = number | { uri: string }
@@ -13,6 +23,9 @@ type FeedbackScreenProps = {
   incorrectBackground: ImageSource
   correctDescription: string
   incorrectDescription: string
+  userAnswer?: string
+  isOpenEnded?: boolean
+  aiScore?: number // Nuevo: score del endpoint de IA
   onContinue: () => void
 }
 
@@ -26,6 +39,9 @@ export const FeedbackScreen = ({
   incorrectBackground,
   correctDescription,
   incorrectDescription,
+  userAnswer,
+  isOpenEnded = false,
+  aiScore,
   onContinue,
 }: FeedbackScreenProps) => {
   const [fadeAnim] = useState(new Animated.Value(0))
@@ -67,27 +83,53 @@ export const FeedbackScreen = ({
   const backgroundImage = isCorrect ? correctBackground : incorrectBackground
   const image = isCorrect ? correctImage : incorrectImage
   const description = isCorrect ? correctDescription : incorrectDescription
-  const title = isCorrect ? "¡Correcto!" : "Incorrecto"
-  const titleColor = isCorrect ? "#4CAF50" : "#F44336"
-  const buttonColor = isCorrect ? "#4CAF50" : "#F44336"
+
+  // Título dinámico basado en el score de IA si está disponible
+  let title = isOpenEnded ? "¡Respuesta Enviada!" : isCorrect ? "¡Correcto!" : "Incorrecto"
+  if (aiScore !== undefined) {
+    if (aiScore >= 200) title = "¡Excelente!"
+    else if (aiScore >= 100) title = "¡Bien!"
+    else if (aiScore > 0) title = "¡Puedes mejorar!"
+    else title = "Incorrecto"
+  }
+
+  const titleColor = isOpenEnded ? "#4CAF50" : isCorrect ? "#4CAF50" : "#F44336"
+  const buttonColor = isOpenEnded ? "#4CAF50" : isCorrect ? "#4CAF50" : "#F44336"
 
   return (
     <ImageBackground source={backgroundImage} style={styles.background} resizeMode="cover">
-      <Animated.View style={[styles.container, { opacity: fadeAnim, transform: [{ scale: scaleAnim }] }]}>
-        <Text style={[styles.title, { color: titleColor }]}>{title}</Text>
+      <ScrollView contentContainerStyle={styles.scrollContainer}>
+        <Animated.View style={[styles.container, { opacity: fadeAnim, transform: [{ scale: scaleAnim }] }]}>
+          <Text style={[styles.title, { color: titleColor }]}>{title}</Text>
 
-        <View style={styles.imageContainer}>
-          <Image source={image} style={styles.image} resizeMode="contain" />
-        </View>
+          {/* Mostrar score de IA si está disponible */}
+          {aiScore !== undefined && (
+            <View style={styles.scoreContainer}>
+              <Text style={styles.scoreText}>Puntuación: {aiScore}</Text>
+            </View>
+          )}
 
-        <View style={styles.descriptionContainer}>
-          <Text style={styles.description}>{description}</Text>
-        </View>
+          <View style={styles.imageContainer}>
+            <Image source={image} style={styles.image} resizeMode="contain" />
+          </View>
 
-        <TouchableOpacity style={[styles.continueButton, { backgroundColor: buttonColor }]} onPress={onContinue}>
-          <Text style={styles.continueButtonText}>Continuar</Text>
-        </TouchableOpacity>
-      </Animated.View>
+          <View style={styles.descriptionContainer}>
+            <Text style={styles.description}>{description}</Text>
+
+            {/* Mostrar la respuesta del usuario si es una pregunta abierta */}
+            {isOpenEnded && userAnswer && (
+              <View style={styles.userAnswerContainer}>
+                <Text style={styles.userAnswerLabel}>Tu respuesta:</Text>
+                <Text style={styles.userAnswerText}>{userAnswer}</Text>
+              </View>
+            )}
+          </View>
+
+          <TouchableOpacity style={[styles.continueButton, { backgroundColor: buttonColor }]} onPress={onContinue}>
+            <Text style={styles.continueButtonText}>Continuar</Text>
+          </TouchableOpacity>
+        </Animated.View>
+      </ScrollView>
     </ImageBackground>
   )
 }
@@ -97,11 +139,17 @@ const styles = StyleSheet.create({
     flex: 1,
     width: "100%",
   },
+  scrollContainer: {
+    flexGrow: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
   container: {
-    flex: 1,
     alignItems: "center",
     justifyContent: "center",
     padding: 20,
+    width: "100%",
   },
   title: {
     fontSize: 32,
@@ -110,6 +158,18 @@ const styles = StyleSheet.create({
     textShadowColor: "rgba(0, 0, 0, 0.2)",
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 2,
+  },
+  scoreContainer: {
+    backgroundColor: "rgba(255, 255, 255, 0.9)",
+    borderRadius: 10,
+    padding: 10,
+    marginBottom: 15,
+  },
+  scoreText: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#4CAF50",
+    textAlign: "center",
   },
   imageContainer: {
     width: width * 0.7,
@@ -146,6 +206,23 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     textAlign: "center",
     color: "#333",
+  },
+  userAnswerContainer: {
+    marginTop: 15,
+    paddingTop: 15,
+    borderTopWidth: 1,
+    borderTopColor: "#DDD",
+  },
+  userAnswerLabel: {
+    fontSize: 14,
+    fontWeight: "bold",
+    color: "#555",
+    marginBottom: 5,
+  },
+  userAnswerText: {
+    fontSize: 14,
+    color: "#333",
+    fontStyle: "italic",
   },
   continueButton: {
     paddingVertical: 12,

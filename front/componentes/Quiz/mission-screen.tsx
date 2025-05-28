@@ -16,6 +16,7 @@ import {
   ScrollView,
   TouchableWithoutFeedback,
   Keyboard,
+  Alert,
 } from "react-native"
 
 // Tipos para las propiedades
@@ -34,9 +35,16 @@ type MissionScreenProps = {
   backgroundImage: ImageSource
   characterImage: ImageSource
   question: string
+  questionId: string // Nuevo: ID de la pregunta para el endpoint
   questionType?: "MULTIPLE_CHOICE_SINGLE" | "OPEN_ENDED"
   options: OptionType[]
-  onSubmit?: (selectedOption: string, isCorrect: boolean, userAnswer?: string) => void
+  onSubmit?: (
+    selectedOption: string,
+    isCorrect: boolean,
+    userAnswer?: string,
+    aiScore?: number,
+    aiFeedback?: string,
+  ) => void
 }
 
 const { width } = Dimensions.get("window")
@@ -46,6 +54,7 @@ export const MissionScreen = ({
   backgroundImage,
   characterImage,
   question,
+  questionId,
   questionType = "MULTIPLE_CHOICE_SINGLE",
   options,
   onSubmit,
@@ -56,6 +65,7 @@ export const MissionScreen = ({
   const [isCorrect, setIsCorrect] = useState<boolean>(false)
   const [fadeAnim] = useState(new Animated.Value(0))
   const [isFocused, setIsFocused] = useState<boolean>(false)
+  const [isLoading, setIsLoading] = useState<boolean>(false)
   const textInputRef = useRef<TextInput>(null)
 
   useEffect(() => {
@@ -89,40 +99,116 @@ export const MissionScreen = ({
     }
   }
 
-  const handleSubmit = () => {
+  // Función para llamar al endpoint de IA
+  const callAIFeedbackEndpoint = async (responseStudent: string[]) => {
+    try {
+      // Obtener datos del localStorage
+      const roomId = localStorage.getItem("room_id")
+      const token = localStorage.getItem("auth_token") || localStorage.getItem("token")
+
+      if (!roomId) {
+        throw new Error("No se encontró room_id en localStorage")
+      }
+
+      if (!token) {
+        throw new Error("No se encontró token de autorización")
+      }
+
+      console.log("🚀 Llamando al endpoint de IA:", {
+        room_id: roomId,
+        question_id: questionId,
+        response_student: responseStudent,
+      })
+
+      const response = await fetch("https://6axx5kevpc.execute-api.us-east-1.amazonaws.com/dev/responses/generate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          room_id: roomId,
+          question_id: questionId,
+          response_student: responseStudent,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}: ${response.statusText}`)
+      }
+
+      const data = await response.json()
+      console.log("✅ Respuesta del endpoint de IA:", data)
+
+      if (data.success && data.data) {
+        return {
+          score: data.data.score,
+          feedback: data.data.feedback,
+        }
+      } else {
+        throw new Error("Respuesta inválida del servidor")
+      }
+    } catch (error) {
+      console.error("❌ Error al llamar al endpoint de IA:", error)
+      Alert.alert("Error", "No se pudo obtener el feedback de la IA. Se continuará con el flujo normal.", [
+        { text: "OK" },
+      ])
+      return null
+    }
+  }
+
+  const handleSubmit = async () => {
     console.log("🚀 ENVIANDO RESPUESTA:")
     console.log("- questionType:", questionType)
     console.log("- selectedOption:", selectedOption)
     console.log("- userAnswer:", userAnswer)
     console.log("- answered:", answered)
 
-    if (questionType === "MULTIPLE_CHOICE_SINGLE") {
-      if (selectedOption && !answered) {
-        // Encontrar la opción seleccionada
-        const selected = options.find((option) => option.id === selectedOption)
-        const correct = selected?.isCorrect || false
+    if (answered || isLoading) return
 
-        console.log("✅ Enviando respuesta de opción múltiple:", { selectedOption, correct })
+    setIsLoading(true)
 
-        setIsCorrect(correct)
-        setAnswered(true)
+    try {
+      if (questionType === "MULTIPLE_CHOICE_SINGLE") {
+        if (selectedOption) {
+          // Encontrar la opción seleccionada
+          const selected = options.find((option) => option.id === selectedOption)
+          const correct = selected?.isCorrect || false
 
-        if (onSubmit) {
-          onSubmit(selectedOption, correct)
+          console.log("✅ Enviando respuesta de opción múltiple:", { selectedOption, correct })
+
+          // Llamar al endpoint de IA
+          const aiResponse = await callAIFeedbackEndpoint([selected?.text || selectedOption])
+
+          setIsCorrect(correct)
+          setAnswered(true)
+
+          if (onSubmit) {
+            onSubmit(selectedOption, correct, undefined, aiResponse?.score, aiResponse?.feedback)
+          }
+        }
+      } else if (questionType === "OPEN_ENDED") {
+        if (userAnswer.trim()) {
+          console.log("✅ Enviando respuesta abierta:", userAnswer)
+
+          // Llamar al endpoint de IA
+          const aiResponse = await callAIFeedbackEndpoint([userAnswer.trim()])
+
+          // Para preguntas abiertas, consideramos la respuesta como "correcta" por defecto
+          // pero el score real vendrá de la IA
+          setIsCorrect(true)
+          setAnswered(true)
+
+          if (onSubmit) {
+            onSubmit("OPEN", true, userAnswer, aiResponse?.score, aiResponse?.feedback)
+          }
         }
       }
-    } else if (questionType === "OPEN_ENDED") {
-      if (userAnswer.trim() && !answered) {
-        console.log("✅ Enviando respuesta abierta:", userAnswer)
-
-        // Para preguntas abiertas, siempre consideramos la respuesta como "correcta"
-        setIsCorrect(true)
-        setAnswered(true)
-
-        if (onSubmit) {
-          onSubmit("OPEN", true, userAnswer)
-        }
-      }
+    } catch (error) {
+      console.error("❌ Error en handleSubmit:", error)
+      Alert.alert("Error", "Ocurrió un error al enviar la respuesta. Por favor, intenta de nuevo.", [{ text: "OK" }])
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -168,7 +254,7 @@ export const MissionScreen = ({
                 }}
                 onFocus={handleTextInputFocus}
                 onBlur={handleTextInputBlur}
-                editable={!answered}
+                editable={!answered && !isLoading}
                 textAlignVertical="top"
                 autoCorrect={true}
                 spellCheck={true}
@@ -196,7 +282,7 @@ export const MissionScreen = ({
               key={option.id}
               style={getOptionStyle(option.id, option.isCorrect)}
               onPress={() => handleOptionPress(option.id)}
-              disabled={answered}
+              disabled={answered || isLoading}
             >
               <Text
                 style={[
@@ -243,7 +329,7 @@ export const MissionScreen = ({
               onChangeText={setUserAnswer}
               onFocus={handleTextInputFocus}
               onBlur={handleTextInputBlur}
-              editable={!answered}
+              editable={!answered && !isLoading}
               textAlignVertical="top"
               autoCorrect={true}
               spellCheck={true}
@@ -284,18 +370,20 @@ export const MissionScreen = ({
                   style={[
                     styles.submitButton,
                     (questionType === "MULTIPLE_CHOICE_SINGLE" && !selectedOption) ||
-                    (questionType === "OPEN_ENDED" && !userAnswer.trim())
+                    (questionType === "OPEN_ENDED" && !userAnswer.trim()) ||
+                    isLoading
                       ? styles.disabledButton
                       : null,
                   ]}
                   onPress={handleSubmit}
                   disabled={
                     (questionType === "MULTIPLE_CHOICE_SINGLE" && !selectedOption) ||
-                    (questionType === "OPEN_ENDED" && !userAnswer.trim())
+                    (questionType === "OPEN_ENDED" && !userAnswer.trim()) ||
+                    isLoading
                   }
                 >
                   <Text style={styles.submitButtonText}>
-                    {questionType === "OPEN_ENDED" ? "Enviar Respuesta" : "Enviar"}
+                    {isLoading ? "Enviando..." : questionType === "OPEN_ENDED" ? "Enviar Respuesta" : "Enviar"}
                   </Text>
                 </TouchableOpacity>
               )}
@@ -345,7 +433,7 @@ const styles = StyleSheet.create({
     padding: 15,
     width: width * 0.85,
     marginBottom: 20,
-    maxHeight: width * 0.8, // Limitar altura para preguntas con muchas opciones
+    maxHeight: width * 0.8,
   },
   questionText: {
     fontSize: 16,
@@ -356,16 +444,16 @@ const styles = StyleSheet.create({
   },
   optionsContainer: {
     width: "100%",
-    maxHeight: width * 0.5, // Permitir scroll si hay muchas opciones
+    maxHeight: width * 0.5,
   },
   optionButton: {
     backgroundColor: "#E0E0E0",
     borderRadius: 10,
-    padding: 10, // Reducir padding para acomodar más opciones
-    marginVertical: 3, // Reducir margen vertical
+    padding: 10,
+    marginVertical: 3,
     flexDirection: "row",
     alignItems: "center",
-    minHeight: 45, // Altura mínima para mantener usabilidad
+    minHeight: 45,
   },
   selectedOption: {
     backgroundColor: "#4CAF50",
@@ -380,12 +468,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "bold",
     marginRight: 8,
-    minWidth: 20, // Ancho mínimo para las letras A, B, C, D, E
+    minWidth: 20,
   },
   optionText: {
     fontSize: 14,
     flex: 1,
-    flexWrap: "wrap", // Permitir que el texto se ajuste
+    flexWrap: "wrap",
   },
   correctOptionText: {
     color: "white",
@@ -409,7 +497,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
   },
-  // Estilos mejorados para preguntas abiertas
   openEndedContainer: {
     width: "100%",
     marginTop: 10,

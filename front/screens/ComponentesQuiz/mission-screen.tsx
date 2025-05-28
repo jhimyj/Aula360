@@ -17,7 +17,6 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
 } from "react-native"
-import { __DEV__ } from "react-native"
 
 // Tipos para las propiedades
 type OptionType = {
@@ -35,7 +34,7 @@ type MissionScreenProps = {
   backgroundImage: ImageSource
   characterImage: ImageSource
   question: string
-  questionType?: "MULTIPLE_CHOICE_SINGLE" | "OPEN_ENDED"
+  questionType?: "MULTIPLE_CHOICE_SINGLE" | "MULTIPLE_CHOICE_MULTIPLE" | "OPEN_ENDED"
   options: OptionType[]
   onSubmit?: (selectedOption: string, isCorrect: boolean, userAnswer?: string) => void
 }
@@ -59,30 +58,35 @@ export const MissionScreen = ({
   const [isFocused, setIsFocused] = useState<boolean>(false)
   const textInputRef = useRef<TextInput>(null)
 
+  // Reset states when mission changes
   useEffect(() => {
+    console.log("🔄 MISSION SCREEN - Reseteando estados para nueva misión")
+    setSelectedOption(null)
+    setUserAnswer("")
+    setAnswered(false)
+    setIsCorrect(false)
+    setIsFocused(false)
+  }, [missionNumber, question])
+
+  useEffect(() => {
+    console.log("🔍 MISSION SCREEN - Props recibidas:")
+    console.log("- missionNumber:", missionNumber)
+    console.log("- questionType:", questionType)
+    console.log("- options length:", options.length)
+    console.log("- question:", question)
+    console.log("- options:", options)
+
     Animated.timing(fadeAnim, {
       toValue: 1,
       duration: 500,
       useNativeDriver: true,
     }).start()
-  }, [])
-
-  // 🔍 LOG PARA DEBUGGING
-  useEffect(() => {
-    console.log("🔍 MISSION SCREEN - Props recibidas:")
-    console.log("- questionType:", questionType)
-    console.log("- options length:", options.length)
-    console.log("- question:", question)
-    console.log("- options:", options)
-  }, [questionType, options, question])
-
-  // 🔥 DETERMINAR SI ES REALMENTE UNA PREGUNTA ABIERTA
-  const isOpenEndedQuestion =
-    questionType === "OPEN_ENDED" || (questionType === "MULTIPLE_CHOICE_SINGLE" && options.length === 0)
+  }, [missionNumber])
 
   const handleOptionPress = (optionId: string) => {
-    if (!answered && questionType === "MULTIPLE_CHOICE_SINGLE" && options.length > 0) {
+    if (!answered && (questionType === "MULTIPLE_CHOICE_SINGLE" || questionType === "MULTIPLE_CHOICE_MULTIPLE")) {
       setSelectedOption(optionId)
+      console.log("✅ Opción seleccionada:", optionId)
     }
   }
 
@@ -104,6 +108,8 @@ export const MissionScreen = ({
   }
 
   const handleSubmit = () => {
+    const isOpenEndedQuestion = questionType === "OPEN_ENDED"
+
     console.log("🚀 ENVIANDO RESPUESTA:")
     console.log("- questionType:", questionType)
     console.log("- isOpenEndedQuestion:", isOpenEndedQuestion)
@@ -111,23 +117,24 @@ export const MissionScreen = ({
     console.log("- userAnswer:", userAnswer)
     console.log("- answered:", answered)
 
+    if (answered) return
+
     if (isOpenEndedQuestion) {
-      // Para preguntas abiertas (incluyendo fallback)
-      if (userAnswer.trim() && !answered) {
+      if (userAnswer.trim()) {
         console.log("✅ Enviando respuesta abierta:", userAnswer)
 
+        // Para preguntas abiertas, siempre consideramos la respuesta como "correcta"
         setIsCorrect(true)
         setAnswered(true)
 
         if (onSubmit) {
-          onSubmit("OPEN_ENDED_RESPONSE", true, userAnswer.trim())
+          onSubmit("OPEN", true, userAnswer)
         }
-      } else if (!userAnswer.trim()) {
-        console.log("⚠️ No hay respuesta escrita")
       }
-    } else if (questionType === "MULTIPLE_CHOICE_SINGLE" && options.length > 0) {
-      // Para preguntas de opción múltiple normales
-      if (selectedOption && !answered) {
+    } else {
+      // Para preguntas de opción múltiple
+      if (selectedOption) {
+        // Encontrar la opción seleccionada
         const selected = options.find((option) => option.id === selectedOption)
         const correct = selected?.isCorrect || false
 
@@ -157,18 +164,18 @@ export const MissionScreen = ({
     }
   }
 
-  const renderContent = () => {
+  const renderOptions = () => {
+    const isOpenEndedQuestion = questionType === "OPEN_ENDED"
+
     console.log("🎨 RENDERIZANDO CONTENIDO:")
     console.log("- questionType:", questionType)
     console.log("- options length:", options.length)
     console.log("- isOpenEndedQuestion:", isOpenEndedQuestion)
 
-    // 🔥 SI ES PREGUNTA ABIERTA (REAL O FALLBACK)
     if (isOpenEndedQuestion) {
-      console.log("✏️ RENDERIZANDO CAMPO DE TEXTO")
+      console.log("✏️ Renderizando campo de texto para pregunta abierta")
       return (
         <View style={styles.openEndedContainer}>
-          <Text style={styles.instructionText}>💭 Escribe tu respuesta:</Text>
           <TouchableWithoutFeedback onPress={handleTextInputPress}>
             <View style={styles.textInputWrapper}>
               <TextInput
@@ -178,10 +185,10 @@ export const MissionScreen = ({
                   isFocused && styles.openEndedInputFocused,
                   answered && styles.openEndedInputDisabled,
                 ]}
-                placeholder="Toca aquí para escribir tu respuesta..."
+                placeholder="Escribe tu respuesta aquí..."
                 placeholderTextColor="#999"
                 multiline={true}
-                numberOfLines={8}
+                numberOfLines={6}
                 value={userAnswer}
                 onChangeText={(text) => {
                   console.log("📝 Texto cambiado:", text)
@@ -195,21 +202,20 @@ export const MissionScreen = ({
                 spellCheck={true}
                 returnKeyType="default"
                 blurOnSubmit={false}
-                autoFocus={false}
               />
+              {!userAnswer && !isFocused && (
+                <View style={styles.placeholderOverlay}>
+                  <Text style={styles.placeholderText}>💭 Escribe tu respuesta aquí</Text>
+                </View>
+              )}
             </View>
           </TouchableWithoutFeedback>
 
           {/* Indicador de caracteres */}
-          <Text style={styles.characterCount}>
-            {userAnswer.length} caracteres {userAnswer.length > 0 ? "✓" : ""}
-          </Text>
+          <Text style={styles.characterCount}>{userAnswer.length} caracteres</Text>
         </View>
       )
-    }
-
-    // Para preguntas de opción múltiple con opciones
-    else if (questionType === "MULTIPLE_CHOICE_SINGLE" && options.length > 0) {
+    } else {
       console.log("📝 Renderizando opciones de opción múltiple")
       return (
         <ScrollView style={styles.optionsContainer} showsVerticalScrollIndicator={false} nestedScrollEnabled={true}>
@@ -243,21 +249,9 @@ export const MissionScreen = ({
         </ScrollView>
       )
     }
-
-    // No debería llegar aquí, pero por seguridad
-    return null
   }
 
-  // 🔥 LÓGICA SIMPLIFICADA PARA EL BOTÓN
-  const isButtonDisabled = () => {
-    if (answered) return true
-
-    if (isOpenEndedQuestion) {
-      return !userAnswer || userAnswer.trim().length === 0
-    } else {
-      return !selectedOption
-    }
-  }
+  const isOpenEndedQuestion = questionType === "OPEN_ENDED"
 
   return (
     <ImageBackground source={backgroundImage} style={styles.background} resizeMode="cover">
@@ -279,31 +273,24 @@ export const MissionScreen = ({
               <View style={styles.questionContainer}>
                 <Text style={styles.questionText}>{question}</Text>
 
-                {/* Contenido dinámico según el tipo */}
-                {renderContent()}
+                {/* Opciones o campo de texto según el tipo */}
+                {renderOptions()}
               </View>
 
               {/* Botón de enviar */}
               {!answered && (
                 <TouchableOpacity
-                  style={[styles.submitButton, isButtonDisabled() ? styles.disabledButton : styles.enabledButton]}
+                  style={[
+                    styles.submitButton,
+                    (!isOpenEndedQuestion && !selectedOption) || (isOpenEndedQuestion && !userAnswer.trim())
+                      ? styles.disabledButton
+                      : null,
+                  ]}
                   onPress={handleSubmit}
-                  disabled={isButtonDisabled()}
+                  disabled={(!isOpenEndedQuestion && !selectedOption) || (isOpenEndedQuestion && !userAnswer.trim())}
                 >
-                  <Text style={styles.submitButtonText}>{isOpenEndedQuestion ? "📝 Enviar Respuesta" : "Enviar"}</Text>
+                  <Text style={styles.submitButtonText}>{isOpenEndedQuestion ? "Enviar Respuesta" : "Enviar"}</Text>
                 </TouchableOpacity>
-              )}
-
-              {/* Debug info para ver el estado */}
-              {__DEV__ && (
-                <View style={styles.debugInfo}>
-                  <Text style={styles.debugText}>QuestionType: {questionType}</Text>
-                  <Text style={styles.debugText}>Options length: {options.length}</Text>
-                  <Text style={styles.debugText}>IsOpenEndedQuestion: {isOpenEndedQuestion.toString()}</Text>
-                  <Text style={styles.debugText}>UserAnswer length: {userAnswer.length}</Text>
-                  <Text style={styles.debugText}>UserAnswer trimmed: "{userAnswer.trim()}"</Text>
-                  <Text style={styles.debugText}>Button disabled: {isButtonDisabled().toString()}</Text>
-                </View>
               )}
             </Animated.View>
           </ScrollView>
@@ -346,20 +333,19 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   questionContainer: {
-    backgroundColor: "rgba(255, 255, 255, 0.95)",
+    backgroundColor: "rgba(255, 255, 255, 0.9)",
     borderRadius: 15,
-    padding: 20,
-    width: width * 0.9,
+    padding: 15,
+    width: width * 0.85,
     marginBottom: 20,
-    minHeight: 200,
+    maxHeight: width * 0.8,
   },
   questionText: {
-    fontSize: 18,
-    marginBottom: 20,
+    fontSize: 16,
+    marginBottom: 15,
     textAlign: "center",
-    fontWeight: "600",
+    fontWeight: "500",
     color: "#333",
-    lineHeight: 24,
   },
   optionsContainer: {
     width: "100%",
@@ -368,11 +354,11 @@ const styles = StyleSheet.create({
   optionButton: {
     backgroundColor: "#E0E0E0",
     borderRadius: 10,
-    padding: 12,
-    marginVertical: 4,
+    padding: 10,
+    marginVertical: 3,
     flexDirection: "row",
     alignItems: "center",
-    minHeight: 50,
+    minHeight: 45,
   },
   selectedOption: {
     backgroundColor: "#4CAF50",
@@ -384,13 +370,13 @@ const styles = StyleSheet.create({
     backgroundColor: "#F44336",
   },
   optionLabel: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "bold",
-    marginRight: 10,
-    minWidth: 25,
+    marginRight: 8,
+    minWidth: 20,
   },
   optionText: {
-    fontSize: 16,
+    fontSize: 14,
     flex: 1,
     flexWrap: "wrap",
   },
@@ -401,39 +387,24 @@ const styles = StyleSheet.create({
     color: "white",
   },
   submitButton: {
+    backgroundColor: "#4CAF50",
     borderRadius: 25,
-    paddingVertical: 15,
-    paddingHorizontal: 40,
-    marginTop: 15,
-    elevation: 3,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
+    paddingVertical: 12,
+    paddingHorizontal: 30,
+    marginTop: 10,
   },
   disabledButton: {
     backgroundColor: "#A5D6A7",
     opacity: 0.7,
   },
-  enabledButton: {
-    backgroundColor: "#4CAF50",
-  },
   submitButtonText: {
     color: "white",
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "bold",
   },
-  // 🔥 ESTILOS MEJORADOS PARA PREGUNTAS ABIERTAS
   openEndedContainer: {
     width: "100%",
     marginTop: 10,
-  },
-  instructionText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#4CAF50",
-    marginBottom: 10,
-    textAlign: "center",
   },
   textInputWrapper: {
     position: "relative",
@@ -441,49 +412,44 @@ const styles = StyleSheet.create({
   },
   openEndedInput: {
     backgroundColor: "#FFFFFF",
-    borderWidth: 3,
-    borderColor: "#4CAF50",
-    borderRadius: 15,
-    padding: 20,
-    minHeight: 180,
-    maxHeight: 250,
+    borderWidth: 2,
+    borderColor: "#E0E0E0",
+    borderRadius: 12,
+    padding: 15,
+    minHeight: 150,
+    maxHeight: 200,
     textAlignVertical: "top",
     fontSize: 16,
     color: "#333",
     fontFamily: Platform.OS === "ios" ? "System" : "Roboto",
-    lineHeight: 24,
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    lineHeight: 22,
   },
   openEndedInputFocused: {
-    borderColor: "#2E7D32",
+    borderColor: "#4CAF50",
     backgroundColor: "#F8FFF8",
-    borderWidth: 3,
   },
   openEndedInputDisabled: {
     backgroundColor: "#F5F5F5",
     borderColor: "#CCC",
     color: "#666",
   },
+  placeholderOverlay: {
+    position: "absolute",
+    top: 15,
+    left: 15,
+    right: 15,
+    pointerEvents: "none",
+  },
+  placeholderText: {
+    fontSize: 16,
+    color: "#999",
+    fontStyle: "italic",
+  },
   characterCount: {
-    fontSize: 14,
-    color: "#4CAF50",
-    textAlign: "right",
-    marginTop: 8,
-    fontWeight: "500",
-  },
-  // Debug styles
-  debugInfo: {
-    marginTop: 10,
-    padding: 10,
-    backgroundColor: "rgba(0,0,0,0.1)",
-    borderRadius: 5,
-  },
-  debugText: {
     fontSize: 12,
     color: "#666",
+    textAlign: "right",
+    marginTop: 5,
+    fontStyle: "italic",
   },
 })

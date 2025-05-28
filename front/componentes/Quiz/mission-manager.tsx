@@ -14,6 +14,7 @@ type ImageSource = number | { uri: string }
 type MissionType = {
   id: number
   missionNumber: number
+  questionId: string // Nuevo: ID de la pregunta para el endpoint
   backgroundImage: ImageSource
   characterImage: ImageSource
   villainImage: ImageSource
@@ -48,7 +49,7 @@ type MissionState = "QUESTION" | "FEEDBACK" | "TRANSITION"
 
 type MissionManagerProps = {
   missions: MissionType[]
-  onComplete?: (score: number, totalMissions: number) => void
+  onComplete?: (score: number, totalMissions: number, aiScores?: number[]) => void
 }
 
 export const MissionManager = ({ missions, onComplete }: MissionManagerProps) => {
@@ -58,6 +59,9 @@ export const MissionManager = ({ missions, onComplete }: MissionManagerProps) =>
   const [lastAnswerCorrect, setLastAnswerCorrect] = useState(false)
   const [showCharacterFeedback, setShowCharacterFeedback] = useState(true)
   const [userAnswers, setUserAnswers] = useState<{ [key: number]: string }>({})
+  const [aiScores, setAiScores] = useState<number[]>([]) // Nuevo: almacenar scores de IA
+  const [aiFeedbacks, setAiFeedbacks] = useState<string[]>([]) // Nuevo: almacenar feedbacks de IA
+  const [currentAiFeedback, setCurrentAiFeedback] = useState<string>("")
 
   useEffect(() => {
     if (missions.length === 0) {
@@ -72,7 +76,13 @@ export const MissionManager = ({ missions, onComplete }: MissionManagerProps) =>
     }
   }, [currentMissionIndex, missions])
 
-  const handleSubmit = (selectedOption: string, isCorrect: boolean, userAnswer?: string) => {
+  const handleSubmit = (
+    selectedOption: string,
+    isCorrect: boolean,
+    userAnswer?: string,
+    aiScore?: number,
+    aiFeedback?: string,
+  ) => {
     // Guardar la respuesta del usuario si es una pregunta abierta
     if (currentMissionIndex < missions.length) {
       const currentMission = missions[currentMissionIndex]
@@ -81,6 +91,24 @@ export const MissionManager = ({ missions, onComplete }: MissionManagerProps) =>
           ...prev,
           [currentMissionIndex]: userAnswer,
         }))
+      }
+
+      // Guardar score y feedback de IA si están disponibles
+      if (aiScore !== undefined) {
+        setAiScores((prev) => {
+          const newScores = [...prev]
+          newScores[currentMissionIndex] = aiScore
+          return newScores
+        })
+      }
+
+      if (aiFeedback) {
+        setAiFeedbacks((prev) => {
+          const newFeedbacks = [...prev]
+          newFeedbacks[currentMissionIndex] = aiFeedback
+          return newFeedbacks
+        })
+        setCurrentAiFeedback(aiFeedback)
       }
 
       // Actualizar puntuación si la respuesta es correcta
@@ -108,7 +136,7 @@ export const MissionManager = ({ missions, onComplete }: MissionManagerProps) =>
     // Si es la última misión, llamar a onComplete
     if (currentMissionIndex >= missions.length - 1) {
       if (onComplete) {
-        onComplete(score, missions.length)
+        onComplete(score, missions.length, aiScores)
       }
       return
     }
@@ -148,6 +176,7 @@ export const MissionManager = ({ missions, onComplete }: MissionManagerProps) =>
             backgroundImage={currentMission.backgroundImage}
             characterImage={currentMission.villainImage}
             question={currentMission.question}
+            questionId={currentMission.questionId} // Nuevo: pasar questionId
             questionType={currentMission.questionType}
             options={currentMission.options}
             onSubmit={handleSubmit}
@@ -180,14 +209,16 @@ export const MissionManager = ({ missions, onComplete }: MissionManagerProps) =>
               correctBackground={currentMission.feedback.correctBackground}
               incorrectBackground={currentMission.feedback.incorrectBackground}
               correctDescription={
-                currentMission.questionType === "OPEN_ENDED"
+                currentAiFeedback || // Usar feedback de IA si está disponible
+                (currentMission.questionType === "OPEN_ENDED"
                   ? "¡Gracias por tu respuesta! Continuemos con la siguiente pregunta."
-                  : currentMission.feedback.correctDescription
+                  : currentMission.feedback.correctDescription)
               }
               incorrectDescription={
-                currentMission.questionType === "OPEN_ENDED"
+                currentAiFeedback || // Usar feedback de IA si está disponible
+                (currentMission.questionType === "OPEN_ENDED"
                   ? "¡Gracias por tu respuesta! Continuemos con la siguiente pregunta."
-                  : currentMission.feedback.incorrectDescription
+                  : currentMission.feedback.incorrectDescription)
               }
               userAnswer={userAnswers[currentMissionIndex]}
               isOpenEnded={currentMission.questionType === "OPEN_ENDED"}

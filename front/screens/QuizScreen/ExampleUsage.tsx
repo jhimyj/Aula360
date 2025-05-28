@@ -13,7 +13,7 @@ type VillainName = "Corporatus" | "Toxicus" | "Shadowman"
 type ApiQuestion = {
   id: string
   text: string
-  type: "MULTIPLE_CHOICE_SINGLE" | "OPEN_ENDED"
+  type: "MULTIPLE_CHOICE_SINGLE" | "MULTIPLE_CHOICE_MULTIPLE" | "OPEN_ENDED"
   config: {
     options?: string[]
     correct_option?: number // Índice de la opción correcta (si existe)
@@ -347,7 +347,7 @@ const buildMissionsFromAPI = async (characterName: CharacterName, villainName: V
       }
 
       return {
-        id: index + 1,
+        id: apiQuestion.id, // Usar el ID real de la pregunta para el endpoint de feedback
         missionNumber: index + 1,
         backgroundImage: assets.backgroundImages[index % assets.backgroundImages.length],
         villainImage: vilImgs[index % vilImgs.length],
@@ -387,6 +387,14 @@ const QuizScreen = ({ navigation }) => {
 
         console.log("Personaje seleccionado:", characterName)
         console.log("Villano seleccionado:", villainName)
+
+        // Guardar room_id en AsyncStorage para el endpoint de feedback
+        // (Esto es solo un ejemplo, ajusta según tu lógica)
+        const roomId = await AsyncStorage.getItem("roomId")
+        if (!roomId) {
+          // Si no existe, podrías obtenerlo de otro lugar o usar un valor por defecto
+          await AsyncStorage.setItem("roomId", "7642a6c9-9978-43b8-b0c6-a0d2e15d7629")
+        }
 
         // Obtener misiones con preguntas del API
         const missions = await buildMissionsFromAPI(characterName, villainName)
