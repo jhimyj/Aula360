@@ -34,7 +34,7 @@ type ApiResponse = {
   request_id: string
 }
 
-// Imágenes del villano para cada misión (3 por villano)
+// Imágenes del villano para cada misión (3 por villano, se repetirán según sea necesario)
 const villainCharacterImages: Record<VillainName, any[]> = {
   Corporatus: [
     require("../../assets/PersonajesQuiz/Corporatus/CorporatusLevel-1.png"),
@@ -53,7 +53,7 @@ const villainCharacterImages: Record<VillainName, any[]> = {
   ],
 }
 
-// Imágenes incorrectas para cada villano y misión (3 por villano)
+// Imágenes incorrectas para cada villano y misión (3 por villano, se repetirán según sea necesario)
 const villainIncorrectImages: Record<VillainName, any[]> = {
   Corporatus: [
     require("../../assets/PersonajesQuiz/Corporatus/CorporatusLevel-1.png"),
@@ -72,7 +72,7 @@ const villainIncorrectImages: Record<VillainName, any[]> = {
   ],
 }
 
-// Fondos y correctImages por personaje (3 por personaje)
+// Fondos y correctImages por personaje (3 por personaje, se repetirán según sea necesario)
 const characterAssets: Record<CharacterName, { backgroundImages: any[]; correctImages: any[] }> = {
   Qhapaq: {
     backgroundImages: [
@@ -230,15 +230,13 @@ const buildMissionsFromAPI = async (characterName: CharacterName, villainName: V
       throw new Error("No se encontraron preguntas para este room")
     }
 
-    // Limitar a máximo 3 preguntas para mantener la estructura visual
-    const questionsToUse = apiQuestions.slice(0, 3)
-
-    console.log("🎯 PROCESANDO PREGUNTAS PARA MISIONES:")
+    // 🔥 USAR TODAS LAS PREGUNTAS, NO SOLO 3
+    console.log("🎯 PROCESANDO TODAS LAS PREGUNTAS PARA MISIONES:")
     console.log(`- Total de preguntas recibidas: ${apiQuestions.length}`)
-    console.log(`- Preguntas que se usarán: ${questionsToUse.length}`)
+    console.log(`- Se crearán ${apiQuestions.length} misiones`)
 
-    return questionsToUse.map((apiQuestion, index) => {
-      console.log(`\n🔄 PROCESANDO PREGUNTA ${index + 1}:`)
+    return apiQuestions.map((apiQuestion, index) => {
+      console.log(`\n🔄 PROCESANDO PREGUNTA ${index + 1} de ${apiQuestions.length}:`)
       console.log("- Tipo original:", apiQuestion.type)
       console.log("- Config original:", JSON.stringify(apiQuestion.config, null, 2))
 
@@ -298,7 +296,11 @@ const buildMissionsFromAPI = async (characterName: CharacterName, villainName: V
 
       console.log(`✅ Pregunta ${index + 1} procesada exitosamente`)
 
-      // ... resto del código igual
+      // Función para obtener imagen con índice cíclico
+      const getImageByIndex = (imageArray: any[], index: number) => {
+        return imageArray[index % imageArray.length]
+      }
+
       const getTransitionTitle = () => {
         if (apiQuestion.tags && apiQuestion.tags.length > 0) {
           return `Explorando ${apiQuestion.tags[0]}`
@@ -326,20 +328,20 @@ const buildMissionsFromAPI = async (characterName: CharacterName, villainName: V
       const getFeedback = () => {
         if (apiQuestion.type === "MULTIPLE_CHOICE_SINGLE") {
           return {
-            correctImage: assets.correctImages[index % assets.correctImages.length],
-            incorrectImage: incorrectImgs[index % incorrectImgs.length],
-            correctBackground: assets.backgroundImages[index % assets.backgroundImages.length],
-            incorrectBackground: assets.backgroundImages[index % assets.backgroundImages.length],
+            correctImage: getImageByIndex(assets.correctImages, index),
+            incorrectImage: getImageByIndex(incorrectImgs, index),
+            correctBackground: getImageByIndex(assets.backgroundImages, index),
+            incorrectBackground: getImageByIndex(assets.backgroundImages, index),
             correctDescription: "¡Excelente! Has respondido correctamente.",
             incorrectDescription: "No te preocupes, sigue intentando. ¡Puedes hacerlo mejor!",
           }
         } else {
           // Para preguntas abiertas, siempre mostramos feedback positivo
           return {
-            correctImage: assets.correctImages[index % assets.correctImages.length],
-            incorrectImage: assets.correctImages[index % assets.correctImages.length], // Usamos la misma imagen
-            correctBackground: assets.backgroundImages[index % assets.backgroundImages.length],
-            incorrectBackground: assets.backgroundImages[index % assets.backgroundImages.length],
+            correctImage: getImageByIndex(assets.correctImages, index),
+            incorrectImage: getImageByIndex(assets.correctImages, index), // Usamos la misma imagen
+            correctBackground: getImageByIndex(assets.backgroundImages, index),
+            incorrectBackground: getImageByIndex(assets.backgroundImages, index),
             correctDescription: "¡Gracias por tu respuesta! Continuemos con la siguiente pregunta.",
             incorrectDescription: "¡Gracias por tu respuesta! Continuemos con la siguiente pregunta.",
           }
@@ -349,16 +351,16 @@ const buildMissionsFromAPI = async (characterName: CharacterName, villainName: V
       return {
         id: apiQuestion.id, // Usar el ID real de la pregunta para el endpoint de feedback
         missionNumber: index + 1,
-        backgroundImage: assets.backgroundImages[index % assets.backgroundImages.length],
-        villainImage: vilImgs[index % vilImgs.length],
-        characterImage: charImgs[index % charImgs.length],
+        backgroundImage: getImageByIndex(assets.backgroundImages, index),
+        villainImage: getImageByIndex(vilImgs, index),
+        characterImage: getImageByIndex(charImgs, index),
         question: apiQuestion.text,
         questionType: apiQuestion.type, // 🔥 USAR DIRECTAMENTE EL TIPO DE LA API
         options: options, // Array vacío para OPEN_ENDED, opciones reales para MULTIPLE_CHOICE
         feedback: getFeedback(),
         transition: {
-          backgroundImage: assets.backgroundImages[index % assets.backgroundImages.length],
-          image: vilImgs[index % vilImgs.length],
+          backgroundImage: getImageByIndex(assets.backgroundImages, index),
+          image: getImageByIndex(vilImgs, index),
           title: getTransitionTitle(),
           description: getTransitionDescription(),
         },
@@ -398,6 +400,7 @@ const QuizScreen = ({ navigation }) => {
 
         // Obtener misiones con preguntas del API
         const missions = await buildMissionsFromAPI(characterName, villainName)
+        console.log(`🎮 Se crearon ${missions.length} misiones exitosamente`)
         setMissionsData(missions)
       } catch (error: any) {
         console.error("Error cargando preguntas:", error)
@@ -422,6 +425,7 @@ const QuizScreen = ({ navigation }) => {
   }, [])
 
   const handleComplete = (score: number, totalMissions: number) => {
+    console.log(`🏁 Quiz completado: ${score}/${totalMissions}`)
     navigation.navigate("Results", { score, totalMissions })
   }
 
