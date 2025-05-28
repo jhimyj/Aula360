@@ -1,9 +1,9 @@
-// hooks/useQuestions.ts
+// hooks/useQuestionsUpdated.ts
 import { useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 
-// Tipos
+// Tipos existentes...
 export type QuestionType = 'MULTIPLE_CHOICE_SINGLE' | 'MULTIPLE_CHOICE_MULTIPLE' | 'OPEN_ENDED';
 export type DifficultyLevel = 'EASY' | 'MEDIUM' | 'HARD';
 
@@ -24,6 +24,32 @@ export interface Question {
   updated_at?: string;
 }
 
+// Nuevos tipos para IA
+interface AIRecommendationRequest {
+  room_id: string;
+  user_prompt: string;
+}
+
+interface AIQuestion {
+  type: QuestionType;
+  text: string;
+  score: number;
+  tags?: string[];
+  difficulty: DifficultyLevel;
+  config: {
+    options?: string[];
+  };
+}
+
+interface AIRecommendationResponse {
+  success: boolean;
+  code: string;
+  message: string;
+  data: AIQuestion[];
+  request_id: string;
+}
+
+// Interfaces existentes...
 interface CreateQuestionResponse {
   success: boolean;
   code: string;
@@ -56,7 +82,48 @@ export const useQuestions = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Crear una pregunta individual
+  // Nueva función para generar recomendaciones con IA
+  const generateAIRecommendations = async (roomId: string, userPrompt: string): Promise<AIQuestion[] | null> => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const token = await AsyncStorage.getItem('userToken');
+      if (!token) {
+        throw new Error('No se encontró token de autenticación');
+      }
+
+      const payload: AIRecommendationRequest = {
+        room_id: roomId,
+        user_prompt: userPrompt
+      };
+
+      const response = await axios.post<AIRecommendationResponse>(
+        'https://fmrdkboi63.execute-api.us-east-1.amazonaws.com/dev/questions/room/recommendation_ia',
+        payload,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (response.data.success) {
+        return response.data.data;
+      } else {
+        throw new Error(response.data.message || 'Error al generar recomendaciones');
+      }
+    } catch (error: any) {
+      console.error('Error generating AI recommendations:', error);
+      setError(error.response?.data?.message || error.message || 'Error al generar recomendaciones con IA');
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Funciones existentes...
   const createQuestion = async (question: Question): Promise<string | null> => {
     try {
       setLoading(true);
@@ -88,7 +155,6 @@ export const useQuestions = () => {
     }
   };
 
-  // Crear múltiples preguntas
   const createQuestionsList = async (roomId: string, questions: Omit<Question, 'room_id'>[]): Promise<string[] | null> => {
     try {
       setLoading(true);
@@ -125,7 +191,6 @@ export const useQuestions = () => {
     }
   };
 
-  // Obtener todas las preguntas de una sala
   const getQuestionsByRoom = async (roomId: string): Promise<Question[] | null> => {
     try {
       setLoading(true);
@@ -156,7 +221,6 @@ export const useQuestions = () => {
     }
   };
 
-  // Obtener una pregunta específica
   const getQuestion = async (questionId: string, roomId: string): Promise<Question | null> => {
     try {
       setLoading(true);
@@ -193,6 +257,7 @@ export const useQuestions = () => {
     createQuestion,
     createQuestionsList,
     getQuestionsByRoom,
-    getQuestion
+    getQuestion,
+    generateAIRecommendations, // Nueva función exportada
   };
 };
