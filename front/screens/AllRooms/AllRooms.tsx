@@ -147,16 +147,7 @@ export default function AllRooms() {
       <StatusBar barStyle="dark-content" backgroundColor="#F8F9FA" />
       
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton} 
-          onPress={() => navigation.goBack()}
-        >
-          <Feather name="arrow-left" size={24} color="#333" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Todas las Salas</Text>
-        <View style={styles.placeholder} />
-      </View>
+     
 
       <ScrollView 
         style={styles.content}

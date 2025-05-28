@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { View, StyleSheet, Alert } from "react-native"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import axios from "axios"
+import { Audio } from "expo-av"
 import { MissionManager } from "../ComponentesQuiz/mission-manager"
 
 type CharacterName = "Qhapaq" | "Amaru" | "Killa"
@@ -32,6 +33,13 @@ type ApiResponse = {
   message: string
   data: ApiQuestion[]
   request_id: string
+}
+
+// 🎵 MÚSICA DE FONDO PARA CADA PERSONAJE
+const characterMusic: Record<CharacterName, any> = {
+  Qhapaq: require("../../assets/Musica-quiz/Qhapac.mp3"), // Reemplaza con tu ruta
+  Amaru: require("../../assets/Musica-quiz/Amaru.mp3"), // Reemplaza con tu ruta
+  Killa: require("../../assets/Musica-quiz/Killa.mp3"), // Reemplaza con tu ruta
 }
 
 // Imágenes del villano para cada misión (3 por villano, se repetirán según sea necesario)
@@ -376,6 +384,37 @@ const QuizScreen = ({ navigation }) => {
   const [missionsData, setMissionsData] = useState([])
   const [loading, setLoading] = useState(true)
 
+  // 🎵 FUNCIÓN SIMPLE PARA REPRODUCIR MÚSICA DE FONDO
+  const playBackgroundMusic = async (characterName: CharacterName) => {
+    try {
+      // Configuración básica de audio
+      await Audio.setAudioModeAsync({
+        playsInSilentModeIOS: true,
+        staysActiveInBackground: true,
+      })
+
+      // Obtener la música del personaje
+      const musicSource = characterMusic[characterName]
+
+      if (!musicSource) {
+        console.warn(`⚠️ No se encontró música para ${characterName}`)
+        return
+      }
+
+      // Cargar y reproducir en loop
+      const { sound } = await Audio.Sound.createAsync(musicSource, {
+        isLooping: true,
+        volume: 0.5,
+        shouldPlay: true,
+      })
+
+      console.log(`🎵 Reproduciendo música de ${characterName}`)
+    } catch (error) {
+      console.error("❌ Error reproduciendo música:", error)
+      // Continuar sin música si hay error
+    }
+  }
+
   useEffect(() => {
     const loadQuestionsAndBuildMissions = async () => {
       try {
@@ -390,8 +429,10 @@ const QuizScreen = ({ navigation }) => {
         console.log("Personaje seleccionado:", characterName)
         console.log("Villano seleccionado:", villainName)
 
+        // 🎵 REPRODUCIR MÚSICA DE FONDO SEGÚN EL PERSONAJE
+        playBackgroundMusic(characterName)
+
         // Guardar room_id en AsyncStorage para el endpoint de feedback
-        // (Esto es solo un ejemplo, ajusta según tu lógica)
         const roomId = await AsyncStorage.getItem("roomId")
         if (!roomId) {
           // Si no existe, podrías obtenerlo de otro lugar o usar un valor por defecto

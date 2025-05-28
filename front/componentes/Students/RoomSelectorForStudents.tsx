@@ -126,15 +126,7 @@ const RoomSelectorForStudents: React.FC = () => {
       <StatusBar barStyle="dark-content" backgroundColor="#F8F9FA" />
 
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color="#333" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Seleccionar Sala</Text>
-        <TouchableOpacity style={styles.refreshButton} onPress={refetchRooms}>
-          <Ionicons name="refresh" size={24} color="#4361EE" />
-        </TouchableOpacity>
-      </View>
+      
 
       {/* Barra de búsqueda */}
       <View style={styles.searchContainer}>

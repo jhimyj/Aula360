@@ -203,11 +203,7 @@ export const MissionScreen = ({
                 returnKeyType="default"
                 blurOnSubmit={false}
               />
-              {!userAnswer && !isFocused && (
-                <View style={styles.placeholderOverlay}>
-                  <Text style={styles.placeholderText}>💭 Escribe tu respuesta aquí</Text>
-                </View>
-              )}
+             
             </View>
           </TouchableWithoutFeedback>
 

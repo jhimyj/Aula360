@@ -9,6 +9,7 @@ import BattleScreen from "../screens/Versus/BattleScreen"
 import compot from "../../front/screens/QuizScreen/ExampleUsage"
 import ResultsScreen from "../screens/ComponentesQuiz/results-screen" // 🎯 IMPORT AGREGADO
 import AsyncStorage from "@react-native-async-storage/async-storage"
+import StudentDashboardScreen from "../screens/Students/StudentDashboardScreen"
 
 export type AuthStackParamList = {
   Login: undefined
@@ -20,6 +21,7 @@ export type AuthStackParamList = {
   BattleScreen: undefined
   Quiz: undefined
   Results: undefined // 🎯 NUEVO TIPO AGREGADO
+  StudentDashboard: undefined // 🎯 DASHBOARD PARA ESTUDIANTES
 }
 
 const Stack = createNativeStackNavigator<AuthStackParamList>()
@@ -159,8 +161,8 @@ export default function AuthStack({ setIsAuthenticated }: { setIsAuthenticated: 
       </Stack.Screen>
 
       {/* 🎯 PANTALLA DE VILLANOS */}
-      <Stack.Screen 
-        name="VillainSelection" 
+      <Stack.Screen
+        name="VillainSelection"
         component={VillainSelectionScreen}
         options={{
           headerShown: true,
@@ -176,8 +178,8 @@ export default function AuthStack({ setIsAuthenticated }: { setIsAuthenticated: 
       />
 
       {/* 🗺️ PANTALLA DE MISIONES */}
-      <Stack.Screen 
-        name="Mision" 
+      <Stack.Screen
+        name="Mision"
         component={Mision}
         options={{
           headerShown: true,
@@ -193,8 +195,8 @@ export default function AuthStack({ setIsAuthenticated }: { setIsAuthenticated: 
       />
 
       {/* ⚔️ PANTALLA DE BATALLA */}
-      <Stack.Screen 
-        name="BattleScreen" 
+      <Stack.Screen
+        name="BattleScreen"
         component={BattleScreen}
         options={{
           headerShown: true,
@@ -210,8 +212,8 @@ export default function AuthStack({ setIsAuthenticated }: { setIsAuthenticated: 
       />
 
       {/* ❓ PANTALLA DE QUIZ */}
-      <Stack.Screen 
-        name="Quiz" 
+      <Stack.Screen
+        name="Quiz"
         component={compot}
         options={{
           headerShown: true,
@@ -227,8 +229,8 @@ export default function AuthStack({ setIsAuthenticated }: { setIsAuthenticated: 
       />
 
       {/* 🏆 PANTALLA DE RESULTADOS - NUEVA ADICIÓN */}
-      <Stack.Screen 
-        name="Results" 
+      <Stack.Screen
+        name="Results"
         component={ResultsScreen}
         options={{
           headerShown: true,
@@ -244,14 +246,31 @@ export default function AuthStack({ setIsAuthenticated }: { setIsAuthenticated: 
       />
 
       {/* 🎮 PANTALLA DE JUEGO DE MISIÓN */}
-      <Stack.Screen 
-        name="MissionGameScreen" 
+      <Stack.Screen
+        name="MissionGameScreen"
         component={MissionGameScreen}
         options={{
           headerShown: true,
           title: "🎮 Juego de Misión",
           headerStyle: {
             backgroundColor: "#FF8C00",
+          },
+          headerTintColor: "#fff",
+          headerTitleStyle: {
+            fontWeight: "bold",
+          },
+        }}
+      />
+
+      {/* 🏠 DASHBOARD PARA ESTUDIANTES */}
+      <Stack.Screen
+        name="StudentDashboard"
+        component={StudentDashboardScreen}
+        options={{
+          headerShown: true,
+          title: "🏠 Dashboard Estudiante",
+          headerStyle: {
+            backgroundColor: "#4361EE",
           },
           headerTintColor: "#fff",
           headerTitleStyle: {

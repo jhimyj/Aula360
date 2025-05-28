@@ -108,7 +108,7 @@ const MissionInfo = ({ onStartMission, onClose }: MissionInfoProps) => {
             id: "mission-qhapaq-1",
             title: "Proteger las tierras sagradas",
             description:
-              "Qhapaq debe proteger las tierras sagradas de su pueblo de Corporatus...",
+              "Qhapaq debe proteger las tierras sagradas de su pueblo, enfrentando poderosas fuerzas que amenazan destruir su herencia y el equilibrio de la naturaleza.",
             image: require("../../assets/Personajes/Amaru1.png"),
             video: require("../../assets/MisionesGame/Qhapac-mision.mp4"),
             difficulty: "medium",
@@ -127,7 +127,7 @@ const MissionInfo = ({ onStartMission, onClose }: MissionInfoProps) => {
             id: "mission-amaru-1",
             title: "Purificar las aguas contaminadas",
             description:
-              "Amaru debe enfrentarse a Toxicus, quien ha contaminado los ríos...",
+              "Amaru debe enfrentarse a una amenaza que ha contaminado los ríos sagrados, luchando por restaurar la pureza del agua y proteger la vida y el equilibrio de su comunidad.",
             image: require("../../assets/Personajes/Amaru1.png"),
             video: require("../../assets/MisionesGame/Amaru-misión.mp4"),
             difficulty: "hard",
@@ -146,7 +146,7 @@ const MissionInfo = ({ onStartMission, onClose }: MissionInfoProps) => {
             id: "mission-killa-1",
             title: "Desenmascarar al infiltrado",
             description:
-              "Killa debe descubrir la identidad de Shadowman...",
+              "rKilla debe descubrir quién está espiando a los líderes de la tribu y tratando de obtener información secreta para proteger a su gente de una amenaza oculta",
             image: require("../../assets/Personajes/Amaru1.png"),
             video: require("../../assets/MisionesGame/MIsion-killa.mp4"),
             difficulty: "easy",

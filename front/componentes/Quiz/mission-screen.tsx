@@ -263,7 +263,6 @@ export const MissionScreen = ({
               />
               {!userAnswer && !isFocused && (
                 <View style={styles.placeholderOverlay}>
-                  <Text style={styles.placeholderText}>💭 Escribe tu respuesta aquí</Text>
                 </View>
               )}
             </View>

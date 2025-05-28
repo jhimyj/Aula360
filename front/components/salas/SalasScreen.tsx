@@ -26,10 +26,7 @@ export const SalasScreen = ({ onBack }: SalasScreenProps) => {
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.container}
         >
-          <Appbar.Header style={styles.appbar}>
-            <Appbar.BackAction onPress={onBack} color="#FFF" />
-            <Appbar.Content title="Crear Nueva Sala" color="#FFF" />
-          </Appbar.Header>
+         
           
           <ScrollView 
             contentContainerStyle={styles.scrollContent}

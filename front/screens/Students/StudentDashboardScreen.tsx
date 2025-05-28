@@ -89,41 +89,11 @@ export default function StudentDashboardScreen() {
 
   useEffect(() => {
     console.log("✅ Entraste a StudentDashboardScreen")
-    clearAllFlags()
     setIsNavigating(false)
   }, [])
 
   // 🎯 FUNCIÓN PARA LIMPIAR FLAGS
-  const clearAllFlags = async () => {
-    try {
-      const keysToRemove = [
-        "showMissionInfo",
-        "isInMissionFlow",
-        "autoShowMission",
-        "missionVisible",
-        "currentScreen",
-        "navigationFlow",
-        "isInCharacterSelection",
-        "navigatingToVillain",
-        "missionAutoShow",
-        "showMission",
-        "missionState",
-        "gameState",
-      ]
-
-      for (const key of keysToRemove) {
-        await AsyncStorage.removeItem(key)
-      }
-
-      await AsyncStorage.setItem("screenState", "character_selection")
-      await AsyncStorage.setItem("navigationReady", "true")
-
-      console.log("🧹 TODOS los flags limpiados")
-    } catch (error) {
-      console.error("Error al limpiar flags:", error)
-    }
-  }
-
+  
   // ---------------- Funciones de audio --------------
   const playBackgroundSound = useCallback(async () => {
     if (soundRef.current) return
