@@ -11,12 +11,12 @@ import CharacterDisplay from "../ComponentesHero/CharacterDisplay"
 import CharacterList from "../ComponentesHero/CharacterList"
 import type { Character } from "../ComponentesHero/types"
 
-// 🎯 ACTUALIZAR TIPOS PARA INCLUIR VILLAINSELECTION EN AUTHSTACK
+// 🎯 TIPOS PARA INCLUIR VILLAINSELECTION EN AUTHSTACK
 type RootStackParamList = {
   Login: undefined
   Register: undefined
   StudentAuth: undefined
-  VillainSelection: undefined // 🎯 AHORA ESTÁ EN AUTHSTACK
+  VillainSelection: undefined
 }
 
 type NavigationProps = NavigationProp<RootStackParamList>
@@ -92,8 +92,6 @@ export default function StudentDashboardScreen() {
     setIsNavigating(false)
   }, [])
 
-  // 🎯 FUNCIÓN PARA LIMPIAR FLAGS
-  
   // ---------------- Funciones de audio --------------
   const playBackgroundSound = useCallback(async () => {
     if (soundRef.current) return
@@ -165,7 +163,7 @@ export default function StudentDashboardScreen() {
     console.log(`🎯 Personaje seleccionado: ${character.name}`)
   }
 
-  // 🎯 FUNCIÓN SIMPLIFICADA PARA CONFIRMAR PERSONAJE
+  // 🎯 FUNCIÓN PARA CONFIRMAR PERSONAJE
   const handleConfirmCharacter = async () => {
     if (isNavigating) {
       console.log("⚠️ Ya se está navegando, ignorando...")
@@ -188,7 +186,7 @@ export default function StudentDashboardScreen() {
       console.log("📋 Estado de navegación:", JSON.stringify(state, null, 2))
       console.log("📋 Rutas disponibles:", state?.routeNames)
 
-      // ✅ AHORA VILLAINSELECTION DEBERÍA ESTAR DISPONIBLE EN AUTHSTACK
+      // ✅ VILLAINSELECTION DEBERÍA ESTAR DISPONIBLE EN AUTHSTACK
       if (!state?.routeNames?.includes("VillainSelection")) {
         throw new Error("La ruta VillainSelection no está disponible en AuthStack")
       }
@@ -246,28 +244,6 @@ export default function StudentDashboardScreen() {
     return (width / baseWidth) * size
   }
 
-  // 🎯 FUNCIÓN DE DEBUG
-  const handleDebugInfo = async () => {
-    try {
-      const state = navigation.getState()
-      const debugInfo = {
-        currentRoute: state?.routes?.[state?.index]?.name,
-        availableRoutes: state?.routeNames,
-        hasVillainRoute: state?.routeNames?.includes("VillainSelection"),
-      }
-
-      console.log("🔍 DEBUG INFO:", JSON.stringify(debugInfo, null, 2))
-
-      Alert.alert(
-        "Debug Info",
-        `Ruta actual: ${debugInfo.currentRoute}\nRutas disponibles: ${debugInfo.availableRoutes?.join(", ")}\nTiene VillainSelection: ${debugInfo.hasVillainRoute ? "SÍ" : "NO"}`,
-        [{ text: "OK" }],
-      )
-    } catch (error) {
-      console.error("Error en debug:", error)
-    }
-  }
-
   // --------------------- UI -------------------------
   return (
     <SafeAreaView style={styles.container}>
@@ -289,24 +265,6 @@ export default function StudentDashboardScreen() {
           activeOpacity={0.7}
         >
           <Feather name={isPlaying ? "volume-2" : "volume-x"} size={getResponsiveSize(24)} color="#FFD700" />
-        </TouchableOpacity>
-
-        {/* 🎯 BOTÓN DE DEBUG */}
-        <TouchableOpacity
-          style={[
-            styles.debugButton,
-            {
-              width: getResponsiveSize(40),
-              height: getResponsiveSize(40),
-              borderRadius: getResponsiveSize(20),
-              top: getResponsiveSize(10),
-              right: getResponsiveSize(60),
-            },
-          ]}
-          onPress={handleDebugInfo}
-          activeOpacity={0.7}
-        >
-          <Feather name="info" size={getResponsiveSize(20)} color="#00FF00" />
         </TouchableOpacity>
 
         <View style={styles.characterContainer}>
@@ -358,14 +316,5 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderWidth: 1,
     borderColor: "rgba(255,215,0,0.3)",
-  },
-  debugButton: {
-    position: "absolute",
-    zIndex: 100,
-    backgroundColor: "rgba(0,255,0,0.3)",
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "rgba(0,255,0,0.5)",
   },
 })

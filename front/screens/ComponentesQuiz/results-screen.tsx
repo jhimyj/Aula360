@@ -1,120 +1,289 @@
 "use client"
-import { View, Text, StyleSheet, TouchableOpacity, Animated, Dimensions, ScrollView, useWindowDimensions } from "react-native"
-import { useState, useEffect } from "react"
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Image,
+  Animated,
+  Dimensions,
+  ScrollView,
+  BackHandler,
+  Alert,
+} from "react-native"
+import { useState, useEffect, useCallback } from "react"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import { removeSavedCharacterImage } from "../../screens/ComponentesHero/saveCharacterImage"
+import { useFocusEffect } from "@react-navigation/native"
 
 type CharacterName = "Qhapaq" | "Amaru" | "Killa"
+type VillainName = "Corporatus" | "Toxicus" | "Shadowman"
 
+// Tipo para resultados detallados
+type QuestionResult = {
+  questionId: string | number
+  responseTime: number // tiempo en milisegundos
+  aiScore: number
+  feedback: string
+  userAnswer: string | string[]
+  isCorrect: boolean // basado en si el score > 0
+}
+
+// Imágenes de celebración por personaje
 const characterCelebrationImages: Record<CharacterName, any> = {
   Qhapaq: require("../../assets/images/chaman.png"),
   Amaru: require("../../assets/Personajes/Amaru1.png"),
   Killa: require("../../assets/Personajes/Guerrera.png"),
 }
 
+// Fondos por personaje
+const characterBackgrounds: Record<CharacterName, any> = {
+  Qhapaq: require("../../assets/fondoQuiz/FondoQuiz-Qhapaq.png"),
+  Amaru: require("../../assets/fondoQuiz/FondoQuiz-Amaru.png"),
+  Killa: require("../../assets/fondoQuiz/FondoQuiz-Killa.png"),
+}
+
+const { width, height } = Dimensions.get("window")
+
 const ResultsScreen = ({ route, navigation }) => {
   // Obtener los parámetros de la ruta
-  const { score, totalMissions } = route.params || { score: 0, totalMissions: 0 }
-  
-  // Use window dimensions for responsive layout
-  const { width, height } = useWindowDimensions()
-  const isTablet = width >= 768 // Common breakpoint for tablets
-  
+  const {
+    score,
+    totalMissions,
+    aiScores = [],
+    responseTimes = [],
+    questionResults = [],
+    correctAnswers = 0,
+    incorrectAnswers = 0,
+  } = route.params || {
+    score: 0,
+    totalMissions: 0,
+    aiScores: [],
+    responseTimes: [],
+    questionResults: [],
+    correctAnswers: 0,
+    incorrectAnswers: 0,
+  }
+
   const [characterName, setCharacterName] = useState<CharacterName>("Qhapaq")
   const [fadeAnim] = useState(new Animated.Value(0))
   const [scaleAnim] = useState(new Animated.Value(0.8))
+  const [bounceAnim] = useState(new Animated.Value(0))
+  const [showDetails, setShowDetails] = useState(false)
+  const [storedResults, setStoredResults] = useState<any>(null)
 
-  // 🔍 DEPURACIÓN: Mostrar valores recibidos
-  console.log("🔍 VALORES RECIBIDOS EN RESULTS SCREEN:")
-  console.log("- score:", score)
-  console.log("- totalMissions:", totalMissions)
-  console.log("- Dispositivo:", isTablet ? "Tablet" : "Teléfono")
-
-  // 🛠️ CORREGIR CÁLCULOS: Asegurarse de que el score no sea mayor que el total de preguntas
-  // Si score > totalMissions, probablemente sea un score de IA y no un contador de respuestas correctas
-  const correctAnswers = score > totalMissions ? Math.min(totalMissions, Math.round(score / 100)) : score
-  const percentage = totalMissions > 0 ? Math.min(100, Math.round((correctAnswers / totalMissions) * 100)) : 0
-  const incorrectAnswers = totalMissions - correctAnswers
-
-  // 🔍 DEPURACIÓN: Mostrar valores calculados
-  console.log("📊 VALORES CALCULADOS:")
-  console.log("- correctAnswers:", correctAnswers)
-  console.log("- percentage:", percentage)
-  console.log("- incorrectAnswers:", incorrectAnswers)
-
-  // Cargar información del personaje
+  // Cargar información del personaje y resultados guardados
   useEffect(() => {
-    const loadCharacterInfo = async () => {
+    const loadData = async () => {
       try {
+        // Cargar personaje
         const savedCharacter = await AsyncStorage.getItem("selectedCharacterName")
         if (savedCharacter) {
           setCharacterName(savedCharacter as CharacterName)
         }
+
+        // Cargar resultados guardados si no se pasaron por parámetros
+        if (!aiScores.length || !responseTimes.length) {
+          const savedResults = await AsyncStorage.getItem("quizResults")
+          if (savedResults) {
+            const parsedResults = JSON.parse(savedResults)
+            setStoredResults(parsedResults)
+            console.log("📊 Resultados cargados desde AsyncStorage:", parsedResults)
+          }
+        }
       } catch (error) {
-        console.error("Error cargando personaje:", error)
+        console.error("Error cargando datos:", error)
       }
     }
-    loadCharacterInfo()
+    loadData()
   }, [])
+
+  // Usar resultados almacenados si están disponibles y no hay parámetros
+  const finalAiScores = aiScores.length > 0 ? aiScores : storedResults?.aiScores || []
+  const finalResponseTimes = responseTimes.length > 0 ? responseTimes : storedResults?.responseTimes || []
+  const finalQuestionResults = questionResults.length > 0 ? questionResults : storedResults?.questionResults || []
+  const finalScore = score || storedResults?.score || 0
+  const finalTotalMissions = totalMissions || storedResults?.totalMissions || 0
+  const finalCorrectAnswers = correctAnswers || storedResults?.correctAnswers || 0
+  const finalIncorrectAnswers = incorrectAnswers || storedResults?.incorrectAnswers || 0
 
   // Animaciones de entrada
   useEffect(() => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
+    Animated.sequence([
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+        Animated.spring(scaleAnim, {
+          toValue: 1,
+          friction: 6,
+          tension: 40,
+          useNativeDriver: true,
+        }),
+      ]),
+      Animated.spring(bounceAnim, {
         toValue: 1,
-        duration: 800,
-        useNativeDriver: true,
-      }),
-      Animated.spring(scaleAnim, {
-        toValue: 1,
-        friction: 6,
+        friction: 4,
         tension: 40,
         useNativeDriver: true,
       }),
     ]).start()
   }, [])
 
-  // Determinar el mensaje según el porcentaje
+  // 🏠 INTERCEPTAR BOTÓN FÍSICO DE BACK PARA MOSTRAR CONFIRMACIÓN
+  useFocusEffect(
+    useCallback(() => {
+      console.log("🎯 ResultsScreen ENFOCADO - Configurando interceptor de botón back")
+
+      const onBackPress = () => {
+        console.log("🔙 BOTÓN FÍSICO DE BACK PRESIONADO en ResultsScreen")
+
+        // Mostrar alerta de confirmación
+        Alert.alert(
+          "¿Regresar a Selección de Héroes?",
+          "¿Quieres volver a la selección de héroes y salir de los resultados?",
+          [
+            {
+              text: "Cancelar",
+              onPress: () => {
+                console.log("❌ Usuario canceló regresar a selección de héroes")
+              },
+              style: "cancel",
+            },
+            {
+              text: "Sí, regresar",
+              onPress: () => {
+                console.log("✅ Usuario confirmó regresar a selección de héroes - Navegando a StudentDashboard")
+                // Limpiar imagen guardada del personaje
+                removeSavedCharacterImage()
+                // Navegar al Dashboard de estudiantes
+                navigation.navigate("StudentDashboard")
+              },
+              style: "default",
+            },
+          ],
+          { cancelable: false },
+        )
+
+        // Retornar true previene la navegación automática hacia atrás
+        return true
+      }
+
+      // Agregar el listener del botón de back
+      const backHandler = BackHandler.addEventListener("hardwareBackPress", onBackPress)
+
+      // Función de limpieza cuando se pierde el foco
+      return () => {
+        console.log("🎯 ResultsScreen DESENFOCADO - Removiendo interceptor de botón back")
+        backHandler.remove()
+      }
+    }, [navigation]),
+  )
+
+  // Calcular estadísticas mejoradas
+  const calculateStats = () => {
+    // Si tenemos scores de IA, usarlos para cálculos más precisos
+    if (finalAiScores && finalAiScores.length > 0) {
+      const totalAIScore = finalAiScores.reduce((sum, score) => sum + score, 0)
+      const averageAIScore = totalAIScore / finalAiScores.length
+      const maxPossibleScore = finalAiScores.length * 100 // Asumiendo 100 como score máximo por pregunta
+      const percentage = Math.round((totalAIScore / maxPossibleScore) * 100)
+
+      // Calcular tiempo promedio de respuesta
+      const totalResponseTime = finalResponseTimes.reduce((sum, time) => sum + time, 0)
+      const averageResponseTime = totalResponseTime / finalResponseTimes.length
+
+      // Calcular respuestas correctas e incorrectas basadas en scores de IA
+      // Score > 0 = Correcta, Score = 0 = Incorrecta
+      const correctAnswers = finalAiScores.filter((score) => score > 0).length
+      const incorrectAnswers = finalAiScores.filter((score) => score === 0).length
+
+      console.log("📊 CÁLCULO DE ESTADÍSTICAS:")
+      console.log("- Scores de IA:", finalAiScores)
+      console.log("- Respuestas correctas (score > 0):", correctAnswers)
+      console.log("- Respuestas incorrectas (score = 0):", incorrectAnswers)
+
+      // Calcular porcentaje de respuestas correctas
+      const totalQuestions = correctAnswers + incorrectAnswers
+      const correctPercentage = totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0
+
+      return {
+        totalScore: totalAIScore,
+        averageScore: Math.round(averageAIScore),
+        percentage: percentage,
+        correctPercentage: correctPercentage,
+        questionsAnswered: finalAiScores.length,
+        correctAnswers: correctAnswers,
+        incorrectAnswers: incorrectAnswers,
+        isAIScored: true,
+        totalResponseTime: totalResponseTime,
+        averageResponseTime: Math.round(averageResponseTime / 1000), // convertir a segundos
+        fastestResponse: Math.min(...finalResponseTimes) / 1000,
+        slowestResponse: Math.max(...finalResponseTimes) / 1000,
+      }
+    } else {
+      // Fallback al sistema tradicional
+      const percentage = finalTotalMissions > 0 ? Math.round((finalScore / finalTotalMissions) * 100) : 0
+      const correctPercentage =
+        finalTotalMissions > 0 ? Math.round((finalCorrectAnswers / finalTotalMissions) * 100) : 0
+
+      // Calcular tiempo promedio de respuesta si está disponible
+      let timeStats = {}
+      if (finalResponseTimes && finalResponseTimes.length > 0) {
+        const totalResponseTime = finalResponseTimes.reduce((sum, time) => sum + time, 0)
+        timeStats = {
+          totalResponseTime: totalResponseTime,
+          averageResponseTime: Math.round(totalResponseTime / finalResponseTimes.length / 1000),
+          fastestResponse: Math.min(...finalResponseTimes) / 1000,
+          slowestResponse: Math.max(...finalResponseTimes) / 1000,
+        }
+      }
+
+      return {
+        totalScore: finalScore,
+        averageScore: finalTotalMissions > 0 ? Math.round((finalScore / finalTotalMissions) * 100) : 0,
+        percentage: percentage,
+        correctPercentage: correctPercentage,
+        questionsAnswered: finalTotalMissions,
+        correctAnswers: finalCorrectAnswers,
+        incorrectAnswers: finalIncorrectAnswers,
+        isAIScored: false,
+        ...timeStats,
+      }
+    }
+  }
+
+  const stats = calculateStats()
+
+  // Determinar el mensaje según el rendimiento
   const getMessage = () => {
-    if (percentage >= 90) return "¡Rendimiento Excepcional!"
-    if (percentage >= 80) return "¡Excelente trabajo!"
-    if (percentage >= 70) return "¡Muy buen trabajo!"
-    if (percentage >= 60) return "¡Buen trabajo!"
-    if (percentage >= 50) return "¡Puedes mejorar!"
-    if (percentage >= 30) return "¡Sigue practicando!"
+    if (stats.correctPercentage >= 90) return "¡Rendimiento Excepcional!"
+    if (stats.correctPercentage >= 80) return "¡Excelente trabajo!"
+    if (stats.correctPercentage >= 70) return "¡Muy buen trabajo!"
+    if (stats.correctPercentage >= 60) return "¡Buen trabajo!"
+    if (stats.correctPercentage >= 50) return "¡Puedes mejorar!"
+    if (stats.correctPercentage >= 30) return "¡Sigue practicando!"
     return "¡No te rindas, inténtalo de nuevo!"
   }
 
   // Determinar el color según el rendimiento
   const getPerformanceColor = () => {
-    if (percentage >= 80) return "#4CAF50" // Verde
-    if (percentage >= 60) return "#FF9800" // Naranja
-    if (percentage >= 40) return "#FFC107" // Amarillo
+    if (stats.correctPercentage >= 80) return "#4CAF50" // Verde
+    if (stats.correctPercentage >= 60) return "#FF9800" // Naranja
+    if (stats.correctPercentage >= 40) return "#FFC107" // Amarillo
     return "#F44336" // Rojo
   }
 
   // Determinar el emoji según el rendimiento
   const getPerformanceEmoji = () => {
-    if (percentage >= 90) return "🏆"
-    if (percentage >= 80) return "🌟"
-    if (percentage >= 70) return "👏"
-    if (percentage >= 60) return "👍"
-    if (percentage >= 50) return "💪"
+    if (stats.correctPercentage >= 90) return "🏆"
+    if (stats.correctPercentage >= 80) return "🌟"
+    if (stats.correctPercentage >= 70) return "👏"
+    if (stats.correctPercentage >= 60) return "👍"
+    if (stats.correctPercentage >= 50) return "💪"
     return "🎯"
-  }
-
-  // Obtener color de fondo según personaje
-  const getBackgroundColor = () => {
-    switch (characterName) {
-      case "Qhapaq":
-        return "#8B4513" // Marrón tierra
-      case "Amaru":
-        return "#2E8B57" // Verde serpiente
-      case "Killa":
-        return "#4B0082" // Púrpura lunar
-      default:
-        return "#8B4513"
-    }
   }
 
   const handleLogout = () => {
@@ -125,245 +294,235 @@ const ResultsScreen = ({ route, navigation }) => {
   const handleRetry = () => {
     navigation.navigate("Quiz")
   }
-  console.log("📌 Rutas disponibles:", navigation.getState().routeNames)
 
-  // 🎮 Renderizar desglose de preguntas
-  const renderQuestionBreakdown = () => {
-    // Crear un array con el estado de cada pregunta (correcta o incorrecta)
-    // Esto es una simulación - en una implementación real, necesitarías los datos reales
-    const questionResults = Array(totalMissions)
-      .fill(0)
-      .map((_, index) => index < correctAnswers)
+  const handleViewDetails = () => {
+    setShowDetails(!showDetails)
+  }
 
-    // Calcular el número de columnas basado en el ancho del dispositivo
-    const numColumns = isTablet ? 10 : 5
-
-    // Agrupar los resultados en filas para una mejor visualización
-    const rows = []
-    for (let i = 0; i < questionResults.length; i += numColumns) {
-      rows.push(questionResults.slice(i, i + numColumns))
+  // Formatear tiempo para mostrar
+  const formatTime = (timeInSeconds) => {
+    if (timeInSeconds < 60) {
+      return `${timeInSeconds.toFixed(1)} seg`
+    } else {
+      const minutes = Math.floor(timeInSeconds / 60)
+      const seconds = Math.round(timeInSeconds % 60)
+      return `${minutes}m ${seconds}s`
     }
-
-    return (
-      <View style={styles.questionBreakdownContainer}>
-        <Text style={styles.questionBreakdownTitle}>Desglose de Preguntas</Text>
-        {rows.map((row, rowIndex) => (
-          <View key={rowIndex} style={styles.questionIconsRow}>
-            {row.map((isCorrect, colIndex) => {
-              const questionIndex = rowIndex * numColumns + colIndex
-              return (
-                <View key={colIndex} style={styles.questionIconWrapper}>
-                  <View
-                    style={[
-                      styles.questionIcon,
-                      {
-                        backgroundColor: isCorrect ? "#4CAF50" : "#F44336",
-                        width: isTablet ? 40 : 32,
-                        height: isTablet ? 40 : 32,
-                        borderRadius: isTablet ? 20 : 16,
-                      },
-                    ]}
-                  >
-                    <Text style={[styles.questionIconText, { fontSize: isTablet ? 16 : 14 }]}>
-                      {questionIndex + 1}
-                    </Text>
-                  </View>
-                  <Text style={styles.questionIconStatus}>{isCorrect ? "✓" : "✗"}</Text>
-                </View>
-              )
-            })}
-          </View>
-        ))}
-      </View>
-    )
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: getBackgroundColor() }]}>
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={[
-          styles.scrollContent,
-          { 
-            paddingHorizontal: isTablet ? 40 : 20,
-            minHeight: height 
-          }
-        ]}
-        showsVerticalScrollIndicator={false}
-        bounces={true}
-      >
-        <Animated.View 
-          style={[
-            styles.content, 
-            { 
-              opacity: fadeAnim, 
-              transform: [{ scale: scaleAnim }],
-              maxWidth: isTablet ? 600 : 400,
-            }
-          ]}
-        >
-          {/* Título con emoji - Más compacto */}
-          <Text style={[styles.title, { fontSize: isTablet ? 28 : 24 }]}>
+    <ScrollView
+      style={[
+        styles.scrollContainer,
+        { backgroundColor: characterName === "Qhapaq" ? "#8B4513" : characterName === "Amaru" ? "#2E8B57" : "#4B0082" },
+      ]}
+    >
+      <View style={styles.container}>
+        <Animated.View style={[styles.content, { opacity: fadeAnim, transform: [{ scale: scaleAnim }] }]}>
+          {/* Imagen del personaje */}
+          <Animated.View style={[styles.characterContainer, { transform: [{ scale: bounceAnim }] }]}>
+            <Image
+              source={characterCelebrationImages[characterName]}
+              style={styles.characterImage}
+              resizeMode="contain"
+            />
+          </Animated.View>
+
+          {/* Título con emoji */}
+          <Text style={styles.title}>
             {getPerformanceEmoji()} Resultados {getPerformanceEmoji()}
           </Text>
 
           {/* Contenedor principal de resultados */}
-          <View style={[styles.resultContainer, { padding: isTablet ? 25 : 20 }]}>
+          <View style={styles.resultContainer}>
             {/* Puntuación principal */}
             <View style={styles.mainScoreContainer}>
-              <Text 
-                style={[
-                  styles.percentageText, 
-                  { 
-                    color: getPerformanceColor(),
-                    fontSize: isTablet ? 52 : 42 
-                  }
-                ]}
-              >
-                {percentage}%
-              </Text>
-              <Text style={[styles.messageText, { fontSize: isTablet ? 22 : 18 }]}>
-                {getMessage()}
-              </Text>
+              <Text style={[styles.percentageText, { color: getPerformanceColor() }]}>{stats.correctPercentage}%</Text>
+              <Text style={styles.messageText}>{getMessage()}</Text>
+            </View>
+
+            {/* Estadísticas de respuestas correctas/incorrectas */}
+            <View style={styles.answersStatsContainer}>
+              <Text style={styles.answersStatsTitle}>📊 Resumen de Respuestas</Text>
+
+              <View style={styles.answersStatsGrid}>
+                <View style={styles.answerStatItem}>
+                  <View style={[styles.answerStatIcon, { backgroundColor: "#4CAF50" }]}>
+                    <Text style={styles.answerStatIconText}>✓</Text>
+                  </View>
+                  <Text style={styles.answerStatLabel}>Correctas</Text>
+                  <Text style={[styles.answerStatValue, { color: "#4CAF50" }]}>{stats.correctAnswers}</Text>
+                </View>
+
+                <View style={styles.answerStatItem}>
+                  <View style={[styles.answerStatIcon, { backgroundColor: "#F44336" }]}>
+                    <Text style={styles.answerStatIconText}>✗</Text>
+                  </View>
+                  <Text style={styles.answerStatLabel}>Incorrectas</Text>
+                  <Text style={[styles.answerStatValue, { color: "#F44336" }]}>{stats.incorrectAnswers}</Text>
+                </View>
+
+                <View style={styles.answerStatItem}>
+                  <View style={[styles.answerStatIcon, { backgroundColor: "#2196F3" }]}>
+                    <Text style={styles.answerStatIconText}>#</Text>
+                  </View>
+                  <Text style={styles.answerStatLabel}>Total</Text>
+                  <Text style={[styles.answerStatValue, { color: "#2196F3" }]}>{stats.questionsAnswered}</Text>
+                </View>
+
+                <View style={styles.answerStatItem}>
+                  <View style={[styles.answerStatIcon, { backgroundColor: "#FF9800" }]}>
+                    <Text style={styles.answerStatIconText}>%</Text>
+                  </View>
+                  <Text style={styles.answerStatLabel}>Aciertos</Text>
+                  <Text style={[styles.answerStatValue, { color: "#FF9800" }]}>{stats.correctPercentage}%</Text>
+                </View>
+              </View>
             </View>
 
             {/* Estadísticas detalladas */}
-            <View style={[styles.statsContainer, { paddingVertical: isTablet ? 15 : 12 }]}>
+            <View style={styles.statsContainer}>
               <View style={styles.statItem}>
-                <Text style={[styles.statLabel, { fontSize: isTablet ? 14 : 12 }]}>Total</Text>
-                <Text style={[styles.statValue, { fontSize: isTablet ? 26 : 22 }]}>{totalMissions}</Text>
-                <Text style={[styles.statSubtext, { fontSize: isTablet ? 12 : 10 }]}>preguntas</Text>
+                <Text style={styles.statLabel}>Preguntas</Text>
+                <Text style={styles.statValue}>{stats.questionsAnswered}</Text>
               </View>
 
               <View style={styles.statItem}>
-                <Text style={[styles.statLabel, { fontSize: isTablet ? 14 : 12 }]}>Correctas</Text>
-                <Text 
-                  style={[
-                    styles.statValue, 
-                    { 
-                      color: "#4CAF50",
-                      fontSize: isTablet ? 26 : 22 
-                    }
-                  ]}
-                >
-                  {correctAnswers}
-                </Text>
-                <Text style={[styles.statSubtext, { fontSize: isTablet ? 12 : 10 }]}>respuestas</Text>
+                <Text style={styles.statLabel}>{stats.isAIScored ? "Score Total" : "Correctas"}</Text>
+                <Text style={styles.statValue}>{stats.totalScore}</Text>
               </View>
 
               <View style={styles.statItem}>
-                <Text style={[styles.statLabel, { fontSize: isTablet ? 14 : 12 }]}>Incorrectas</Text>
-                <Text 
-                  style={[
-                    styles.statValue, 
-                    { 
-                      color: "#F44336",
-                      fontSize: isTablet ? 26 : 22 
-                    }
-                  ]}
-                >
-                  {incorrectAnswers}
-                </Text>
-                <Text style={[styles.statSubtext, { fontSize: isTablet ? 12 : 10 }]}>respuestas</Text>
+                <Text style={styles.statLabel}>{stats.isAIScored ? "Promedio" : "Porcentaje"}</Text>
+                <Text style={styles.statValue}>{stats.isAIScored ? stats.averageScore : `${stats.percentage}%`}</Text>
               </View>
             </View>
 
-            {/* Barra de progreso visual */}
-            <View style={styles.progressContainer}>
-              <Text style={[styles.progressLabel, { fontSize: isTablet ? 16 : 14 }]}>Progreso</Text>
-              <View style={[styles.progressBarBackground, { height: isTablet ? 12 : 10 }]}>
-                <View
-                  style={[
-                    styles.progressBarFill,
-                    {
-                      width: `${percentage}%`,
-                      backgroundColor: getPerformanceColor(),
-                      borderRadius: isTablet ? 6 : 5,
-                    },
-                  ]}
-                />
-              </View>
-              <Text style={[styles.progressText, { fontSize: isTablet ? 14 : 12 }]}>
-                {correctAnswers} de {totalMissions} correctas
-              </Text>
-            </View>
+            {/* Estadísticas de tiempo */}
+            {stats.averageResponseTime && (
+              <View style={styles.timeStatsContainer}>
+                <Text style={styles.timeStatsTitle}>⏱️ Estadísticas de Tiempo</Text>
 
-            {/* 🆕 Desglose visual de preguntas */}
-            {renderQuestionBreakdown()}
+                <View style={styles.timeStatsGrid}>
+                  <View style={styles.timeStatItem}>
+                    <Text style={styles.timeStatLabel}>Tiempo Promedio</Text>
+                    <Text style={styles.timeStatValue}>{formatTime(stats.averageResponseTime)}</Text>
+                  </View>
+
+                  <View style={styles.timeStatItem}>
+                    <Text style={styles.timeStatLabel}>Respuesta más Rápida</Text>
+                    <Text style={styles.timeStatValue}>{formatTime(stats.fastestResponse)}</Text>
+                  </View>
+
+                  <View style={styles.timeStatItem}>
+                    <Text style={styles.timeStatLabel}>Respuesta más Lenta</Text>
+                    <Text style={styles.timeStatValue}>{formatTime(stats.slowestResponse)}</Text>
+                  </View>
+
+                  <View style={styles.timeStatItem}>
+                    <Text style={styles.timeStatLabel}>Tiempo Total</Text>
+                    <Text style={styles.timeStatValue}>{formatTime(stats.totalResponseTime / 1000)}</Text>
+                  </View>
+                </View>
+              </View>
+            )}
+
+            {/* Información adicional si es score de IA */}
+            {stats.isAIScored && (
+              <View style={styles.aiInfoContainer}>
+                <Text style={styles.aiInfoText}>✨ Evaluado con Inteligencia Artificial</Text>
+                <Text style={styles.aiInfoSubtext}>Puntuación basada en la calidad y precisión de tus respuestas</Text>
+              </View>
+            )}
 
             {/* Información del personaje */}
-            <View style={[styles.characterInfoContainer, { padding: isTablet ? 15 : 12 }]}>
-              <Text style={[styles.characterInfoText, { fontSize: isTablet ? 18 : 15 }]}>
-                🎮 Aventura completada con {characterName}
-              </Text>
-              <Text style={[styles.characterInfoSubtext, { fontSize: isTablet ? 14 : 11 }]}>
-                ¡Has demostrado tus conocimientos!
-              </Text>
+            <View style={styles.characterInfoContainer}>
+              <Text style={styles.characterInfoText}>Aventura completada con {characterName}</Text>
             </View>
           </View>
+
+          {/* Detalles de respuestas */}
+          {showDetails && finalQuestionResults && finalQuestionResults.length > 0 && (
+            <View style={styles.detailedResultsContainer}>
+              <Text style={styles.detailedResultsTitle}>📝 Detalles de Respuestas</Text>
+
+              {finalQuestionResults.map((result, index) => (
+                <View key={index} style={styles.questionResultItem}>
+                  <View style={styles.questionResultHeader}>
+                    <Text style={styles.questionResultTitle}>Pregunta {index + 1}</Text>
+                    <View style={styles.questionResultScoreContainer}>
+                      <Text style={[styles.questionResultScore, { color: result.isCorrect ? "#4CAF50" : "#F44336" }]}>
+                        {result.isCorrect ? "✓ Correcta (Score > 0)" : "✗ Incorrecta (Score = 0)"}
+                      </Text>
+                      <Text style={styles.questionResultAiScore}>Score: {result.aiScore}</Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.questionResultDetails}>
+                    <Text style={styles.questionResultLabel}>Tiempo: </Text>
+                    <Text style={styles.questionResultValue}>{formatTime(result.responseTime / 1000)}</Text>
+                  </View>
+
+                  {result.feedback && (
+                    <View style={styles.feedbackContainer}>
+                      <Text style={styles.feedbackLabel}>Feedback:</Text>
+                      <Text style={styles.feedbackText}>{result.feedback}</Text>
+                    </View>
+                  )}
+                </View>
+              ))}
+            </View>
+          )}
 
           {/* Botones de acción */}
           <View style={styles.buttonContainer}>
-            <TouchableOpacity 
-              style={[
-                styles.button, 
-                styles.retryButton,
-                { 
-                  paddingVertical: isTablet ? 15 : 12,
-                  paddingHorizontal: isTablet ? 35 : 25,
-                  width: isTablet ? "70%" : "85%",
-                }
-              ]} 
-              onPress={handleRetry}
-            >
-              <Text style={[styles.buttonText, { fontSize: isTablet ? 18 : 15 }]}>
-                🔄 Intentar de Nuevo
-              </Text>
+            {finalQuestionResults && finalQuestionResults.length > 0 && (
+              <TouchableOpacity style={[styles.button, styles.detailsButton]} onPress={handleViewDetails}>
+                <Text style={styles.buttonText}>{showDetails ? "🔍 Ocultar Detalles" : "📊 Ver Detalles"}</Text>
+              </TouchableOpacity>
+            )}
+
+            <TouchableOpacity style={[styles.button, styles.retryButton]} onPress={handleRetry}>
+              <Text style={styles.buttonText}>🔄 Intentar de Nuevo</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity 
-              style={[
-                styles.button, 
-                styles.homeButton,
-                { 
-                  paddingVertical: isTablet ? 15 : 12,
-                  paddingHorizontal: isTablet ? 35 : 25,
-                  width: isTablet ? "70%" : "85%",
-                }
-              ]} 
-              onPress={handleLogout}
-            >
-              <Text style={[styles.buttonText, { fontSize: isTablet ? 18 : 15 }]}>
-                🏠 Volver al Inicio
-              </Text>
+            <TouchableOpacity style={[styles.button, styles.homeButton]} onPress={handleLogout}>
+              <Text style={styles.buttonText}>🏠 Volver al Inicio</Text>
             </TouchableOpacity>
           </View>
         </Animated.View>
-      </ScrollView>
-    </View>
+      </View>
+    </ScrollView>
   )
 }
 
 const styles = StyleSheet.create({
+  scrollContainer: {
+    flex: 1,
+  },
   container: {
     flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
     justifyContent: "center",
     alignItems: "center",
-    paddingVertical: 20,
+    padding: 20,
+    paddingBottom: 40,
   },
   content: {
     width: "100%",
     alignItems: "center",
   },
-  title: {
-    fontWeight: "bold",
+  characterContainer: {
+    marginTop: 20,
     marginBottom: 20,
+  },
+  characterImage: {
+    width: width * 0.3,
+    height: width * 0.3,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: "bold",
+    marginBottom: 30,
     color: "#FFF",
     textAlign: "center",
     textShadowColor: "rgba(0, 0, 0, 0.5)",
@@ -373,9 +532,10 @@ const styles = StyleSheet.create({
   resultContainer: {
     backgroundColor: "rgba(255, 255, 255, 0.95)",
     borderRadius: 20,
+    padding: 25,
     width: "100%",
     alignItems: "center",
-    marginBottom: 20,
+    marginBottom: 30,
     elevation: 8,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
@@ -384,22 +544,72 @@ const styles = StyleSheet.create({
   },
   mainScoreContainer: {
     alignItems: "center",
-    marginBottom: 20,
+    marginBottom: 25,
   },
   percentageText: {
+    fontSize: 48,
     fontWeight: "bold",
-    marginBottom: 8,
+    marginBottom: 10,
   },
   messageText: {
+    fontSize: 20,
     color: "#333",
     textAlign: "center",
     fontWeight: "600",
+  },
+  answersStatsContainer: {
+    backgroundColor: "#F8F9FA",
+    borderRadius: 12,
+    padding: 15,
+    marginBottom: 20,
+    width: "100%",
+  },
+  answersStatsTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#333",
+    marginBottom: 15,
+    textAlign: "center",
+  },
+  answersStatsGrid: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    flexWrap: "wrap",
+  },
+  answerStatItem: {
+    width: "22%",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  answerStatIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  answerStatIconText: {
+    color: "white",
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+  answerStatLabel: {
+    fontSize: 12,
+    color: "#666",
+    marginBottom: 4,
+    textAlign: "center",
+  },
+  answerStatValue: {
+    fontSize: 16,
+    fontWeight: "bold",
   },
   statsContainer: {
     flexDirection: "row",
     justifyContent: "space-around",
     width: "100%",
     marginBottom: 20,
+    paddingVertical: 15,
     backgroundColor: "#F8F9FA",
     borderRadius: 12,
   },
@@ -408,115 +618,185 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   statLabel: {
+    fontSize: 12,
     color: "#666",
-    marginBottom: 4,
+    marginBottom: 5,
     fontWeight: "500",
   },
   statValue: {
+    fontSize: 18,
     fontWeight: "bold",
     color: "#333",
   },
-  statSubtext: {
-    color: "#999",
-    marginTop: 2,
-  },
-  progressContainer: {
-    width: "100%",
-    marginBottom: 16,
-  },
-  progressLabel: {
-    fontWeight: "600",
-    color: "#333",
-    marginBottom: 6,
-    textAlign: "center",
-  },
-  progressBarBackground: {
-    width: "100%",
-    backgroundColor: "#E0E0E0",
-    borderRadius: 5,
-    overflow: "hidden",
-    marginBottom: 6,
-  },
-  progressBarFill: {
-    height: "100%",
-    minWidth: "2%", // Mínimo visible
-  },
-  progressText: {
-    color: "#666",
-    textAlign: "center",
-  },
-  questionBreakdownContainer: {
-    width: "100%",
-    marginBottom: 16,
-    backgroundColor: "#F5F5F5",
+  timeStatsContainer: {
+    backgroundColor: "#F0F8FF",
     borderRadius: 12,
-    padding: 12,
+    padding: 15,
+    marginBottom: 20,
+    width: "100%",
   },
-  questionBreakdownTitle: {
-    fontSize: 14,
+  timeStatsTitle: {
+    fontSize: 16,
     fontWeight: "600",
-    color: "#333",
-    marginBottom: 10,
+    color: "#0277BD",
+    marginBottom: 12,
     textAlign: "center",
   },
-  questionIconsContainer: {
+  timeStatsGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    justifyContent: "center",
-    gap: 8,
+    justifyContent: "space-between",
   },
-  questionIconsRow: {
-    flexDirection: "row",
-    justifyContent: "center",
-    marginBottom: 8,
-  },
-  questionIconWrapper: {
+  timeStatItem: {
+    width: "48%",
+    backgroundColor: "#E1F5FE",
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 10,
     alignItems: "center",
-    marginHorizontal: 4,
   },
-  questionIcon: {
-    justifyContent: "center",
+  timeStatLabel: {
+    fontSize: 12,
+    color: "#01579B",
+    marginBottom: 4,
+    textAlign: "center",
+  },
+  timeStatValue: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#0288D1",
+  },
+  aiInfoContainer: {
+    backgroundColor: "#E3F2FD",
+    borderRadius: 10,
+    padding: 15,
+    marginBottom: 15,
+    width: "100%",
     alignItems: "center",
-    marginBottom: 3,
   },
-  questionIconText: {
-    color: "white",
-    fontWeight: "bold",
+  aiInfoText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#1976D2",
+    marginBottom: 5,
   },
-  questionIconStatus: {
-    fontSize: 11,
-    fontWeight: "bold",
-    color: "#333",
+  aiInfoSubtext: {
+    fontSize: 12,
+    color: "#1565C0",
+    textAlign: "center",
   },
   characterInfoContainer: {
     backgroundColor: "#F3E5F5",
-    borderRadius: 12,
+    borderRadius: 8,
+    padding: 10,
     width: "100%",
     alignItems: "center",
   },
   characterInfoText: {
+    fontSize: 14,
     color: "#7B1FA2",
-    fontWeight: "600",
-    marginBottom: 3,
+    fontWeight: "500",
   },
-  characterInfoSubtext: {
-    color: "#9C27B0",
+  detailedResultsContainer: {
+    backgroundColor: "rgba(255, 255, 255, 0.95)",
+    borderRadius: 20,
+    padding: 20,
+    width: "100%",
+    marginBottom: 30,
+    elevation: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+  },
+  detailedResultsTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 15,
+    textAlign: "center",
+  },
+  questionResultItem: {
+    backgroundColor: "#F5F5F5",
+    borderRadius: 10,
+    padding: 15,
+    marginBottom: 15,
+  },
+  questionResultHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E0E0E0",
+    paddingBottom: 8,
+  },
+  questionResultTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#333",
+  },
+  questionResultScoreContainer: {
+    alignItems: "flex-end",
+  },
+  questionResultScore: {
+    fontSize: 14,
+    fontWeight: "bold",
+    marginBottom: 2,
+  },
+  questionResultAiScore: {
+    fontSize: 12,
+    color: "#666",
+  },
+  questionResultDetails: {
+    flexDirection: "row",
+    marginBottom: 8,
+  },
+  questionResultLabel: {
+    fontSize: 14,
+    color: "#666",
+    fontWeight: "500",
+  },
+  questionResultValue: {
+    fontSize: 14,
+    color: "#333",
+  },
+  feedbackContainer: {
+    backgroundColor: "#FFFDE7",
+    borderRadius: 8,
+    padding: 10,
+    marginTop: 5,
+  },
+  feedbackLabel: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: "#5D4037",
+    marginBottom: 5,
+  },
+  feedbackText: {
+    fontSize: 13,
+    color: "#5D4037",
     fontStyle: "italic",
   },
   buttonContainer: {
     width: "100%",
     alignItems: "center",
-    paddingBottom: 20,
   },
   button: {
+    paddingVertical: 15,
+    paddingHorizontal: 30,
     borderRadius: 25,
-    marginBottom: 10,
+    marginBottom: 12,
+    width: "85%",
     alignItems: "center",
     elevation: 3,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
+  },
+  detailsButton: {
+    backgroundColor: "#9C27B0",
   },
   retryButton: {
     backgroundColor: "#4CAF50",
@@ -526,6 +806,7 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: "white",
+    fontSize: 16,
     fontWeight: "bold",
   },
 })

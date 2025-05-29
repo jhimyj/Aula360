@@ -1,12 +1,13 @@
 // components/CreateRoomCard/RoomCard.tsx
 import React, { useState, useRef } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Modal, Alert, Dimensions, Clipboard, Share } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Modal, Alert, Dimensions, Clipboard, Share, Platform } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import QRCode from 'react-native-qrcode-svg';
 import * as MediaLibrary from 'expo-media-library';
 import * as FileSystem from 'expo-file-system';
 import { captureRef } from 'react-native-view-shot';
+import * as Sharing from 'expo-sharing';
 import QuestionsModal from "../../components/Evaluation/QuestionsModal";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
@@ -26,6 +27,7 @@ export default function RoomCard({
   const [questions, setQuestions] = useState([]);
   const [loadingQuestions, setLoadingQuestions] = useState(false);
   const [questionsError, setQuestionsError] = useState(null);
+  const [qrLoading, setQrLoading] = useState(false);
   const moreButtonRef = useRef(null);
   const qrRef = useRef(null);
   const qrViewRef = useRef(null);
@@ -121,73 +123,152 @@ export default function RoomCard({
     setQrModalVisible(true);
   };
 
-  // Función para capturar el QR como imagen
+  // Función mejorada para capturar el QR como imagen
   const captureQRImage = async () => {
     try {
+      setQrLoading(true);
+      
+      // Esperar un poco para asegurar que el QR esté renderizado
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
       const uri = await captureRef(qrViewRef, {
         format: 'png',
         quality: 1,
+        result: 'tmpfile', // Usar archivo temporal para mejor compatibilidad
       });
+      
+      console.log('QR capturado en:', uri);
       return uri;
     } catch (error) {
       console.error('Error al capturar QR:', error);
-      throw error;
+      throw new Error('No se pudo capturar el código QR. Intenta nuevamente.');
+    } finally {
+      setQrLoading(false);
     }
   };
 
-  // Función para compartir el QR con imagen
+  // Función mejorada para compartir el QR con imagen
   const handleShareQRWithImage = async () => {
     try {
-      // Capturar la imagen del QR
-      const qrImageUri = await captureQRImage();
+      setQrLoading(true);
       
       // Crear el mensaje para compartir
-      const roomInfo = {
-        id: room.id,
-        name: room.name,
-        course: room.course || '',
-        topic: room.topic || '',
-        description: room.description || ''
-      };
-
       const shareMessage = `🎓 ¡Únete a LIA! 🚀\n\n📚 Sala: ${room.name}\n📖 Curso: ${room.course || 'No especificado'}\n🎯 Tema: ${room.topic || 'General'}\n\n🔑 ID: ${room.id}\n\n¡Escanea el código QR para unirte a la sala de estudio!`;
 
-      // Compartir con la imagen del QR
-      await Share.share({
-        message: shareMessage,
-        url: qrImageUri,
-        title: `LIA - Sala: ${room.name}`
-      });
+      if (Platform.OS === 'android') {
+        // En Android, usar expo-sharing para mejor compatibilidad
+        try {
+          const qrImageUri = await captureQRImage();
+          
+          // Verificar si el archivo existe
+          const fileInfo = await FileSystem.getInfoAsync(qrImageUri);
+          if (!fileInfo.exists) {
+            throw new Error('El archivo de imagen no se generó correctamente');
+          }
+          
+          // Usar expo-sharing en Android
+          if (await Sharing.isAvailableAsync()) {
+            await Sharing.shareAsync(qrImageUri, {
+              mimeType: 'image/png',
+              dialogTitle: `LIA - Sala: ${room.name}`,
+            });
+          } else {
+            // Fallback a compartir solo texto
+            await Share.share({
+              message: shareMessage,
+              title: `LIA - Sala: ${room.name}`
+            });
+          }
+        } catch (imageError) {
+          console.warn('Error al compartir imagen, usando texto:', imageError);
+          // Fallback a compartir solo texto
+          await Share.share({
+            message: shareMessage,
+            title: `LIA - Sala: ${room.name}`
+          });
+        }
+      } else {
+        // En iOS, usar el método original
+        try {
+          const qrImageUri = await captureQRImage();
+          await Share.share({
+            message: shareMessage,
+            url: qrImageUri,
+            title: `LIA - Sala: ${room.name}`
+          });
+        } catch (imageError) {
+          console.warn('Error al compartir imagen, usando texto:', imageError);
+          await Share.share({
+            message: shareMessage,
+            title: `LIA - Sala: ${room.name}`
+          });
+        }
+      }
     } catch (error) {
       console.error('Error al compartir QR:', error);
-      Alert.alert('Error', 'No se pudo compartir el código QR');
+      Alert.alert('Error', 'No se pudo compartir el código QR. Intenta nuevamente.');
+    } finally {
+      setQrLoading(false);
     }
   };
 
-  // Función para guardar QR en galería
+  // Función mejorada para guardar QR en galería
   const handleSaveQR = async () => {
     try {
+      setQrLoading(true);
+      
       // Solicitar permisos
       const { status } = await MediaLibrary.requestPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Permisos', 'Se necesitan permisos para guardar la imagen');
+        Alert.alert(
+          'Permisos requeridos', 
+          'Se necesitan permisos para guardar la imagen en tu galería.',
+          [
+            { text: 'Cancelar', style: 'cancel' },
+            { text: 'Configurar', onPress: () => MediaLibrary.requestPermissionsAsync() }
+          ]
+        );
         return;
       }
 
       // Capturar la imagen del QR
       const qrImageUri = await captureQRImage();
       
-      // Guardar en la galería
-      await MediaLibrary.saveToLibraryAsync(qrImageUri);
+      // Verificar que el archivo existe
+      const fileInfo = await FileSystem.getInfoAsync(qrImageUri);
+      if (!fileInfo.exists) {
+        throw new Error('No se pudo generar la imagen del QR');
+      }
+      
+      // Crear un nombre único para el archivo
+      const fileName = `LIA_QR_${room.name.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}.png`;
+      
+      // Guardar en la galería con nombre personalizado
+      const asset = await MediaLibrary.createAssetAsync(qrImageUri);
+      
+      // Crear un álbum específico para LIA (opcional)
+      try {
+        const album = await MediaLibrary.getAlbumAsync('LIA');
+        if (album) {
+          await MediaLibrary.addAssetsToAlbumAsync([asset], album, false);
+        } else {
+          await MediaLibrary.createAlbumAsync('LIA', asset, false);
+        }
+      } catch (albumError) {
+        console.warn('No se pudo crear álbum específico:', albumError);
+        // El asset ya está guardado en la galería principal
+      }
       
       Alert.alert('✅ Guardado', 'El código QR ha sido guardado en tu galería');
     } catch (error) {
       console.error('Error al guardar QR:', error);
-      Alert.alert('Error', 'No se pudo guardar el código QR');
+      Alert.alert('Error', `No se pudo guardar el código QR: ${error.message}`);
+    } finally {
+      setQrLoading(false);
     }
   };
 
-  // Función para compartir solo texto
+  // Función para compartir solo texto (fallback)
   const handleShareText = async () => {
     try {
       const shareMessage = `🎓 ¡Únete a LIA! 🚀\n\n📚 Sala: ${room.name}\n📖 Curso: ${room.course || 'No especificado'}\n🎯 Tema: ${room.topic || 'General'}\n\n🔑 ID de la sala: ${room.id}\n\n¡Usa este ID para unirte a la sala de estudio!`;
@@ -216,7 +297,6 @@ export default function RoomCard({
         handleGenerateQR();
         break;
       case 'questions':
-        // Manejar la visualización de preguntas directamente aquí
         console.log('Ver preguntas de:', room.name);
         setQuestionsModalVisible(true);
         await fetchRoomQuestions(room.id);
@@ -247,11 +327,26 @@ export default function RoomCard({
   // Función para formatear la fecha
   const formatDate = (dateString) => {
     if (!dateString) return 'Sin fecha';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('es-ES', { 
-      day: '2-digit', 
-      month: '2-digit' 
-    });
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('es-ES', { 
+        day: '2-digit', 
+        month: '2-digit' 
+      });
+    } catch (error) {
+      return 'Sin fecha';
+    }
+  };
+
+  // Función para generar logo SVG como base64 (más confiable)
+  const getLiaLogoBase64 = () => {
+    const svgString = `
+      <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="40" height="40" rx="8" fill="#4361EE"/>
+        <text x="20" y="26" fontFamily="Arial, sans-serif" fontSize="14" fontWeight="bold" fill="white" textAnchor="middle">LIA</text>
+      </svg>
+    `;
+    return `data:image/svg+xml;base64,${btoa(svgString)}`;
   };
 
   return (
@@ -356,7 +451,6 @@ export default function RoomCard({
           activeOpacity={1} 
           onPress={() => setShowMenu(false)}
         >
-          {/* Menú posicionado */}
           <View 
             style={[
               styles.popoverMenu, 
@@ -366,7 +460,6 @@ export default function RoomCard({
               }
             ]}
           >
-            {/* Flecha hacia arriba */}
             <View style={styles.popoverArrow} />
             
             <TouchableOpacity 
@@ -389,7 +482,6 @@ export default function RoomCard({
             
             <View style={styles.popoverDivider} />
             
-            {/* NUEVA OPCIÓN: Generar QR */}
             <TouchableOpacity 
               style={styles.popoverItem} 
               onPress={() => handleMenuOption('generateQR')}
@@ -415,7 +507,7 @@ export default function RoomCard({
               onPress={() => handleMenuOption('upload')}
             >
               <Feather name="upload" size={18} color="#4361EE" />
-              <Text style={styles.popoverItemText}>Subir evaluación</Text>
+              <Text style={styles.popoverItemText}>Crear evaluación</Text>
             </TouchableOpacity>
             
             <View style={styles.popoverDivider} />
@@ -441,7 +533,7 @@ export default function RoomCard({
         </TouchableOpacity>
       </Modal>
 
-      {/* Modal para mostrar el QR */}
+      {/* Modal mejorado para mostrar el QR */}
       <Modal
         visible={qrModalVisible}
         transparent={true}
@@ -472,21 +564,24 @@ export default function RoomCard({
               )}
             </View>
             
-            {/* Código QR con captura */}
+            {/* Código QR con captura mejorada */}
             <View ref={qrViewRef} style={styles.qrCaptureContainer}>
               <View style={styles.qrContainer}>
                 <QRCode
-                  value={room.id}
+                  value={room.id || 'default-room-id'}
                   size={200}
                   color="#333"
                   backgroundColor="#fff"
                   logo={{
-                    uri: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiByeD0iOCIgZmlsbD0iIzQzNjFFRSIvPgo8dGV4dCB4PSIyMCIgeT0iMjYiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9IndoaXRlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5MSUE8L3RleHQ+Cjwvc3ZnPgo='
+                    uri: getLiaLogoBase64()
                   }}
                   logoSize={40}
                   logoBackgroundColor="transparent"
                   logoMargin={2}
                   logoBorderRadius={8}
+                  enableLinearGradient={false}
+                  linearGradient={undefined}
+                  getRef={(c) => (qrRef.current = c)}
                 />
               </View>
               
@@ -503,7 +598,7 @@ export default function RoomCard({
               <Text style={styles.qrIdText}>{room.id}</Text>
             </View>
             
-            {/* Botones de acción */}
+            {/* Botones de acción mejorados */}
             <View style={styles.qrButtonsContainer}>
               <TouchableOpacity 
                 style={styles.qrButton}
@@ -511,27 +606,44 @@ export default function RoomCard({
                   Clipboard.setString(room.id);
                   Alert.alert('✅ Copiado', 'El ID ha sido copiado al portapapeles');
                 }}
+                disabled={qrLoading}
               >
                 <Feather name="copy" size={16} color="#4361EE" />
                 <Text style={styles.qrButtonText}>Copiar</Text>
               </TouchableOpacity>
               
               <TouchableOpacity 
-                style={styles.qrButton}
+                style={[styles.qrButton, qrLoading && styles.qrButtonDisabled]}
                 onPress={handleSaveQR}
+                disabled={qrLoading}
               >
-                <Feather name="download" size={16} color="#4361EE" />
-                <Text style={styles.qrButtonText}>Guardar</Text>
+                <Feather name={qrLoading ? "loader" : "download"} size={16} color="#4361EE" />
+                <Text style={styles.qrButtonText}>
+                  {qrLoading ? 'Guardando...' : 'Guardar'}
+                </Text>
               </TouchableOpacity>
               
               <TouchableOpacity 
-                style={[styles.qrButton, styles.qrShareButton]}
+                style={[styles.qrButton, styles.qrShareButton, qrLoading && styles.qrButtonDisabled]}
                 onPress={handleShareQRWithImage}
+                disabled={qrLoading}
               >
-                <Feather name="share-2" size={16} color="#fff" />
-                <Text style={[styles.qrButtonText, styles.qrShareButtonText]}>Compartir</Text>
+                <Feather name={qrLoading ? "loader" : "share-2"} size={16} color="#fff" />
+                <Text style={[styles.qrButtonText, styles.qrShareButtonText]}>
+                  {qrLoading ? 'Compartiendo...' : 'Compartir'}
+                </Text>
               </TouchableOpacity>
             </View>
+            
+            {/* Botón adicional para compartir solo texto */}
+            <TouchableOpacity 
+              style={styles.qrTextShareButton}
+              onPress={handleShareText}
+              disabled={qrLoading}
+            >
+              <Feather name="message-circle" size={16} color="#666" />
+              <Text style={styles.qrTextShareButtonText}>Compartir solo texto</Text>
+            </TouchableOpacity>
             
             {/* Instrucciones */}
             <Text style={styles.qrInstructions}>
@@ -741,7 +853,7 @@ const styles = StyleSheet.create({
   deleteText: {
     color: '#FF4444',
   },
-  // Estilos del modal QR
+  // Estilos mejorados del modal QR
   qrModalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -862,7 +974,7 @@ const styles = StyleSheet.create({
   qrButtonsContainer: {
     flexDirection: 'row',
     gap: 8,
-    marginBottom: 16,
+    marginBottom: 12,
     flexWrap: 'wrap',
     justifyContent: 'center',
   },
@@ -878,6 +990,9 @@ const styles = StyleSheet.create({
     minWidth: 80,
     justifyContent: 'center',
   },
+  qrButtonDisabled: {
+    opacity: 0.6,
+  },
   qrShareButton: {
     backgroundColor: '#4361EE',
     borderColor: '#4361EE',
@@ -890,6 +1005,19 @@ const styles = StyleSheet.create({
   },
   qrShareButtonText: {
     color: '#fff',
+  },
+  qrTextShareButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    marginBottom: 16,
+  },
+  qrTextShareButtonText: {
+    marginLeft: 8,
+    fontSize: 12,
+    fontFamily: 'Poppins_400Regular',
+    color: '#666',
   },
   qrInstructions: {
     fontSize: 12,

@@ -242,7 +242,7 @@ export default function AuthStack({ setIsAuthenticated }: { setIsAuthenticated: 
         }}
       />
 
-      {/* 🏆 PANTALLA DE RESULTADOS - NUEVA ADICIÓN */}
+      {/* 🏆 PANTALLA DE RESULTADOS - SIN BOTÓN DE BACK */}
       <Stack.Screen
         name="Results"
         component={ResultsScreen}
@@ -256,6 +256,13 @@ export default function AuthStack({ setIsAuthenticated }: { setIsAuthenticated: 
           headerTitleStyle: {
             fontWeight: "bold",
           },
+          // 🚫 MÚLTIPLES FORMAS DE QUITAR EL BOTÓN DE BACK
+          headerLeft: () => null,
+          headerBackVisible: false,
+          headerBackButtonMenuEnabled: false,
+          gestureEnabled: false,
+          // 🔒 PREVENIR NAVEGACIÓN HACIA ATRÁS
+          headerBackTitleVisible: false,
         }}
       />
 

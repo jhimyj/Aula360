@@ -13,7 +13,7 @@ export default function ActionCards({ onUploadEvaluation, onViewStudents }) {
         <View style={styles.iconContainer}>
           <Feather name="upload" size={24} color="#fff" />
         </View>
-        <Text style={styles.actionCardText}>Subir{"\n"}Evaluación</Text>
+        <Text style={styles.actionCardText}>Crear{"\n"}Evaluación</Text>
       </TouchableOpacity>
 
       <TouchableOpacity 

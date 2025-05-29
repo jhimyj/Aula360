@@ -253,6 +253,12 @@ export default function Dashboard() {
     )
   }
 
+  // 🆕 Función para cargar más salas en el modal
+  const handleLoadMoreInModal = () => {
+    console.log("📄 Cargando más salas desde el modal...")
+    loadMoreRooms()
+  }
+
   if (!fontsLoaded) {
     return (
       <View style={styles.loadingContainer}>
@@ -263,6 +269,11 @@ export default function Dashboard() {
 
   // Solo mostrar las primeras 3 salas en el dashboard
   const limitedRooms = rooms.slice(0, 3)
+
+  console.log("🏠 DASHBOARD - Estado de salas:")
+  console.log("- Total de salas:", rooms.length)
+  console.log("- ¿Hay más salas?:", hasMoreRooms)
+  console.log("- ¿Cargando más?:", isLoadingMore)
 
   return (
     <SafeAreaView style={styles.container}>
@@ -327,6 +338,8 @@ export default function Dashboard() {
           </View>
         )}
       </ScrollView>
+
+      {/* 🆕 Modal actualizado con soporte para paginación */}
       <RoomSelectorModal
         visible={roomSelectorVisible}
         onClose={() => setRoomSelectorVisible(false)}
@@ -334,6 +347,9 @@ export default function Dashboard() {
         onSelectRoom={handleSelectRoomForEvaluation}
         onViewAllRooms={handleViewAllRooms}
         loading={loading && rooms.length === 0}
+        onLoadMore={handleLoadMoreInModal} // 🆕 Función para cargar más
+        hasMoreRooms={hasMoreRooms} // 🆕 Indicador de más salas
+        isLoadingMore={isLoadingMore} // 🆕 Estado de carga
       />
     </SafeAreaView>
   )

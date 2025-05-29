@@ -130,7 +130,7 @@ export const SalasForm = () => {
           labelStyle={styles.buttonLabel}
           icon="check-circle"
         >
-          Crear SalW
+          Crear Sala
         </Button>
       </Animated.View>
     </Animated.View>
