@@ -176,7 +176,7 @@ function MainNavigator({
             name="BattleScreen"
             component={BattleScreen}
             options={{
-              title: "⚔️ Batalla",
+              title: "Batalla",
               headerBackTitleVisible: false,
             }}
           />
@@ -200,7 +200,7 @@ function MainNavigator({
             name="Quiz"
             component={compot}
             options={{
-              title: "❓ Quiz",
+              title: " Quiz",
               headerBackTitleVisible: false,
             }}
           />

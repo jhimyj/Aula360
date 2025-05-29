@@ -194,7 +194,7 @@ export default function AuthStack({ setIsAuthenticated }: { setIsAuthenticated: 
         }}
       />
 
-      {/* ⚔️ PANTALLA DE BATALLA */}
+      {/* ⚔️ PANTALLA DE BATALLA - SIN BOTÓN DE BACK */}
       <Stack.Screen
         name="BattleScreen"
         component={BattleScreen}
@@ -208,10 +208,17 @@ export default function AuthStack({ setIsAuthenticated }: { setIsAuthenticated: 
           headerTitleStyle: {
             fontWeight: "bold",
           },
+          // 🚫 MÚLTIPLES FORMAS DE QUITAR EL BOTÓN DE BACK
+          headerLeft: () => null,
+          headerBackVisible: false,
+          headerBackButtonMenuEnabled: false,
+          gestureEnabled: false,
+          // 🔒 PREVENIR NAVEGACIÓN HACIA ATRÁS
+          headerBackTitleVisible: false,
         }}
       />
 
-      {/* ❓ PANTALLA DE QUIZ */}
+      {/* ❓ PANTALLA DE QUIZ - SIN BOTÓN DE BACK */}
       <Stack.Screen
         name="Quiz"
         component={compot}
@@ -225,6 +232,13 @@ export default function AuthStack({ setIsAuthenticated }: { setIsAuthenticated: 
           headerTitleStyle: {
             fontWeight: "bold",
           },
+          // 🚫 MÚLTIPLES FORMAS DE QUITAR EL BOTÓN DE BACK
+          headerLeft: () => null,
+          headerBackVisible: false,
+          headerBackButtonMenuEnabled: false,
+          gestureEnabled: false,
+          // 🔒 PREVENIR NAVEGACIÓN HACIA ATRÁS
+          headerBackTitleVisible: false,
         }}
       />
 

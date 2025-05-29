@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { View, StyleSheet, Alert } from "react-native"
+import { View, StyleSheet, Alert, BackHandler } from "react-native"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import axios from "axios"
 import { useFocusEffect } from "@react-navigation/native"
@@ -379,24 +379,79 @@ const QuizScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(true)
   const [isQuizActive, setIsQuizActive] = useState(false)
 
-  // 🎯 CONTROL DEL CICLO DE VIDA DEL QUIZ
+  // 🏠 NAVEGACIÓN AL STUDENT DASHBOARD AL PRESIONAR BACK
   useFocusEffect(
     useCallback(() => {
-      console.log("🎯 QuizScreen ENFOCADO - Activando quiz")
+      console.log("🎯 QuizScreen ENFOCADO - Activando quiz y configurando navegación back")
       setIsQuizActive(true)
+
+      // 🏠 INTERCEPTAR EL BOTÓN DE BACK PARA IR AL STUDENT DASHBOARD
+      const onBackPress = () => {
+        console.log("🏠 BOTÓN BACK PRESIONADO - Navegando a StudentDashboard")
+
+        // Mostrar alerta de confirmación antes de salir
+        Alert.alert(
+          "¿Salir del Quiz?",
+          "Si sales ahora, perderás todo tu progreso. ¿Estás seguro?",
+          [
+            {
+              text: "Cancelar",
+              onPress: () => {
+                console.log("❌ Usuario canceló salir del quiz")
+              },
+              style: "cancel",
+            },
+            {
+              text: "Salir",
+              onPress: () => {
+                console.log("✅ Usuario confirmó salir del quiz - Navegando a StudentDashboard")
+                setIsQuizActive(false)
+                // 🏠 NAVEGAR ESPECÍFICAMENTE AL STUDENT DASHBOARD
+                navigation.navigate("StudentDashboard")
+              },
+              style: "destructive",
+            },
+          ],
+          { cancelable: false },
+        )
+
+        // Retornar true previene la navegación automática hacia atrás
+        return true
+      }
+
+      // Agregar el listener del botón de back
+      const backHandler = BackHandler.addEventListener("hardwareBackPress", onBackPress)
+
+      // 🔒 DESHABILITAR GESTOS DE NAVEGACIÓN (si es posible)
+      if (navigation.setOptions) {
+        navigation.setOptions({
+          gestureEnabled: false, // Deshabilitar gestos de swipe back en iOS
+          headerLeft: () => null, // Remover botón de back del header si existe
+        })
+      }
 
       // Función de limpieza cuando se pierde el foco
       return () => {
-        console.log("🎯 QuizScreen DESENFOCADO - Desactivando quiz")
+        console.log("🎯 QuizScreen DESENFOCADO - Desactivando quiz y restaurando navegación")
         setIsQuizActive(false)
+
+        // Remover el listener del botón de back
+        backHandler.remove()
+
+        // 🔓 RESTAURAR NAVEGACIÓN NORMAL
+        if (navigation.setOptions) {
+          navigation.setOptions({
+            gestureEnabled: true, // Restaurar gestos de navegación
+          })
+        }
       }
-    }, []),
+    }, [navigation]),
   )
 
   // 🧹 CLEANUP AL DESMONTAR
   useEffect(() => {
     return () => {
-      console.log("🧹 QuizScreen DESMONTÁNDOSE - Limpieza")
+      console.log("🧹 QuizScreen DESMONTÁNDOSE - Limpieza final")
       setIsQuizActive(false)
     }
   }, [])
@@ -426,7 +481,6 @@ const QuizScreen = ({ navigation }) => {
         const missions = await buildMissionsFromAPI(characterName, villainName)
         console.log(`🎮 Se crearon ${missions.length} misiones exitosamente`)
         setMissionsData(missions)
-
       } catch (error: any) {
         console.error("Error cargando preguntas:", error)
 
@@ -440,7 +494,8 @@ const QuizScreen = ({ navigation }) => {
             text: "Volver",
             onPress: () => {
               setIsQuizActive(false)
-              navigation.goBack()
+              // 🏠 TAMBIÉN NAVEGAR AL STUDENT DASHBOARD EN CASO DE ERROR
+              navigation.navigate("StudentDashboard")
             },
           },
         ])
