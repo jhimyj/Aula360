@@ -1,12 +1,7 @@
 import re
 
 from utils.config import (
-    schema_question,
-    schema_config_multiple_choice_single,
-    schema_config_open_ended,
-    schema_question_list,
-    schema_question_item,
-    recommendation_ia_question_schema
+    response_student_schema
 )
 
 class CustomValidator:
@@ -136,19 +131,7 @@ class CustomValidator:
 
 
 #funciones a exportar
-def create_validator_schema_question():
-    return CustomValidator(schema=schema_question)
-def create_validator_config_multiple_choice_single():
-    return CustomValidator(schema=schema_config_multiple_choice_single)
-def create_validator_config_open_ended():
-    return CustomValidator(schema=schema_config_open_ended)
 
-def create_validator_schema_question_list():
-    return CustomValidator(schema=schema_question_list)
 
-def create_validator_schema_question_item():
-    return CustomValidator(schema=schema_question_item)
-
-def create_validator_recommendation_ia_question_schema():
-    return CustomValidator(schema=recommendation_ia_question_schema)
-
+def create_validator_response_student_schema():
+    return CustomValidator(schema=response_student_schema)

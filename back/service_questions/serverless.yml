@@ -3,7 +3,7 @@ org: ${env:ORG}
 
 provider:
   name: aws
-  runtime: python3.9
+  runtime: python3.10
   memorySize: 1024
   timeout: 29
   role: ${env:ROLE}
@@ -13,6 +13,7 @@ provider:
     QUESTION_GSI_INDEX_ROOMID_CREATEDAT: ${env:QUESTION_GSI_INDEX_ROOMID_CREATEDAT}
     HTTPS_SERVICE_ROOM: ${env:HTTPS_SERVICE_ROOM}
     JWT_SECRET_KEY: ${env:JWT_SECRET_KEY}
+    ANTHROPIC_API_KEY: ${env:ANTHROPIC_API_KEY}
 
 
 package:
@@ -113,6 +114,26 @@ functions:
             origin: '*'
             methods:
               - GET
+            headers:
+              - Content-Type
+              - Authorization
+              - X-Amz-Date
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+
+  recommendation_ia:
+    handler: recommendation_ia/handler.lambda_handler
+    layers:
+      - { Ref: CommonLibLambdaLayer }
+    events:
+      - http:
+          path: questions/room/recommendation_ia
+          method: post
+          cors:
+            origin: '*'
+            methods:
+              - POST
             headers:
               - Content-Type
               - Authorization

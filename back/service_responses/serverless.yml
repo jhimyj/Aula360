@@ -1,0 +1,61 @@
+service: service-response
+org: ${env:ORG}
+
+provider:
+  name: aws
+  runtime: python3.10
+  memorySize: 1024
+  timeout: 29
+  role: ${env:ROLE}
+  environment: #aca las variables de entorno
+    RESPONSE_TABLE: ${env:RESPONSE_TABLE}
+    RESPONSE_GSI_INDEX_QUESTIONID_ROOMIDSTUDENTID: ${env:RESPONSE_GSI_INDEX_QUESTIONID_ROOMIDSTUDENTID}
+    HTTPS_SERVICE_QUESTION: ${env:HTTPS_SERVICE_QUESTION}
+    JWT_SECRET_KEY: ${env:JWT_SECRET_KEY}
+    ANTHROPIC_API_KEY: ${env:ANTHROPIC_API_KEY}
+
+package:
+  individually: true
+  exclude:
+    - .serverless/**
+    - .venv/**
+    - .idea/**
+    - financial-data/**
+    - build_layer.sh
+    - user/**
+    - test/**
+    - Dockerfile
+    - variables/**
+    - businesses_businessId_ai-parse/**
+    - "*.zip" #eres incluir otros ZIP que no sean necesarios
+    - README.md  # Ejemplo, si hay archivos de documentación que no necesitas
+    - serverless.yml
+    - requirements.txt
+
+# Definición del layer que contiene las dependencias comunes.
+layers: #si es que hay librerias externa
+  commonLib:
+    package:
+      artifact: layer_common_lib.zip
+    description: "Dependencias comunes para todas las Lambdas"
+
+functions:
+  generate:
+    handler: generate/handler.lambda_handler
+    layers:
+      - { Ref: CommonLibLambdaLayer }
+    events:
+      - http:
+          path: responses/generate
+          method: post
+          cors:
+            origin: '*'
+            methods:
+              - POST
+            headers:
+              - Content-Type
+              - Authorization
+              - X-Amz-Date
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
