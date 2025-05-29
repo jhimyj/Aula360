@@ -4,7 +4,8 @@ import { useState, useEffect } from "react"
 import { View, StyleSheet, Alert } from "react-native"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import axios from "axios"
-import { Audio } from "expo-av"
+import { useFocusEffect } from "@react-navigation/native"
+import { useCallback } from "react"
 import { MissionManager } from "../ComponentesQuiz/mission-manager"
 
 type CharacterName = "Qhapaq" | "Amaru" | "Killa"
@@ -33,13 +34,6 @@ type ApiResponse = {
   message: string
   data: ApiQuestion[]
   request_id: string
-}
-
-// 🎵 MÚSICA DE FONDO PARA CADA PERSONAJE
-const characterMusic: Record<CharacterName, any> = {
-  Qhapaq: require("../../assets/Musica-quiz/Qhapac.mp3"), // Reemplaza con tu ruta
-  Amaru: require("../../assets/Musica-quiz/Amaru.mp3"), // Reemplaza con tu ruta
-  Killa: require("../../assets/Musica-quiz/Killa.mp3"), // Reemplaza con tu ruta
 }
 
 // Imágenes del villano para cada misión (3 por villano, se repetirán según sea necesario)
@@ -383,37 +377,29 @@ const buildMissionsFromAPI = async (characterName: CharacterName, villainName: V
 const QuizScreen = ({ navigation }) => {
   const [missionsData, setMissionsData] = useState([])
   const [loading, setLoading] = useState(true)
+  const [isQuizActive, setIsQuizActive] = useState(false)
 
-  // 🎵 FUNCIÓN SIMPLE PARA REPRODUCIR MÚSICA DE FONDO
-  const playBackgroundMusic = async (characterName: CharacterName) => {
-    try {
-      // Configuración básica de audio
-      await Audio.setAudioModeAsync({
-        playsInSilentModeIOS: true,
-        staysActiveInBackground: true,
-      })
+  // 🎯 CONTROL DEL CICLO DE VIDA DEL QUIZ
+  useFocusEffect(
+    useCallback(() => {
+      console.log("🎯 QuizScreen ENFOCADO - Activando quiz")
+      setIsQuizActive(true)
 
-      // Obtener la música del personaje
-      const musicSource = characterMusic[characterName]
-
-      if (!musicSource) {
-        console.warn(`⚠️ No se encontró música para ${characterName}`)
-        return
+      // Función de limpieza cuando se pierde el foco
+      return () => {
+        console.log("🎯 QuizScreen DESENFOCADO - Desactivando quiz")
+        setIsQuizActive(false)
       }
+    }, []),
+  )
 
-      // Cargar y reproducir en loop
-      const { sound } = await Audio.Sound.createAsync(musicSource, {
-        isLooping: true,
-        volume: 0.5,
-        shouldPlay: true,
-      })
-
-      console.log(`🎵 Reproduciendo música de ${characterName}`)
-    } catch (error) {
-      console.error("❌ Error reproduciendo música:", error)
-      // Continuar sin música si hay error
+  // 🧹 CLEANUP AL DESMONTAR
+  useEffect(() => {
+    return () => {
+      console.log("🧹 QuizScreen DESMONTÁNDOSE - Limpieza")
+      setIsQuizActive(false)
     }
-  }
+  }, [])
 
   useEffect(() => {
     const loadQuestionsAndBuildMissions = async () => {
@@ -429,9 +415,6 @@ const QuizScreen = ({ navigation }) => {
         console.log("Personaje seleccionado:", characterName)
         console.log("Villano seleccionado:", villainName)
 
-        // 🎵 REPRODUCIR MÚSICA DE FONDO SEGÚN EL PERSONAJE
-        playBackgroundMusic(characterName)
-
         // Guardar room_id en AsyncStorage para el endpoint de feedback
         const roomId = await AsyncStorage.getItem("roomId")
         if (!roomId) {
@@ -443,6 +426,7 @@ const QuizScreen = ({ navigation }) => {
         const missions = await buildMissionsFromAPI(characterName, villainName)
         console.log(`🎮 Se crearon ${missions.length} misiones exitosamente`)
         setMissionsData(missions)
+
       } catch (error: any) {
         console.error("Error cargando preguntas:", error)
 
@@ -454,7 +438,10 @@ const QuizScreen = ({ navigation }) => {
           },
           {
             text: "Volver",
-            onPress: () => navigation.goBack(),
+            onPress: () => {
+              setIsQuizActive(false)
+              navigation.goBack()
+            },
           },
         ])
       } finally {
@@ -462,15 +449,22 @@ const QuizScreen = ({ navigation }) => {
       }
     }
 
-    loadQuestionsAndBuildMissions()
-  }, [])
+    // Solo cargar si el quiz está activo
+    if (isQuizActive) {
+      loadQuestionsAndBuildMissions()
+    }
+  }, [isQuizActive])
 
   const handleComplete = (score: number, totalMissions: number) => {
     console.log(`🏁 Quiz completado: ${score}/${totalMissions}`)
+
+    // Desactivar quiz al completar
+    setIsQuizActive(false)
+
     navigation.navigate("Results", { score, totalMissions })
   }
 
-  if (loading) {
+  if (loading || !isQuizActive) {
     return <View style={styles.container} />
   }
 

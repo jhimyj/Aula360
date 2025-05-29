@@ -334,25 +334,7 @@ function DrawerNavigatorContent({ setIsAuthenticated }: { setIsAuthenticated: (v
   }, [])
 
   // 🧹 FUNCIÓN PARA LIMPIAR DATOS DE USUARIO
-  const clearUserRole = async () => {
-    try {
-      await AsyncStorage.multiRemove([
-        "userRole",
-        "userInfo",
-        "userToken",
-        "studentToken",
-        "teacherToken", // 🔥 AGREGAR TEACHER TOKEN
-        "studentData",
-        "authMethod",
-        "roomId", // 🔥 LIMPIAR ROOM ID TAMBIÉN
-      ])
-      setUserRole(null)
-      setUserInfo(null)
-      console.log("🧹 Información del usuario limpiada")
-    } catch (error) {
-      console.error("❌ Error al limpiar información del usuario:", error)
-    }
-  }
+ 
 
   const handleLogout = async () => {
     Alert.alert("Cerrar Sesión", "¿Estás seguro de que quieres cerrar sesión?", [
@@ -366,7 +348,7 @@ function DrawerNavigatorContent({ setIsAuthenticated }: { setIsAuthenticated: (v
         onPress: async () => {
           try {
             // 🧹 LIMPIAR TODA LA INFORMACIÓN DEL USUARIO
-            await clearUserRole()
+           // await clearUserRole()
             setIsAuthenticated(false)
             console.log("👋 Sesión cerrada exitosamente")
           } catch (error) {

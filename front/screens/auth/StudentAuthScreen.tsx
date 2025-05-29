@@ -14,6 +14,7 @@ import {
   Animated,
   Modal,
   Dimensions,
+  ScrollView,
 } from "react-native"
 import { CameraView, useCameraPermissions } from "expo-camera"
 import { Ionicons } from "@expo/vector-icons"
@@ -317,7 +318,93 @@ export default function StudentAuthScreen({ setIsAuthenticated, onBack }: Props)
 
   if (step === "choice") {
     return (
-      <View style={styles.container}>
+      <KeyboardAvoidingView 
+        style={styles.container} 
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+      >
+        <ScrollView 
+          contentContainerStyle={styles.scrollContainer}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* Imagen superior - ocupa más espacio */}
+          <View style={[styles.imageSection, currentIsTablet && styles.imageSectionTablet]}>
+            <Image
+              source={require("../../assets/images/Cuenta-inicio.png")}
+              style={[styles.heroImage, currentIsTablet && styles.heroImageTablet]}
+              resizeMode="contain"
+            />
+          </View>
+
+          {/* Modal inferior */}
+          <View style={[styles.modalSection, currentIsTablet && styles.modalSectionTablet]}>
+            <Animated.View
+              style={[styles.choiceModal, currentIsTablet && styles.choiceModalTablet, { opacity: fadeAnim }]}
+            >
+              <View style={styles.modalHeader}>
+                <Text style={[styles.modalTitle, currentIsTablet && styles.modalTitleTablet]}>
+                  ¡Bienvenido Estudiante! 🎓
+                </Text>
+                <Text style={[styles.modalSubtitle, currentIsTablet && styles.modalSubtitleTablet]}>
+                  Para comenzar, necesitamos saber si es tu primera vez aquí
+                </Text>
+              </View>
+
+              <View style={[styles.choiceButtons, currentIsTablet && styles.choiceButtonsTablet]}>
+                <TouchableOpacity
+                  style={[styles.firstTimeButton, currentIsTablet && styles.choiceButtonTablet]}
+                  onPress={() => handleChoice(true)}
+                >
+                  <View style={styles.buttonContent}>
+                    <Text style={[styles.buttonEmoji, currentIsTablet && styles.buttonEmojiTablet]}>🆕</Text>
+                    <Text style={[styles.buttonTitle, currentIsTablet && styles.buttonTitleTablet]}>
+                      Sí, es mi primera vez
+                    </Text>
+                    <Text style={[styles.buttonSubtext, currentIsTablet && styles.buttonSubtextTablet]}>
+                      Crear nueva cuenta de estudiante
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.returningButton, currentIsTablet && styles.choiceButtonTablet]}
+                  onPress={() => handleChoice(false)}
+                >
+                  <View style={styles.buttonContent}>
+                    <Text style={[styles.buttonEmoji, currentIsTablet && styles.buttonEmojiTablet]}>👋</Text>
+                    <Text style={[styles.buttonTitle, currentIsTablet && styles.buttonTitleTablet]}>
+                      No, ya tengo cuenta
+                    </Text>
+                    <Text style={[styles.buttonSubtext, currentIsTablet && styles.buttonSubtextTablet]}>
+                      Iniciar sesión como estudiante
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              </View>
+
+              <TouchableOpacity style={[styles.backLink, currentIsTablet && styles.backLinkTablet]} onPress={onBack}>
+                <Text style={[styles.backText, currentIsTablet && styles.backTextTablet]}>← Volver al inicio</Text>
+              </TouchableOpacity>
+            </Animated.View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    )
+  }
+
+  return (
+    <KeyboardAvoidingView 
+      style={styles.container} 
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+    >
+      <ScrollView 
+        contentContainerStyle={styles.scrollContainer}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        enableOnAndroid={true}
+      >
         {/* Imagen superior - ocupa más espacio */}
         <View style={[styles.imageSection, currentIsTablet && styles.imageSectionTablet]}>
           <Image
@@ -329,73 +416,6 @@ export default function StudentAuthScreen({ setIsAuthenticated, onBack }: Props)
 
         {/* Modal inferior */}
         <View style={[styles.modalSection, currentIsTablet && styles.modalSectionTablet]}>
-          <Animated.View
-            style={[styles.choiceModal, currentIsTablet && styles.choiceModalTablet, { opacity: fadeAnim }]}
-          >
-            <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, currentIsTablet && styles.modalTitleTablet]}>
-                ¡Bienvenido Estudiante! 🎓
-              </Text>
-              <Text style={[styles.modalSubtitle, currentIsTablet && styles.modalSubtitleTablet]}>
-                Para comenzar, necesitamos saber si es tu primera vez aquí
-              </Text>
-            </View>
-
-            <View style={[styles.choiceButtons, currentIsTablet && styles.choiceButtonsTablet]}>
-              <TouchableOpacity
-                style={[styles.firstTimeButton, currentIsTablet && styles.choiceButtonTablet]}
-                onPress={() => handleChoice(true)}
-              >
-                <View style={styles.buttonContent}>
-                  <Text style={[styles.buttonEmoji, currentIsTablet && styles.buttonEmojiTablet]}>🆕</Text>
-                  <Text style={[styles.buttonTitle, currentIsTablet && styles.buttonTitleTablet]}>
-                    Sí, es mi primera vez
-                  </Text>
-                  <Text style={[styles.buttonSubtext, currentIsTablet && styles.buttonSubtextTablet]}>
-                    Crear nueva cuenta de estudiante
-                  </Text>
-                </View>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.returningButton, currentIsTablet && styles.choiceButtonTablet]}
-                onPress={() => handleChoice(false)}
-              >
-                <View style={styles.buttonContent}>
-                  <Text style={[styles.buttonEmoji, currentIsTablet && styles.buttonEmojiTablet]}>👋</Text>
-                  <Text style={[styles.buttonTitle, currentIsTablet && styles.buttonTitleTablet]}>
-                    No, ya tengo cuenta
-                  </Text>
-                  <Text style={[styles.buttonSubtext, currentIsTablet && styles.buttonSubtextTablet]}>
-                    Iniciar sesión como estudiante
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            </View>
-
-            <TouchableOpacity style={[styles.backLink, currentIsTablet && styles.backLinkTablet]} onPress={onBack}>
-              <Text style={[styles.backText, currentIsTablet && styles.backTextTablet]}>← Volver al inicio</Text>
-            </TouchableOpacity>
-          </Animated.View>
-        </View>
-      </View>
-    )
-  }
-
-  return (
-    <View style={styles.container}>
-      {/* Imagen superior - ocupa más espacio */}
-      <View style={[styles.imageSection, currentIsTablet && styles.imageSectionTablet]}>
-        <Image
-          source={require("../../assets/images/Cuenta-inicio.png")}
-          style={[styles.heroImage, currentIsTablet && styles.heroImageTablet]}
-          resizeMode="contain"
-        />
-      </View>
-
-      {/* Modal inferior */}
-      <View style={[styles.modalSection, currentIsTablet && styles.modalSectionTablet]}>
-        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.keyboardView}>
           <Animated.View style={[styles.formModal, currentIsTablet && styles.formModalTablet, { opacity: fadeAnim }]}>
             <View style={styles.modalHeader}>
               <Text style={[styles.modalTitle, currentIsTablet && styles.modalTitleTablet]}>
@@ -420,6 +440,8 @@ export default function StudentAuthScreen({ setIsAuthenticated, onBack }: Props)
                   onChangeText={setUsername}
                   autoCapitalize="none"
                   placeholderTextColor="#A0A0A0"
+                  returnKeyType="next"
+                  blurOnSubmit={false}
                 />
               </View>
 
@@ -433,6 +455,8 @@ export default function StudentAuthScreen({ setIsAuthenticated, onBack }: Props)
                     onChangeText={setRoomId}
                     autoCapitalize="none"
                     placeholderTextColor="#A0A0A0"
+                    returnKeyType="done"
+                    onSubmitEditing={handleSubmit}
                   />
                   <TouchableOpacity
                     style={[styles.qrButton, currentIsTablet && styles.qrButtonTablet]}
@@ -476,8 +500,8 @@ export default function StudentAuthScreen({ setIsAuthenticated, onBack }: Props)
               </TouchableOpacity>
             </View>
           </Animated.View>
-        </KeyboardAvoidingView>
-      </View>
+        </View>
+      </ScrollView>
 
       {/* Modal del Escáner QR */}
       <Modal visible={showQRScanner} animationType="slide" presentationStyle="fullScreen">
@@ -515,11 +539,11 @@ export default function StudentAuthScreen({ setIsAuthenticated, onBack }: Props)
           </CameraView>
         </View>
       </Modal>
-    </View>
+    </KeyboardAvoidingView>
   )
 }
 
-// Los estilos permanecen exactamente iguales
+// Estilos actualizados para mejor manejo del teclado
 const styles = StyleSheet.create({
   // Layout principal
   container: {
@@ -527,34 +551,37 @@ const styles = StyleSheet.create({
     backgroundColor: "#F8FAFC",
   },
 
+  // 🔥 NUEVO: ScrollView container
+  scrollContainer: {
+    flexGrow: 1,
+    minHeight: screenHeight,
+  },
+
   // Sección de imagen - MÁS ESPACIO COMO EN LA IMAGEN
   imageSection: {
-    flex: 0.55, // Más espacio para la imagen
+    flex: 0.45, // Reducido ligeramente para dar más espacio al formulario
     justifyContent: "center",
     alignItems: "center",
     paddingTop: 40,
     paddingHorizontal: 20,
+    minHeight: screenHeight * 0.35, // Altura mínima
   },
 
   // Imagen hero - tamaño como en el diseño
   heroImage: {
-    width: screenWidth * 0.6, // 60% del ancho de pantalla
-    height: screenWidth * 0.6,
-    maxWidth: 280,
-    maxHeight: 280,
+    width: screenWidth * 0.5, // Reducido ligeramente
+    height: screenWidth * 0.5,
+    maxWidth: 250,
+    maxHeight: 250,
   },
 
-  // Sección modal - MENOS ESPACIO, POSICIONADO ABAJO
+  // Sección modal - MÁS ESPACIO PARA EL FORMULARIO
   modalSection: {
-    flex: 0.45, // Menos espacio para el modal
+    flex: 0.55, // Más espacio para el modal
     justifyContent: "flex-end",
     paddingHorizontal: 20,
-    paddingBottom: 40,
-  },
-
-  keyboardView: {
-    flex: 1,
-    justifyContent: "flex-end",
+    paddingBottom: 20, // Reducido el padding bottom
+    minHeight: screenHeight * 0.4, // Altura mínima
   },
 
   // Modales - diseño como en la imagen
@@ -569,6 +596,7 @@ const styles = StyleSheet.create({
     elevation: 12,
     borderTopWidth: 4,
     borderTopColor: "#4F46E5",
+    marginBottom: 20, // Espacio adicional en la parte inferior
   },
 
   formModal: {
@@ -582,6 +610,7 @@ const styles = StyleSheet.create({
     elevation: 12,
     borderTopWidth: 4,
     borderTopColor: "#059669",
+    marginBottom: 20, // Espacio adicional en la parte inferior
   },
 
   // Headers
@@ -671,6 +700,7 @@ const styles = StyleSheet.create({
     padding: 14,
     fontSize: 15,
     color: "#1F2937",
+    minHeight: 48, // Altura mínima para mejor toque
   },
 
   roomInputContainer: {
@@ -688,6 +718,7 @@ const styles = StyleSheet.create({
     padding: 14,
     fontSize: 15,
     color: "#1F2937",
+    minHeight: 48, // Altura mínima para mejor toque
   },
 
   qrButton: {
@@ -715,6 +746,7 @@ const styles = StyleSheet.create({
     padding: 16,
     alignItems: "center",
     marginTop: 8,
+    minHeight: 52, // Altura mínima para mejor toque
   },
 
   submitButtonDisabled: {
@@ -843,25 +875,27 @@ const styles = StyleSheet.create({
 
   // Sección de imagen en tablet
   imageSectionTablet: {
-    flex: 0.5, // Ajustado para tablets
+    flex: 0.4, // Ajustado para tablets
     paddingTop: 60,
     paddingHorizontal: 40,
+    minHeight: screenHeight * 0.3,
   },
 
   // Imagen más grande en tablets
   heroImageTablet: {
-    width: screenWidth * 0.4, // 40% en tablets
-    height: screenWidth * 0.4,
-    maxWidth: 350,
-    maxHeight: 350,
+    width: screenWidth * 0.3, // 30% en tablets
+    height: screenWidth * 0.3,
+    maxWidth: 300,
+    maxHeight: 300,
   },
 
   // Modal section en tablet
   modalSectionTablet: {
-    flex: 0.5,
+    flex: 0.6,
     paddingHorizontal: 60,
-    paddingBottom: 60,
+    paddingBottom: 40,
     justifyContent: "center",
+    minHeight: screenHeight * 0.5,
   },
 
   // Modales en tablet
@@ -930,6 +964,7 @@ const styles = StyleSheet.create({
     padding: 18,
     fontSize: 17,
     borderRadius: 16,
+    minHeight: 56,
   },
 
   roomInputContainerTablet: {
@@ -951,6 +986,7 @@ const styles = StyleSheet.create({
     padding: 20,
     borderRadius: 16,
     marginTop: 12,
+    minHeight: 60,
   },
 
   submitButtonTextTablet: {

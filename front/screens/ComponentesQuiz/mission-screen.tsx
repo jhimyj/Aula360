@@ -36,7 +36,7 @@ type MissionScreenProps = {
   question: string
   questionType?: "MULTIPLE_CHOICE_SINGLE" | "MULTIPLE_CHOICE_MULTIPLE" | "OPEN_ENDED"
   options: OptionType[]
-  onSubmit?: (selectedOption: string, isCorrect: boolean, userAnswer?: string) => void
+  onSubmit?: (selectedOption: string | string[], isCorrect: boolean, userAnswer?: string) => void
 }
 
 const { width } = Dimensions.get("window")
@@ -50,7 +50,10 @@ export const MissionScreen = ({
   options,
   onSubmit,
 }: MissionScreenProps) => {
+  // Para MULTIPLE_CHOICE_SINGLE usamos selectedOption (string)
   const [selectedOption, setSelectedOption] = useState<string | null>(null)
+  // Para MULTIPLE_CHOICE_MULTIPLE usamos selectedOptions (array)
+  const [selectedOptions, setSelectedOptions] = useState<string[]>([])
   const [userAnswer, setUserAnswer] = useState<string>("")
   const [answered, setAnswered] = useState<boolean>(false)
   const [isCorrect, setIsCorrect] = useState<boolean>(false)
@@ -62,6 +65,7 @@ export const MissionScreen = ({
   useEffect(() => {
     console.log("🔄 MISSION SCREEN - Reseteando estados para nueva misión")
     setSelectedOption(null)
+    setSelectedOptions([])
     setUserAnswer("")
     setAnswered(false)
     setIsCorrect(false)
@@ -85,8 +89,26 @@ export const MissionScreen = ({
 
   const handleOptionPress = (optionId: string) => {
     if (!answered && (questionType === "MULTIPLE_CHOICE_SINGLE" || questionType === "MULTIPLE_CHOICE_MULTIPLE")) {
-      setSelectedOption(optionId)
-      console.log("✅ Opción seleccionada:", optionId)
+      if (questionType === "MULTIPLE_CHOICE_SINGLE") {
+        // Comportamiento original para selección única
+        setSelectedOption(optionId)
+        console.log("✅ Opción seleccionada (única):", optionId)
+      } else if (questionType === "MULTIPLE_CHOICE_MULTIPLE") {
+        // Nuevo comportamiento para selección múltiple
+        setSelectedOptions((prev) => {
+          if (prev.includes(optionId)) {
+            // Si ya está seleccionada, la removemos
+            const newSelection = prev.filter((id) => id !== optionId)
+            console.log("✅ Opciones seleccionadas (múltiple):", newSelection)
+            return newSelection
+          } else {
+            // Si no está seleccionada, la agregamos
+            const newSelection = [...prev, optionId]
+            console.log("✅ Opciones seleccionadas (múltiple):", newSelection)
+            return newSelection
+          }
+        })
+      }
     }
   }
 
@@ -114,6 +136,7 @@ export const MissionScreen = ({
     console.log("- questionType:", questionType)
     console.log("- isOpenEndedQuestion:", isOpenEndedQuestion)
     console.log("- selectedOption:", selectedOption)
+    console.log("- selectedOptions:", selectedOptions)
     console.log("- userAnswer:", userAnswer)
     console.log("- answered:", answered)
 
@@ -131,14 +154,14 @@ export const MissionScreen = ({
           onSubmit("OPEN", true, userAnswer)
         }
       }
-    } else {
-      // Para preguntas de opción múltiple
+    } else if (questionType === "MULTIPLE_CHOICE_SINGLE") {
+      // Comportamiento original para selección única
       if (selectedOption) {
         // Encontrar la opción seleccionada
         const selected = options.find((option) => option.id === selectedOption)
         const correct = selected?.isCorrect || false
 
-        console.log("✅ Enviando respuesta de opción múltiple:", { selectedOption, correct })
+        console.log("✅ Enviando respuesta de opción única:", { selectedOption, correct })
 
         setIsCorrect(correct)
         setAnswered(true)
@@ -147,14 +170,39 @@ export const MissionScreen = ({
           onSubmit(selectedOption, correct)
         }
       }
+    } else if (questionType === "MULTIPLE_CHOICE_MULTIPLE") {
+      // Nuevo comportamiento para selección múltiple
+      if (selectedOptions.length > 0) {
+        // Para múltiples selecciones, verificar si al menos una es correcta
+        const selectedOptionObjects = options.filter((option) => selectedOptions.includes(option.id))
+        const hasCorrectAnswer = selectedOptionObjects.some((option) => option.isCorrect)
+
+        console.log("✅ Enviando respuesta de opción múltiple:", { selectedOptions, hasCorrectAnswer })
+
+        setIsCorrect(hasCorrectAnswer)
+        setAnswered(true)
+
+        if (onSubmit) {
+          // 🔥 ENVIAR TODAS LAS OPCIONES SELECCIONADAS, NO SOLO LA PRIMERA
+          onSubmit(selectedOptions, hasCorrectAnswer)
+        }
+      }
     }
   }
 
   const getOptionStyle = (optionId: string, isOptionCorrect?: boolean) => {
     if (!answered) {
-      return [styles.optionButton, selectedOption === optionId && styles.selectedOption]
+      // Verificar si está seleccionada según el tipo de pregunta
+      const isSelected =
+        questionType === "MULTIPLE_CHOICE_SINGLE" ? selectedOption === optionId : selectedOptions.includes(optionId)
+
+      return [styles.optionButton, isSelected && styles.selectedOption]
     } else {
-      if (optionId === selectedOption) {
+      // Verificar si está seleccionada según el tipo de pregunta
+      const isSelected =
+        questionType === "MULTIPLE_CHOICE_SINGLE" ? selectedOption === optionId : selectedOptions.includes(optionId)
+
+      if (isSelected) {
         return [styles.optionButton, isOptionCorrect ? styles.correctOption : styles.incorrectOption]
       } else if (isOptionCorrect) {
         return [styles.optionButton, styles.correctOption]
@@ -203,7 +251,6 @@ export const MissionScreen = ({
                 returnKeyType="default"
                 blurOnSubmit={false}
               />
-             
             </View>
           </TouchableWithoutFeedback>
 
@@ -222,24 +269,65 @@ export const MissionScreen = ({
               onPress={() => handleOptionPress(option.id)}
               disabled={answered}
             >
-              <Text
-                style={[
-                  styles.optionLabel,
-                  answered && option.isCorrect && styles.correctOptionText,
-                  answered && selectedOption === option.id && !option.isCorrect && styles.incorrectOptionText,
-                ]}
-              >
-                {option.id}.
-              </Text>
-              <Text
-                style={[
-                  styles.optionText,
-                  answered && option.isCorrect && styles.correctOptionText,
-                  answered && selectedOption === option.id && !option.isCorrect && styles.incorrectOptionText,
-                ]}
-              >
-                {option.text}
-              </Text>
+              {/* Renderizar checkbox o radio button según el tipo */}
+              {questionType === "MULTIPLE_CHOICE_MULTIPLE" ? (
+                // Checkbox para selección múltiple
+                <View style={styles.checkboxContainer}>
+                  <View
+                    style={[
+                      styles.checkbox,
+                      selectedOptions.includes(option.id) && styles.checkboxSelected,
+                      answered && option.isCorrect && styles.checkboxCorrect,
+                      answered && selectedOptions.includes(option.id) && !option.isCorrect && styles.checkboxIncorrect,
+                    ]}
+                  >
+                    {selectedOptions.includes(option.id) && <Text style={styles.checkmark}>✓</Text>}
+                  </View>
+                </View>
+              ) : (
+                // Radio button para selección única (comportamiento original)
+                <View style={styles.radioContainer}>
+                  <View
+                    style={[
+                      styles.radioButton,
+                      selectedOption === option.id && styles.radioButtonSelected,
+                      answered && option.isCorrect && styles.radioButtonCorrect,
+                      answered && selectedOption === option.id && !option.isCorrect && styles.radioButtonIncorrect,
+                    ]}
+                  >
+                    {selectedOption === option.id && <View style={styles.radioButtonInner} />}
+                  </View>
+                </View>
+              )}
+
+              <View style={styles.optionContent}>
+                <Text
+                  style={[
+                    styles.optionLabel,
+                    answered && option.isCorrect && styles.correctOptionText,
+                    answered &&
+                      ((questionType === "MULTIPLE_CHOICE_SINGLE" && selectedOption === option.id) ||
+                        (questionType === "MULTIPLE_CHOICE_MULTIPLE" && selectedOptions.includes(option.id))) &&
+                      !option.isCorrect &&
+                      styles.incorrectOptionText,
+                  ]}
+                >
+                  {option.id}.
+                </Text>
+                <Text
+                  style={[
+                    styles.optionText,
+                    answered && option.isCorrect && styles.correctOptionText,
+                    answered &&
+                      ((questionType === "MULTIPLE_CHOICE_SINGLE" && selectedOption === option.id) ||
+                        (questionType === "MULTIPLE_CHOICE_MULTIPLE" && selectedOptions.includes(option.id))) &&
+                      !option.isCorrect &&
+                      styles.incorrectOptionText,
+                  ]}
+                >
+                  {option.text}
+                </Text>
+              </View>
             </TouchableOpacity>
           ))}
         </ScrollView>
@@ -248,6 +336,18 @@ export const MissionScreen = ({
   }
 
   const isOpenEndedQuestion = questionType === "OPEN_ENDED"
+
+  // Determinar si el botón debe estar habilitado
+  const isSubmitDisabled = () => {
+    if (isOpenEndedQuestion) {
+      return !userAnswer.trim()
+    } else if (questionType === "MULTIPLE_CHOICE_SINGLE") {
+      return !selectedOption
+    } else if (questionType === "MULTIPLE_CHOICE_MULTIPLE") {
+      return selectedOptions.length === 0
+    }
+    return true
+  }
 
   return (
     <ImageBackground source={backgroundImage} style={styles.background} resizeMode="cover">
@@ -276,16 +376,17 @@ export const MissionScreen = ({
               {/* Botón de enviar */}
               {!answered && (
                 <TouchableOpacity
-                  style={[
-                    styles.submitButton,
-                    (!isOpenEndedQuestion && !selectedOption) || (isOpenEndedQuestion && !userAnswer.trim())
-                      ? styles.disabledButton
-                      : null,
-                  ]}
+                  style={[styles.submitButton, isSubmitDisabled() ? styles.disabledButton : null]}
                   onPress={handleSubmit}
-                  disabled={(!isOpenEndedQuestion && !selectedOption) || (isOpenEndedQuestion && !userAnswer.trim())}
+                  disabled={isSubmitDisabled()}
                 >
-                  <Text style={styles.submitButtonText}>{isOpenEndedQuestion ? "Enviar Respuesta" : "Enviar"}</Text>
+                  <Text style={styles.submitButtonText}>
+                    {isOpenEndedQuestion
+                      ? "Enviar Respuesta"
+                      : questionType === "MULTIPLE_CHOICE_MULTIPLE" && selectedOptions.length > 1
+                        ? `Enviar (${selectedOptions.length})`
+                        : "Enviar"}
+                  </Text>
                 </TouchableOpacity>
               )}
             </Animated.View>
@@ -350,11 +451,11 @@ const styles = StyleSheet.create({
   optionButton: {
     backgroundColor: "#E0E0E0",
     borderRadius: 10,
-    padding: 10,
+    padding: 12,
     marginVertical: 3,
     flexDirection: "row",
     alignItems: "center",
-    minHeight: 45,
+    minHeight: 50,
   },
   selectedOption: {
     backgroundColor: "#4CAF50",
@@ -429,23 +530,80 @@ const styles = StyleSheet.create({
     borderColor: "#CCC",
     color: "#666",
   },
-  placeholderOverlay: {
-    position: "absolute",
-    top: 15,
-    left: 15,
-    right: 15,
-    pointerEvents: "none",
-  },
-  placeholderText: {
-    fontSize: 16,
-    color: "#999",
-    fontStyle: "italic",
-  },
   characterCount: {
     fontSize: 12,
     color: "#666",
     textAlign: "right",
     marginTop: 5,
     fontStyle: "italic",
+  },
+  // Estilos para checkboxes (MULTIPLE_CHOICE_MULTIPLE)
+  checkboxContainer: {
+    marginRight: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderWidth: 2,
+    borderColor: "#666",
+    borderRadius: 4,
+    backgroundColor: "transparent",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  checkboxSelected: {
+    backgroundColor: "#4CAF50",
+    borderColor: "#4CAF50",
+  },
+  checkboxCorrect: {
+    backgroundColor: "#4CAF50",
+    borderColor: "#4CAF50",
+  },
+  checkboxIncorrect: {
+    backgroundColor: "#F44336",
+    borderColor: "#F44336",
+  },
+  checkmark: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  // Estilos para radio buttons (MULTIPLE_CHOICE_SINGLE)
+  radioContainer: {
+    marginRight: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  radioButton: {
+    width: 24,
+    height: 24,
+    borderWidth: 2,
+    borderColor: "#666",
+    borderRadius: 12,
+    backgroundColor: "transparent",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  radioButtonSelected: {
+    borderColor: "#4CAF50",
+  },
+  radioButtonCorrect: {
+    borderColor: "#4CAF50",
+  },
+  radioButtonIncorrect: {
+    borderColor: "#F44336",
+  },
+  radioButtonInner: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: "#4CAF50",
+  },
+  optionContent: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
   },
 })

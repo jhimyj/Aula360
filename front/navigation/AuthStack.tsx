@@ -120,7 +120,7 @@ export default function AuthStack({ setIsAuthenticated }: { setIsAuthenticated: 
 
       try {
         // 🧹 LIMPIAR TODOS LOS DATOS
-        await AsyncStorage.clear()
+
         console.log("🧹 AsyncStorage completamente limpiado")
       } catch (error) {
         console.error("❌ Error al limpiar AsyncStorage:", error)

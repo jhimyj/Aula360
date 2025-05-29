@@ -107,7 +107,8 @@ export const MissionManager = ({ missions, onComplete }: MissionManagerProps) =>
         question_id: questionId,
         response_student: responseStudent,
       })
-       console.log("TOKEN:",token)
+      console.log("TOKEN:", token)
+
       const response = await fetch("https://6axx5kevpc.execute-api.us-east-1.amazonaws.com/dev/responses/generate", {
         method: "POST",
         headers: {
@@ -120,16 +121,13 @@ export const MissionManager = ({ missions, onComplete }: MissionManagerProps) =>
           response_student: responseStudent,
         }),
       })
-         
+
       console.log(response)
-       if (!response.ok) {
-  const errorData = await response.json().catch(() => null)
-  const errorMessage = errorData?.message || `Error HTTP: ${response.status}`
-  throw new Error(errorMessage)
-}
 
       if (!response.ok) {
-        throw new Error(`Error HTTP: ${response.status}`)
+        const errorData = await response.json().catch(() => null)
+        const errorMessage = errorData?.message || `Error HTTP: ${response.status}`
+        throw new Error(errorMessage)
       }
 
       const data: FeedbackResponse = await response.json()
@@ -142,7 +140,7 @@ export const MissionManager = ({ missions, onComplete }: MissionManagerProps) =>
     }
   }
 
-  const handleSubmit = async (selectedOption: string, isCorrect: boolean, userAnswer?: string) => {
+  const handleSubmit = async (selectedOption: string | string[], isCorrect: boolean, userAnswer?: string) => {
     console.log("🎯 HANDLE SUBMIT - Iniciando procesamiento")
     console.log("- currentMissionIndex:", currentMissionIndex)
     console.log("- missions.length:", missions.length)
@@ -173,19 +171,29 @@ export const MissionManager = ({ missions, onComplete }: MissionManagerProps) =>
           ...prev,
           [currentMissionIndex]: userAnswer,
         }))
-      } else if (
-        currentMission.questionType === "MULTIPLE_CHOICE_SINGLE" ||
-        currentMission.questionType === "MULTIPLE_CHOICE_MULTIPLE"
-      ) {
-        // Para opción múltiple, usar el texto de la opción seleccionada
+      } else if (currentMission.questionType === "MULTIPLE_CHOICE_SINGLE") {
+        // Para opción única, usar el texto de la opción seleccionada
         const selectedOptionObj = currentMission.options.find((opt) => opt.id === selectedOption)
         if (selectedOptionObj) {
           responseStudent = [selectedOptionObj.text]
         }
+        console.log("📝 SINGLE CHOICE - Respuesta preparada:", responseStudent)
+      } else if (currentMission.questionType === "MULTIPLE_CHOICE_MULTIPLE") {
+        // 🔥 PARA MÚLTIPLES OPCIONES, ENVIAR TODAS LAS RESPUESTAS SELECCIONADAS
+        if (Array.isArray(selectedOption)) {
+          const selectedOptionObjects = currentMission.options.filter((opt) => selectedOption.includes(opt.id))
+          responseStudent = selectedOptionObjects.map((opt) => opt.text)
+        }
+        console.log("📝 MULTIPLE CHOICE - Respuestas preparadas:", responseStudent)
       }
 
       // Obtener el ID de la pregunta actual
       const questionId = currentMission.id.toString()
+
+      console.log("🚀 ENVIANDO AL ENDPOINT DE IA:")
+      console.log("- questionId:", questionId)
+      console.log("- responseStudent:", responseStudent)
+      console.log("- Número de respuestas:", responseStudent.length)
 
       // Llamar al endpoint de feedback
       const feedbackResponse = await generateFeedback(questionId, responseStudent)

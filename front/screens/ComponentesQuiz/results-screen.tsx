@@ -1,5 +1,5 @@
 "use client"
-import { View, Text, StyleSheet, TouchableOpacity, Animated, Dimensions, ScrollView } from "react-native"
+import { View, Text, StyleSheet, TouchableOpacity, Animated, Dimensions, ScrollView, useWindowDimensions } from "react-native"
 import { useState, useEffect } from "react"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import { removeSavedCharacterImage } from "../../screens/ComponentesHero/saveCharacterImage"
@@ -12,12 +12,14 @@ const characterCelebrationImages: Record<CharacterName, any> = {
   Killa: require("../../assets/Personajes/Guerrera.png"),
 }
 
-const { width, height } = Dimensions.get("window")
-
 const ResultsScreen = ({ route, navigation }) => {
   // Obtener los parámetros de la ruta
   const { score, totalMissions } = route.params || { score: 0, totalMissions: 0 }
-
+  
+  // Use window dimensions for responsive layout
+  const { width, height } = useWindowDimensions()
+  const isTablet = width >= 768 // Common breakpoint for tablets
+  
   const [characterName, setCharacterName] = useState<CharacterName>("Qhapaq")
   const [fadeAnim] = useState(new Animated.Value(0))
   const [scaleAnim] = useState(new Animated.Value(0.8))
@@ -26,6 +28,7 @@ const ResultsScreen = ({ route, navigation }) => {
   console.log("🔍 VALORES RECIBIDOS EN RESULTS SCREEN:")
   console.log("- score:", score)
   console.log("- totalMissions:", totalMissions)
+  console.log("- Dispositivo:", isTablet ? "Tablet" : "Teléfono")
 
   // 🛠️ CORREGIR CÁLCULOS: Asegurarse de que el score no sea mayor que el total de preguntas
   // Si score > totalMissions, probablemente sea un score de IA y no un contador de respuestas correctas
@@ -124,7 +127,6 @@ const ResultsScreen = ({ route, navigation }) => {
   }
   console.log("📌 Rutas disponibles:", navigation.getState().routeNames)
 
-
   // 🎮 Renderizar desglose de preguntas
   const renderQuestionBreakdown = () => {
     // Crear un array con el estado de cada pregunta (correcta o incorrecta)
@@ -133,26 +135,45 @@ const ResultsScreen = ({ route, navigation }) => {
       .fill(0)
       .map((_, index) => index < correctAnswers)
 
+    // Calcular el número de columnas basado en el ancho del dispositivo
+    const numColumns = isTablet ? 10 : 5
+
+    // Agrupar los resultados en filas para una mejor visualización
+    const rows = []
+    for (let i = 0; i < questionResults.length; i += numColumns) {
+      rows.push(questionResults.slice(i, i + numColumns))
+    }
+
     return (
       <View style={styles.questionBreakdownContainer}>
         <Text style={styles.questionBreakdownTitle}>Desglose de Preguntas</Text>
-        <View style={styles.questionIconsContainer}>
-          {questionResults.map((isCorrect, index) => (
-            <View key={index} style={styles.questionIconWrapper}>
-              <View
-                style={[
-                  styles.questionIcon,
-                  {
-                    backgroundColor: isCorrect ? "#4CAF50" : "#F44336",
-                  },
-                ]}
-              >
-                <Text style={styles.questionIconText}>{index + 1}</Text>
-              </View>
-              <Text style={styles.questionIconStatus}>{isCorrect ? "✓" : "✗"}</Text>
-            </View>
-          ))}
-        </View>
+        {rows.map((row, rowIndex) => (
+          <View key={rowIndex} style={styles.questionIconsRow}>
+            {row.map((isCorrect, colIndex) => {
+              const questionIndex = rowIndex * numColumns + colIndex
+              return (
+                <View key={colIndex} style={styles.questionIconWrapper}>
+                  <View
+                    style={[
+                      styles.questionIcon,
+                      {
+                        backgroundColor: isCorrect ? "#4CAF50" : "#F44336",
+                        width: isTablet ? 40 : 32,
+                        height: isTablet ? 40 : 32,
+                        borderRadius: isTablet ? 20 : 16,
+                      },
+                    ]}
+                  >
+                    <Text style={[styles.questionIconText, { fontSize: isTablet ? 16 : 14 }]}>
+                      {questionIndex + 1}
+                    </Text>
+                  </View>
+                  <Text style={styles.questionIconStatus}>{isCorrect ? "✓" : "✗"}</Text>
+                </View>
+              )
+            })}
+          </View>
+        ))}
       </View>
     )
   }
@@ -161,60 +182,108 @@ const ResultsScreen = ({ route, navigation }) => {
     <View style={[styles.container, { backgroundColor: getBackgroundColor() }]}>
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { 
+            paddingHorizontal: isTablet ? 40 : 20,
+            minHeight: height 
+          }
+        ]}
         showsVerticalScrollIndicator={false}
         bounces={true}
       >
-        <Animated.View style={[styles.content, { opacity: fadeAnim, transform: [{ scale: scaleAnim }] }]}>
+        <Animated.View 
+          style={[
+            styles.content, 
+            { 
+              opacity: fadeAnim, 
+              transform: [{ scale: scaleAnim }],
+              maxWidth: isTablet ? 600 : 400,
+            }
+          ]}
+        >
           {/* Título con emoji - Más compacto */}
-          <Text style={styles.title}>
+          <Text style={[styles.title, { fontSize: isTablet ? 28 : 24 }]}>
             {getPerformanceEmoji()} Resultados {getPerformanceEmoji()}
           </Text>
 
           {/* Contenedor principal de resultados */}
-          <View style={styles.resultContainer}>
+          <View style={[styles.resultContainer, { padding: isTablet ? 25 : 20 }]}>
             {/* Puntuación principal */}
             <View style={styles.mainScoreContainer}>
-              <Text style={[styles.percentageText, { color: getPerformanceColor() }]}>{percentage}%</Text>
-              <Text style={styles.messageText}>{getMessage()}</Text>
+              <Text 
+                style={[
+                  styles.percentageText, 
+                  { 
+                    color: getPerformanceColor(),
+                    fontSize: isTablet ? 52 : 42 
+                  }
+                ]}
+              >
+                {percentage}%
+              </Text>
+              <Text style={[styles.messageText, { fontSize: isTablet ? 22 : 18 }]}>
+                {getMessage()}
+              </Text>
             </View>
 
             {/* Estadísticas detalladas */}
-            <View style={styles.statsContainer}>
+            <View style={[styles.statsContainer, { paddingVertical: isTablet ? 15 : 12 }]}>
               <View style={styles.statItem}>
-                <Text style={styles.statLabel}>Total</Text>
-                <Text style={styles.statValue}>{totalMissions}</Text>
-                <Text style={styles.statSubtext}>preguntas</Text>
+                <Text style={[styles.statLabel, { fontSize: isTablet ? 14 : 12 }]}>Total</Text>
+                <Text style={[styles.statValue, { fontSize: isTablet ? 26 : 22 }]}>{totalMissions}</Text>
+                <Text style={[styles.statSubtext, { fontSize: isTablet ? 12 : 10 }]}>preguntas</Text>
               </View>
 
               <View style={styles.statItem}>
-                <Text style={styles.statLabel}>Correctas</Text>
-                <Text style={[styles.statValue, { color: "#4CAF50" }]}>{correctAnswers}</Text>
-                <Text style={styles.statSubtext}>respuestas</Text>
+                <Text style={[styles.statLabel, { fontSize: isTablet ? 14 : 12 }]}>Correctas</Text>
+                <Text 
+                  style={[
+                    styles.statValue, 
+                    { 
+                      color: "#4CAF50",
+                      fontSize: isTablet ? 26 : 22 
+                    }
+                  ]}
+                >
+                  {correctAnswers}
+                </Text>
+                <Text style={[styles.statSubtext, { fontSize: isTablet ? 12 : 10 }]}>respuestas</Text>
               </View>
 
               <View style={styles.statItem}>
-                <Text style={styles.statLabel}>Incorrectas</Text>
-                <Text style={[styles.statValue, { color: "#F44336" }]}>{incorrectAnswers}</Text>
-                <Text style={styles.statSubtext}>respuestas</Text>
+                <Text style={[styles.statLabel, { fontSize: isTablet ? 14 : 12 }]}>Incorrectas</Text>
+                <Text 
+                  style={[
+                    styles.statValue, 
+                    { 
+                      color: "#F44336",
+                      fontSize: isTablet ? 26 : 22 
+                    }
+                  ]}
+                >
+                  {incorrectAnswers}
+                </Text>
+                <Text style={[styles.statSubtext, { fontSize: isTablet ? 12 : 10 }]}>respuestas</Text>
               </View>
             </View>
 
             {/* Barra de progreso visual */}
             <View style={styles.progressContainer}>
-              <Text style={styles.progressLabel}>Progreso</Text>
-              <View style={styles.progressBarBackground}>
+              <Text style={[styles.progressLabel, { fontSize: isTablet ? 16 : 14 }]}>Progreso</Text>
+              <View style={[styles.progressBarBackground, { height: isTablet ? 12 : 10 }]}>
                 <View
                   style={[
                     styles.progressBarFill,
                     {
                       width: `${percentage}%`,
                       backgroundColor: getPerformanceColor(),
+                      borderRadius: isTablet ? 6 : 5,
                     },
                   ]}
                 />
               </View>
-              <Text style={styles.progressText}>
+              <Text style={[styles.progressText, { fontSize: isTablet ? 14 : 12 }]}>
                 {correctAnswers} de {totalMissions} correctas
               </Text>
             </View>
@@ -223,20 +292,50 @@ const ResultsScreen = ({ route, navigation }) => {
             {renderQuestionBreakdown()}
 
             {/* Información del personaje */}
-            <View style={styles.characterInfoContainer}>
-              <Text style={styles.characterInfoText}>🎮 Aventura completada con {characterName}</Text>
-              <Text style={styles.characterInfoSubtext}>¡Has demostrado tus conocimientos!</Text>
+            <View style={[styles.characterInfoContainer, { padding: isTablet ? 15 : 12 }]}>
+              <Text style={[styles.characterInfoText, { fontSize: isTablet ? 18 : 15 }]}>
+                🎮 Aventura completada con {characterName}
+              </Text>
+              <Text style={[styles.characterInfoSubtext, { fontSize: isTablet ? 14 : 11 }]}>
+                ¡Has demostrado tus conocimientos!
+              </Text>
             </View>
           </View>
 
           {/* Botones de acción */}
           <View style={styles.buttonContainer}>
-            <TouchableOpacity style={[styles.button, styles.retryButton]} onPress={handleRetry}>
-              <Text style={styles.buttonText}>🔄 Intentar de Nuevo</Text>
+            <TouchableOpacity 
+              style={[
+                styles.button, 
+                styles.retryButton,
+                { 
+                  paddingVertical: isTablet ? 15 : 12,
+                  paddingHorizontal: isTablet ? 35 : 25,
+                  width: isTablet ? "70%" : "85%",
+                }
+              ]} 
+              onPress={handleRetry}
+            >
+              <Text style={[styles.buttonText, { fontSize: isTablet ? 18 : 15 }]}>
+                🔄 Intentar de Nuevo
+              </Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={[styles.button, styles.homeButton]} onPress={handleLogout}>
-              <Text style={styles.buttonText}>🏠 Volver al Inicio</Text>
+            <TouchableOpacity 
+              style={[
+                styles.button, 
+                styles.homeButton,
+                { 
+                  paddingVertical: isTablet ? 15 : 12,
+                  paddingHorizontal: isTablet ? 35 : 25,
+                  width: isTablet ? "70%" : "85%",
+                }
+              ]} 
+              onPress={handleLogout}
+            >
+              <Text style={[styles.buttonText, { fontSize: isTablet ? 18 : 15 }]}>
+                🏠 Volver al Inicio
+              </Text>
             </TouchableOpacity>
           </View>
         </Animated.View>
@@ -257,18 +356,14 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     paddingVertical: 20,
-    paddingHorizontal: 20,
-    minHeight: height, // Asegurar que el contenido tenga al menos la altura de la pantalla
   },
   content: {
     width: "100%",
     alignItems: "center",
-    maxWidth: 400, // Limitar el ancho máximo para pantallas grandes
   },
   title: {
-    fontSize: 24, // Reducido de 28
     fontWeight: "bold",
-    marginBottom: 20, // Reducido de 30
+    marginBottom: 20,
     color: "#FFF",
     textAlign: "center",
     textShadowColor: "rgba(0, 0, 0, 0.5)",
@@ -278,10 +373,9 @@ const styles = StyleSheet.create({
   resultContainer: {
     backgroundColor: "rgba(255, 255, 255, 0.95)",
     borderRadius: 20,
-    padding: 20, // Reducido de 25
     width: "100%",
     alignItems: "center",
-    marginBottom: 20, // Reducido de 30
+    marginBottom: 20,
     elevation: 8,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
@@ -290,15 +384,13 @@ const styles = StyleSheet.create({
   },
   mainScoreContainer: {
     alignItems: "center",
-    marginBottom: 20, // Reducido de 25
+    marginBottom: 20,
   },
   percentageText: {
-    fontSize: 42, // Reducido de 48
     fontWeight: "bold",
-    marginBottom: 8, // Reducido de 10
+    marginBottom: 8,
   },
   messageText: {
-    fontSize: 18, // Reducido de 20
     color: "#333",
     textAlign: "center",
     fontWeight: "600",
@@ -307,8 +399,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-around",
     width: "100%",
-    marginBottom: 20, // Reducido de 25
-    paddingVertical: 12, // Reducido de 15
+    marginBottom: 20,
     backgroundColor: "#F8F9FA",
     borderRadius: 12,
   },
@@ -317,122 +408,109 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   statLabel: {
-    fontSize: 12,
     color: "#666",
-    marginBottom: 4, // Reducido de 5
+    marginBottom: 4,
     fontWeight: "500",
   },
   statValue: {
-    fontSize: 22, // Reducido de 24
     fontWeight: "bold",
     color: "#333",
   },
   statSubtext: {
-    fontSize: 10,
     color: "#999",
     marginTop: 2,
   },
   progressContainer: {
     width: "100%",
-    marginBottom: 16, // Reducido de 20
+    marginBottom: 16,
   },
   progressLabel: {
-    fontSize: 14,
     fontWeight: "600",
     color: "#333",
-    marginBottom: 6, // Reducido de 8
+    marginBottom: 6,
     textAlign: "center",
   },
   progressBarBackground: {
     width: "100%",
-    height: 10, // Reducido de 12
     backgroundColor: "#E0E0E0",
-    borderRadius: 5, // Reducido de 6
+    borderRadius: 5,
     overflow: "hidden",
-    marginBottom: 6, // Reducido de 8
+    marginBottom: 6,
   },
   progressBarFill: {
     height: "100%",
-    borderRadius: 5, // Reducido de 6
     minWidth: "2%", // Mínimo visible
   },
   progressText: {
-    fontSize: 12,
     color: "#666",
     textAlign: "center",
   },
   questionBreakdownContainer: {
     width: "100%",
-    marginBottom: 16, // Reducido de 20
+    marginBottom: 16,
     backgroundColor: "#F5F5F5",
     borderRadius: 12,
-    padding: 12, // Reducido de 15
+    padding: 12,
   },
   questionBreakdownTitle: {
     fontSize: 14,
     fontWeight: "600",
     color: "#333",
-    marginBottom: 10, // Reducido de 12
+    marginBottom: 10,
     textAlign: "center",
   },
   questionIconsContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "center",
-    gap: 8, // Reducido de 10
+    gap: 8,
+  },
+  questionIconsRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    marginBottom: 8,
   },
   questionIconWrapper: {
     alignItems: "center",
-    marginHorizontal: 4, // Reducido de 5
-    marginBottom: 8, // Reducido de 10
+    marginHorizontal: 4,
   },
   questionIcon: {
-    width: 32, // Reducido de 36
-    height: 32, // Reducido de 36
-    borderRadius: 16, // Reducido de 18
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 3, // Reducido de 4
+    marginBottom: 3,
   },
   questionIconText: {
     color: "white",
     fontWeight: "bold",
-    fontSize: 14, // Reducido de 16
   },
   questionIconStatus: {
-    fontSize: 11, // Reducido de 12
+    fontSize: 11,
     fontWeight: "bold",
     color: "#333",
   },
   characterInfoContainer: {
     backgroundColor: "#F3E5F5",
     borderRadius: 12,
-    padding: 12, // Reducido de 15
     width: "100%",
     alignItems: "center",
   },
   characterInfoText: {
-    fontSize: 15, // Reducido de 16
     color: "#7B1FA2",
     fontWeight: "600",
-    marginBottom: 3, // Reducido de 4
+    marginBottom: 3,
   },
   characterInfoSubtext: {
-    fontSize: 11, // Reducido de 12
     color: "#9C27B0",
     fontStyle: "italic",
   },
   buttonContainer: {
     width: "100%",
     alignItems: "center",
-    paddingBottom: 20, // Añadir padding inferior para evitar que se corte
+    paddingBottom: 20,
   },
   button: {
-    paddingVertical: 12, // Reducido de 15
-    paddingHorizontal: 25, // Reducido de 30
     borderRadius: 25,
-    marginBottom: 10, // Reducido de 12
-    width: "85%",
+    marginBottom: 10,
     alignItems: "center",
     elevation: 3,
     shadowColor: "#000",
@@ -448,7 +526,6 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: "white",
-    fontSize: 15, // Reducido de 16
     fontWeight: "bold",
   },
 })
