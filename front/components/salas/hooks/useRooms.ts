@@ -28,6 +28,8 @@ interface Room {
   topic: string
   description: string
   created_at: string // ✅ AGREGADO: Campo original de la API
+  short_code?: string
+
 }
 
 interface ApiResponse {
@@ -85,6 +87,8 @@ export const useRooms = (pageSize = 10) => {
       color: ROOM_COLORS[index % ROOM_COLORS.length],
       course: apiRoom.course || "Sin curso",
       topic: apiRoom.topic || "Sin tema",
+      short_code: apiRoom.short_code,
+
       description: apiRoom.description,
       created_at: apiRoom.created_at, // ✅ AGREGADO: Mantener fecha original de la API
     }

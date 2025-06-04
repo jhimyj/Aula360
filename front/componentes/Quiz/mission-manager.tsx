@@ -124,7 +124,7 @@ export const MissionManager = ({ missions, onComplete }: MissionManagerProps) =>
       // Obtener room_id y token del AsyncStorage
       const roomId = await AsyncStorage.getItem("roomId")
       const token = await AsyncStorage.getItem("studentToken")
-
+     console.log("ROOM",roomId)
       if (!roomId) {
         console.error("❌ No se encontró room_id en AsyncStorage")
         return null

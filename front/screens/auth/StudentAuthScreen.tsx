@@ -22,10 +22,7 @@ import axios from "axios"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import MissionScreen from "../Students/StudentDashboardScreen"
 
-// Obtener dimensiones de pantalla y detectar tipo de dispositivo
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window")
-const isTablet = screenWidth >= 768
-const isLargeTablet = screenWidth >= 1024
 
 type Props = {
   setIsAuthenticated: (val: boolean) => void
@@ -36,17 +33,15 @@ export default function StudentAuthScreen({ setIsAuthenticated, onBack }: Props)
   const [step, setStep] = useState<"choice" | "form">("choice")
   const [isFirstTime, setIsFirstTime] = useState<boolean | null>(null)
   const [username, setUsername] = useState("")
-  const [roomId, setRoomId] = useState("")
+  const [roomCode, setRoomCode] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [fadeAnim] = useState(new Animated.Value(0))
   const [showQRScanner, setShowQRScanner] = useState(false)
   const [permission, requestPermission] = useCameraPermissions()
   const [dimensions, setDimensions] = useState(Dimensions.get("window"))
 
-  // 🎯 NUEVO ESTADO PARA MOSTRAR MISSIONSCREEN
   const [showMissionScreen, setShowMissionScreen] = useState(false)
 
-  // Escuchar cambios en las dimensiones de pantalla
   useEffect(() => {
     const subscription = Dimensions.addEventListener("change", ({ window }) => {
       setDimensions(window)
@@ -54,9 +49,7 @@ export default function StudentAuthScreen({ setIsAuthenticated, onBack }: Props)
     return () => subscription?.remove()
   }, [])
 
-  // Calcular si es tablet basado en las dimensiones actuales
   const currentIsTablet = dimensions.width >= 768
-  const currentIsLargeTablet = dimensions.width >= 1024
 
   React.useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -72,9 +65,7 @@ export default function StudentAuthScreen({ setIsAuthenticated, onBack }: Props)
   }
 
   const handleQRScan = async () => {
-    if (!permission) {
-      return
-    }
+    if (!permission) return
 
     if (!permission.granted) {
       const { granted } = await requestPermission()
@@ -90,153 +81,163 @@ export default function StudentAuthScreen({ setIsAuthenticated, onBack }: Props)
   const handleBarcodeScanned = ({ data }: { data: string }) => {
     console.log("QR escaneado:", data)
 
-    let extractedRoomId = data
+    let extractedRoomCode = data
 
-    if (data.includes("room_id=")) {
+    if (data.includes("room_code=")) {
       const urlParams = new URLSearchParams(data.split("?")[1])
-      extractedRoomId = urlParams.get("room_id") || data
+      extractedRoomCode = urlParams.get("room_code") || data
     } else if (data.includes("/room/")) {
-      extractedRoomId = data.split("/room/")[1] || data
+      extractedRoomCode = data.split("/room/")[1] || data
     }
 
-    setRoomId(extractedRoomId)
+    setRoomCode(extractedRoomCode)
     setShowQRScanner(false)
 
-    Alert.alert("¡QR Escaneado!", `Room ID detectado: ${extractedRoomId}`, [{ text: "OK" }])
+    Alert.alert("¡QR Escaneado!", `Room code detectado: ${extractedRoomCode}`, [{ text: "OK" }])
   }
 
-  const createStudent = async (roomId: string, username: string) => {
+  const createStudent = async (room_code: string, username: string) => {
     try {
       console.log("🎓 CREANDO ESTUDIANTE - Primera vez")
       const response = await axios.post(
         "https://iza2ya8d9j.execute-api.us-east-1.amazonaws.com/dev/students/create",
         {
-          room_id: roomId,
+          room_code: room_code,
           username: username,
           data: {},
         },
-        {
-          headers: { "Content-Type": "application/json" },
-        },
+        { headers: { "Content-Type": "application/json" } },
       )
       console.log("✅ Estudiante creado exitosamente:", response.data)
 
-      const token = response.data?.data?.token
-      if (token) {
-        console.log("🔑 Token obtenido del create:", token)
-
-        // 🎯 INFORMACIÓN COMPLETA DEL ESTUDIANTE CON ROL
-        const studentInfo = {
-          id: response.data?.data?.id,
-          username: username,
-          room_id: roomId,
-          role: "STUDENT", // 🎯 ROL ASIGNADO EXPLÍCITAMENTE
-          loginMethod: "student_create",
-          created_at: new Date().toISOString(),
-          isFirstTime: true,
-          studentId: response.data?.data?.id,
-          authType: "student",
-        }
-
-        // 🎯 GUARDAR TODA LA INFORMACIÓN DE ROL
-        await AsyncStorage.setItem("studentToken", token)
-        await AsyncStorage.setItem("studentData", JSON.stringify(studentInfo))
-        await AsyncStorage.setItem("authMethod", "student_with_token")
-        await AsyncStorage.setItem("userRole", "STUDENT") // 🎯 ROL PRINCIPAL
-        await AsyncStorage.setItem("userInfo", JSON.stringify(studentInfo)) // 🎯 INFO COMPLETA
-        await AsyncStorage.setItem('roomId', studentInfo.room_id);
-
-        // 🎯 ASIGNAR PERSONAJE POR DEFECTO PARA MISIONES
-        await AsyncStorage.setItem("selectedCharacterName", "Qhapaq")
-
-        console.log("📋 Información del estudiante guardada:")
-        console.log("- Rol:", "STUDENT")
-        console.log("- Username:", username)
-        console.log("- Room ID:", roomId)
-        console.log("- Método de login:", "student_create")
-        console.log("- Student ID:", response.data?.data?.id)
-        console.log("- Personaje asignado:", "Qhapaq")
-
-        return { success: true, token, message: response.data?.message }
+      // Extraer datos de la nueva estructura de respuesta
+      const { success, data: responseData, message } = response.data
+      
+      if (!success) {
+        throw new Error(message || "Error al crear estudiante")
       }
 
-      return { success: true, token: null, message: response.data?.message }
+      const token = responseData?.token
+      const studentId = responseData?.id
+      const studentData = responseData?.student
+      const roomId = studentData?.room_id
+
+      if (!token) {
+        throw new Error("Token no encontrado en la respuesta")
+      }
+
+      console.log("🔑 Token obtenido del create:", token)
+      console.log("🏠 Room ID obtenido:", roomId)
+
+      const studentInfo = {
+        id: studentId,
+        username,
+        room_code,
+        room_id: roomId, // Usar el room_id del objeto student
+        role: "STUDENT",
+        loginMethod: "student_create",
+        created_at: new Date().toISOString(),
+        isFirstTime: true,
+        studentId: studentId,
+        authType: "student",
+        score_student: studentData?.score_student || 0,
+        score_villain: studentData?.score_villain || 0,
+        status: studentData?.status || "CREATED"
+      }
+
+      await AsyncStorage.setItem("studentToken", token)
+      await AsyncStorage.setItem("studentData", JSON.stringify(studentInfo))
+      await AsyncStorage.setItem("authMethod", "student_with_token")
+      await AsyncStorage.setItem("userRole", "STUDENT")
+      await AsyncStorage.setItem("userInfo", JSON.stringify(studentInfo))
+
+      // Guardar room_code y roomId por separado
+      await AsyncStorage.setItem("room_code", room_code)  // El código ingresado por el usuario
+      await AsyncStorage.setItem("roomId", roomId || room_code)  // El ID que viene del servidor
+
+      await AsyncStorage.setItem("selectedCharacterName", "Qhapaq")
+
+      console.log("📋 Información del estudiante guardada:", studentInfo)
+
+      return { success: true, token, message, studentData }
     } catch (error: any) {
       console.error("❌ Error al crear estudiante:", error.response?.data || error.message)
-
       const apiMessage = error.response?.data?.message || error.response?.data?.error
       throw new Error(apiMessage || "Error desconocido al crear estudiante")
     }
   }
 
-  const loginStudent = async (roomId: string, username: string) => {
+  const loginStudent = async (room_code: string, username: string) => {
     try {
       console.log("🎓 LOGIN DE ESTUDIANTE - Usuario existente")
       const response = await axios.post(
         "https://iza2ya8d9j.execute-api.us-east-1.amazonaws.com/dev/students/login",
         {
-          room_id: roomId,
-          username: username,
+          room_code: room_code,
+          username,
         },
-        {
-          headers: { "Content-Type": "application/json" },
-        },
+        { headers: { "Content-Type": "application/json" } },
       )
-
+      
       console.log("✅ Respuesta completa del login:", response.data)
 
-      const token = response.data?.token || response.data?.data?.token
+      // Extraer datos de la nueva estructura de respuesta
+      const { success, data: responseData, message } = response.data
+      
+      if (!success) {
+        throw new Error(message || "Error al hacer login")
+      }
+
+      const token = responseData?.token
+      const roomId = responseData?.room_id
 
       if (!token) {
         console.error("❌ Token no encontrado en la respuesta:", response.data)
-        const apiMessage = response.data?.message || "Token no encontrado en la respuesta"
-        throw new Error(apiMessage)
+        throw new Error("Token no encontrado en la respuesta")
       }
 
       console.log("🔑 Token obtenido exitosamente:", token)
+      console.log("🏠 Room ID obtenido:", roomId)
 
-      // 🎯 INFORMACIÓN COMPLETA DEL ESTUDIANTE CON ROL
       const studentInfo = {
-        username: username,
-        room_id: roomId,
-        role: "STUDENT", // 🎯 ROL ASIGNADO EXPLÍCITAMENTE
+        username,
+        room_code,
+        room_id: roomId, // Usar el room_id de la respuesta
+        role: "STUDENT",
         loginMethod: "student_login",
         created_at: new Date().toISOString(),
         isFirstTime: false,
         authType: "student",
       }
 
-      // 🎯 GUARDAR TODA LA INFORMACIÓN DE ROL
       await AsyncStorage.setItem("studentToken", token)
       await AsyncStorage.setItem("studentData", JSON.stringify(studentInfo))
       await AsyncStorage.setItem("authMethod", "student_with_token")
-      await AsyncStorage.setItem("userRole", "STUDENT") // 🎯 ROL PRINCIPAL
-      await AsyncStorage.setItem("userInfo", JSON.stringify(studentInfo)) // 🎯 INFO COMPLETA
-      await AsyncStorage.setItem("roomId", roomId) // 🔥 AGREGAR ESTA LÍNEA
-      // 🎯 ASIGNAR PERSONAJE POR DEFECTO SI NO EXISTE
+      await AsyncStorage.setItem("userRole", "STUDENT")
+      await AsyncStorage.setItem("userInfo", JSON.stringify(studentInfo))
+
+      // Guardar room_code y roomId por separado  
+      await AsyncStorage.setItem("room_code", room_code)  // El código ingresado por el usuario
+      await AsyncStorage.setItem("roomId", roomId || room_code)  // El ID que viene del servidor
+
       const existingCharacter = await AsyncStorage.getItem("selectedCharacterName")
       if (!existingCharacter) {
         await AsyncStorage.setItem("selectedCharacterName", "Amaru")
         console.log("- Personaje asignado:", "Amaru")
       }
-    
-      console.log("📋 Información del estudiante guardada:")
-      console.log("- Rol:", "STUDENT")
-      console.log("- Username:", username)
-      console.log("- Room ID:", roomId)
-      console.log("- Método de login:", "student_login")
 
-      return { token, message: response.data?.message }
+      console.log("📋 Información del estudiante guardada:", studentInfo)
+
+      return { token, message }
     } catch (error: any) {
       console.error("❌ Error al hacer login:", error.response?.data || error.message)
-
       const apiMessage = error.response?.data?.message || error.response?.data?.error
       throw new Error(apiMessage || "Error desconocido al hacer login")
     }
   }
 
   const handleSubmit = async () => {
-    if (!username.trim() || !roomId.trim()) {
+    if (!username.trim() || !roomCode.trim()) {
       Alert.alert("Error", "Por favor completa todos los campos")
       return
     }
@@ -244,91 +245,76 @@ export default function StudentAuthScreen({ setIsAuthenticated, onBack }: Props)
     setIsLoading(true)
     try {
       if (isFirstTime) {
-        const createResult = await createStudent(roomId, username)
+        const createResult = await createStudent(roomCode, username)
 
         if (createResult.token) {
-          console.log("✅ FLUJO PRIMERA VEZ COMPLETADO - Estudiante creado con token")
           Alert.alert(
             "¡Cuenta creada! 🎓",
             `¡Hola ${username}! Tu cuenta de estudiante ha sido creada exitosamente. ¡Prepárate para tu primera misión!`,
             [
               {
                 text: "OK",
-                onPress: () => {
-                  // 🎯 MOSTRAR MISSIONSCREEN INMEDIATAMENTE
-                  console.log("🎮 Mostrando MissionScreen después de crear cuenta")
-                  setShowMissionScreen(true)
-                },
+                onPress: () => setShowMissionScreen(true),
               },
             ],
           )
         } else {
-          await loginStudent(roomId, username)
-          console.log("✅ FLUJO PRIMERA VEZ COMPLETADO - Estudiante creado y token obtenido via login")
-          // 🎯 MOSTRAR MISSIONSCREEN INMEDIATAMENTE
-          console.log("🎮 Mostrando MissionScreen después de login fallback")
+          // Fallback al login si no se pudo crear
+          await loginStudent(roomCode, username)
           setShowMissionScreen(true)
         }
       } else {
-        const loginResult = await loginStudent(roomId, username)
-        console.log("✅ FLUJO ESTUDIANTE EXISTENTE COMPLETADO - Token obtenido")
+        await loginStudent(roomCode, username)
         Alert.alert(
           "¡Bienvenido de vuelta! 👋",
           `¡Hola ${username}! Has iniciado sesión exitosamente. ¡Continúa con tus misiones!`,
           [
             {
               text: "OK",
-              onPress: () => {
-                // 🎯 MOSTRAR MISSIONSCREEN INMEDIATAMENTE
-                console.log("🎮 Mostrando MissionScreen después de login existente")
-                setShowMissionScreen(true)
-              },
+              onPress: () => setShowMissionScreen(true),
             },
           ],
         )
       }
     } catch (error: any) {
-      console.error("💥 Error en handleSubmit:", error)
       Alert.alert("Error", error.message)
     } finally {
       setIsLoading(false)
     }
   }
 
-  // 🎯 FUNCIÓN PARA MANEJAR EL CIERRE DEL MISSIONSCREEN
   const handleCloseMissionScreen = () => {
-    console.log("🚪 Cerrando MissionScreen y yendo al dashboard principal")
     setShowMissionScreen(false)
-    // Ahora sí ir al dashboard principal
     setIsAuthenticated(true)
   }
 
-  // 🎯 FUNCIÓN PARA MANEJAR EL INICIO DE MISIÓN
   const handleStartMission = () => {
-    console.log("🚀 Iniciando misión desde StudentAuthScreen")
     setShowMissionScreen(false)
-    // Ir al dashboard principal después de iniciar misión
     setIsAuthenticated(true)
   }
 
-  // 🎯 SI ESTÁ MOSTRANDO MISSIONSCREEN, RENDERIZAR ESO
   if (showMissionScreen) {
-    return <MissionScreen visible={true} onClose={handleCloseMissionScreen} onStartMission={handleStartMission} />
+    return (
+      <MissionScreen
+        visible={true}
+        onClose={handleCloseMissionScreen}
+        onStartMission={handleStartMission}
+      />
+    )
   }
 
   if (step === "choice") {
     return (
-      <KeyboardAvoidingView 
-        style={styles.container} 
+      <KeyboardAvoidingView
+        style={styles.container}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
       >
-        <ScrollView 
+        <ScrollView
           contentContainerStyle={styles.scrollContainer}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Imagen superior - ocupa más espacio */}
           <View style={[styles.imageSection, currentIsTablet && styles.imageSectionTablet]}>
             <Image
               source={require("../../assets/images/Cuenta-inicio.png")}
@@ -337,7 +323,6 @@ export default function StudentAuthScreen({ setIsAuthenticated, onBack }: Props)
             />
           </View>
 
-          {/* Modal inferior */}
           <View style={[styles.modalSection, currentIsTablet && styles.modalSectionTablet]}>
             <Animated.View
               style={[styles.choiceModal, currentIsTablet && styles.choiceModalTablet, { opacity: fadeAnim }]}
@@ -394,18 +379,17 @@ export default function StudentAuthScreen({ setIsAuthenticated, onBack }: Props)
   }
 
   return (
-    <KeyboardAvoidingView 
-      style={styles.container} 
+    <KeyboardAvoidingView
+      style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
     >
-      <ScrollView 
+      <ScrollView
         contentContainerStyle={styles.scrollContainer}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         enableOnAndroid={true}
       >
-        {/* Imagen superior - ocupa más espacio */}
         <View style={[styles.imageSection, currentIsTablet && styles.imageSectionTablet]}>
           <Image
             source={require("../../assets/images/Cuenta-inicio.png")}
@@ -414,7 +398,6 @@ export default function StudentAuthScreen({ setIsAuthenticated, onBack }: Props)
           />
         </View>
 
-        {/* Modal inferior */}
         <View style={[styles.modalSection, currentIsTablet && styles.modalSectionTablet]}>
           <Animated.View style={[styles.formModal, currentIsTablet && styles.formModalTablet, { opacity: fadeAnim }]}>
             <View style={styles.modalHeader}>
@@ -446,13 +429,13 @@ export default function StudentAuthScreen({ setIsAuthenticated, onBack }: Props)
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={[styles.inputLabel, currentIsTablet && styles.inputLabelTablet]}>🏠 Room ID</Text>
+                <Text style={[styles.inputLabel, currentIsTablet && styles.inputLabelTablet]}>🏠 Room Code</Text>
                 <View style={[styles.roomInputContainer, currentIsTablet && styles.roomInputContainerTablet]}>
                   <TextInput
                     style={[styles.roomInput, currentIsTablet && styles.inputTablet]}
                     placeholder="Código proporcionado por tu profesor"
-                    value={roomId}
-                    onChangeText={setRoomId}
+                    value={roomCode}
+                    onChangeText={setRoomCode}
                     autoCapitalize="none"
                     placeholderTextColor="#A0A0A0"
                     returnKeyType="done"
@@ -503,7 +486,6 @@ export default function StudentAuthScreen({ setIsAuthenticated, onBack }: Props)
         </View>
       </ScrollView>
 
-      {/* Modal del Escáner QR */}
       <Modal visible={showQRScanner} animationType="slide" presentationStyle="fullScreen">
         <View style={styles.qrScannerContainer}>
           <View style={[styles.qrHeader, currentIsTablet && styles.qrHeaderTablet]}>
@@ -543,48 +525,36 @@ export default function StudentAuthScreen({ setIsAuthenticated, onBack }: Props)
   )
 }
 
-// Estilos actualizados para mejor manejo del teclado
 const styles = StyleSheet.create({
-  // Layout principal
   container: {
     flex: 1,
     backgroundColor: "#F8FAFC",
   },
-
-  // 🔥 NUEVO: ScrollView container
   scrollContainer: {
     flexGrow: 1,
     minHeight: screenHeight,
   },
-
-  // Sección de imagen - MÁS ESPACIO COMO EN LA IMAGEN
   imageSection: {
-    flex: 0.45, // Reducido ligeramente para dar más espacio al formulario
+    flex: 0.45,
     justifyContent: "center",
     alignItems: "center",
     paddingTop: 40,
     paddingHorizontal: 20,
-    minHeight: screenHeight * 0.35, // Altura mínima
+    minHeight: screenHeight * 0.35,
   },
-
-  // Imagen hero - tamaño como en el diseño
   heroImage: {
-    width: screenWidth * 0.5, // Reducido ligeramente
+    width: screenWidth * 0.5,
     height: screenWidth * 0.5,
     maxWidth: 250,
     maxHeight: 250,
   },
-
-  // Sección modal - MÁS ESPACIO PARA EL FORMULARIO
   modalSection: {
-    flex: 0.55, // Más espacio para el modal
+    flex: 0.55,
     justifyContent: "flex-end",
     paddingHorizontal: 20,
-    paddingBottom: 20, // Reducido el padding bottom
-    minHeight: screenHeight * 0.4, // Altura mínima
+    paddingBottom: 20,
+    minHeight: screenHeight * 0.4,
   },
-
-  // Modales - diseño como en la imagen
   choiceModal: {
     backgroundColor: "#FFFFFF",
     borderRadius: 24,
@@ -596,9 +566,8 @@ const styles = StyleSheet.create({
     elevation: 12,
     borderTopWidth: 4,
     borderTopColor: "#4F46E5",
-    marginBottom: 20, // Espacio adicional en la parte inferior
+    marginBottom: 20,
   },
-
   formModal: {
     backgroundColor: "#FFFFFF",
     borderRadius: 24,
@@ -610,15 +579,12 @@ const styles = StyleSheet.create({
     elevation: 12,
     borderTopWidth: 4,
     borderTopColor: "#059669",
-    marginBottom: 20, // Espacio adicional en la parte inferior
+    marginBottom: 20,
   },
-
-  // Headers
   modalHeader: {
     alignItems: "center",
     marginBottom: 24,
   },
-
   modalTitle: {
     fontSize: 22,
     fontWeight: "700",
@@ -626,20 +592,16 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     textAlign: "center",
   },
-
   modalSubtitle: {
     fontSize: 15,
     color: "#6B7280",
     textAlign: "center",
     lineHeight: 20,
   },
-
-  // Botones de elección
   choiceButtons: {
     gap: 16,
     marginBottom: 24,
   },
-
   firstTimeButton: {
     backgroundColor: "#EEF2FF",
     borderRadius: 16,
@@ -647,7 +609,6 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: "#C7D2FE",
   },
-
   returningButton: {
     backgroundColor: "#F0FDF4",
     borderRadius: 16,
@@ -655,43 +616,34 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: "#BBF7D0",
   },
-
   buttonContent: {
     alignItems: "center",
   },
-
   buttonEmoji: {
     fontSize: 28,
     marginBottom: 8,
   },
-
   buttonTitle: {
     fontSize: 16,
     fontWeight: "600",
     color: "#1F2937",
     marginBottom: 4,
   },
-
   buttonSubtext: {
     fontSize: 13,
     color: "#6B7280",
   },
-
-  // Formulario
   formContent: {
     gap: 18,
   },
-
   inputGroup: {
     gap: 8,
   },
-
   inputLabel: {
     fontSize: 15,
     fontWeight: "600",
     color: "#374151",
   },
-
   input: {
     backgroundColor: "#F9FAFB",
     borderWidth: 2,
@@ -700,15 +652,13 @@ const styles = StyleSheet.create({
     padding: 14,
     fontSize: 15,
     color: "#1F2937",
-    minHeight: 48, // Altura mínima para mejor toque
+    minHeight: 48,
   },
-
   roomInputContainer: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
   },
-
   roomInput: {
     flex: 1,
     backgroundColor: "#F9FAFB",
@@ -718,9 +668,8 @@ const styles = StyleSheet.create({
     padding: 14,
     fontSize: 15,
     color: "#1F2937",
-    minHeight: 48, // Altura mínima para mejor toque
+    minHeight: 48,
   },
-
   qrButton: {
     backgroundColor: "#F0FDF4",
     borderWidth: 2,
@@ -732,60 +681,49 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
   },
-
   qrHint: {
     fontSize: 11,
     color: "#059669",
     fontStyle: "italic",
     marginTop: 4,
   },
-
   submitButton: {
     backgroundColor: "#059669",
     borderRadius: 12,
     padding: 16,
     alignItems: "center",
     marginTop: 8,
-    minHeight: 52, // Altura mínima para mejor toque
+    minHeight: 52,
   },
-
   submitButtonDisabled: {
     backgroundColor: "#9CA3AF",
   },
-
   submitButtonText: {
     color: "#FFFFFF",
     fontSize: 16,
     fontWeight: "600",
   },
-
   changeChoiceButton: {
     alignItems: "center",
     padding: 8,
   },
-
   changeChoiceText: {
     color: "#6366F1",
     fontSize: 14,
     fontWeight: "500",
   },
-
   backLink: {
     alignItems: "center",
     padding: 8,
   },
-
   backText: {
     color: "#6B7280",
     fontSize: 13,
   },
-
-  // QR Scanner
   qrScannerContainer: {
     flex: 1,
     backgroundColor: "#000",
   },
-
   qrHeader: {
     flexDirection: "row",
     alignItems: "center",
@@ -795,38 +733,31 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
     backgroundColor: "rgba(0,0,0,0.8)",
   },
-
   closeButton: {
     padding: 8,
   },
-
   qrTitle: {
     color: "#FFF",
     fontSize: 18,
     fontWeight: "600",
   },
-
   placeholder: {
     width: 46,
   },
-
   camera: {
     flex: 1,
   },
-
   scannerOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.5)",
     justifyContent: "center",
     alignItems: "center",
   },
-
   scannerFrame: {
     width: 250,
     height: 250,
     position: "relative",
   },
-
   corner: {
     position: "absolute",
     width: 30,
@@ -834,35 +765,30 @@ const styles = StyleSheet.create({
     borderColor: "#059669",
     borderWidth: 4,
   },
-
   topLeft: {
     top: 0,
     left: 0,
     borderRightWidth: 0,
     borderBottomWidth: 0,
   },
-
   topRight: {
     top: 0,
     right: 0,
     borderLeftWidth: 0,
     borderBottomWidth: 0,
   },
-
   bottomLeft: {
     bottom: 0,
     left: 0,
     borderRightWidth: 0,
     borderTopWidth: 0,
   },
-
   bottomRight: {
     bottom: 0,
     right: 0,
     borderLeftWidth: 0,
     borderTopWidth: 0,
   },
-
   scannerText: {
     color: "#FFF",
     fontSize: 16,
@@ -870,26 +796,18 @@ const styles = StyleSheet.create({
     marginTop: 30,
     paddingHorizontal: 40,
   },
-
-  // ===== ESTILOS RESPONSIVOS PARA TABLET =====
-
-  // Sección de imagen en tablet
   imageSectionTablet: {
-    flex: 0.4, // Ajustado para tablets
+    flex: 0.4,
     paddingTop: 60,
     paddingHorizontal: 40,
     minHeight: screenHeight * 0.3,
   },
-
-  // Imagen más grande en tablets
   heroImageTablet: {
-    width: screenWidth * 0.3, // 30% en tablets
+    width: screenWidth * 0.3,
     height: screenWidth * 0.3,
     maxWidth: 300,
     maxHeight: 300,
   },
-
-  // Modal section en tablet
   modalSectionTablet: {
     flex: 0.6,
     paddingHorizontal: 60,
@@ -897,8 +815,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     minHeight: screenHeight * 0.5,
   },
-
-  // Modales en tablet
   choiceModalTablet: {
     borderRadius: 32,
     padding: 32,
@@ -906,7 +822,6 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     width: "100%",
   },
-
   formModalTablet: {
     borderRadius: 32,
     padding: 32,
@@ -914,121 +829,93 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     width: "100%",
   },
-
-  // Textos en tablet
   modalTitleTablet: {
     fontSize: 28,
     marginBottom: 12,
   },
-
   modalSubtitleTablet: {
     fontSize: 18,
     lineHeight: 24,
   },
-
-  // Botones en tablet
   choiceButtonsTablet: {
     gap: 20,
     marginBottom: 32,
   },
-
   choiceButtonTablet: {
     padding: 24,
     borderRadius: 20,
   },
-
   buttonEmojiTablet: {
     fontSize: 36,
     marginBottom: 12,
   },
-
   buttonTitleTablet: {
     fontSize: 20,
     marginBottom: 6,
   },
-
   buttonSubtextTablet: {
     fontSize: 15,
   },
-
-  // Formulario en tablet
   formContentTablet: {
     gap: 24,
   },
-
   inputLabelTablet: {
     fontSize: 17,
   },
-
   inputTablet: {
     padding: 18,
     fontSize: 17,
     borderRadius: 16,
     minHeight: 56,
   },
-
   roomInputContainerTablet: {
     gap: 14,
   },
-
   qrButtonTablet: {
     padding: 14,
     borderRadius: 16,
     width: 56,
     height: 56,
   },
-
   qrHintTablet: {
     fontSize: 13,
   },
-
   submitButtonTablet: {
     padding: 20,
     borderRadius: 16,
     marginTop: 12,
     minHeight: 60,
   },
-
   submitButtonTextTablet: {
     fontSize: 18,
   },
-
   changeChoiceButtonTablet: {
     padding: 12,
   },
-
   changeChoiceTextTablet: {
     fontSize: 16,
   },
-
   backLinkTablet: {
     padding: 12,
   },
-
   backTextTablet: {
     fontSize: 15,
   },
-
-  // QR Scanner en tablet
   qrHeaderTablet: {
     paddingTop: 60,
     paddingHorizontal: 30,
     paddingBottom: 30,
   },
-
   closeButtonTablet: {
     padding: 12,
   },
-
   qrTitleTablet: {
     fontSize: 22,
   },
-
   scannerFrameTablet: {
     width: 350,
     height: 350,
   },
-
   scannerTextTablet: {
     fontSize: 18,
     marginTop: 40,
