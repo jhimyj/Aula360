@@ -19,6 +19,7 @@ import compot from "../../front/screens/QuizScreen/ExampleUsage"
 import ResultsScreen from "../screens/ComponentesQuiz/results-screen"
 import AllRooms from "../screens/AllRooms/AllRooms"
 import UploadEvaluationScreen from "../screens/UploadEvaluation/UploadEvaluationScreen"
+import { useNavigation, CommonActions } from "@react-navigation/native"
 
 // 🔥 NUEVAS IMPORTACIONES PARA ESTUDIANTES
 import RoomSelectorForStudents from "../componentes/Students/RoomSelectorForStudents"
@@ -381,6 +382,7 @@ const clearUserRole = async () => {
 
 // Crear un componente wrapper que maneje el logout Y LOS ROLES
 function DrawerNavigatorContent({ setIsAuthenticated }: { setIsAuthenticated: (val: boolean) => void }) {
+  const navigation = useNavigation()
   // 🎯 ESTADOS PARA MANEJAR EL ROL
   const [userRole, setUserRole] = useState<string | null>(null)
   const [userInfo, setUserInfo] = useState<any>(null)
@@ -441,12 +443,31 @@ function DrawerNavigatorContent({ setIsAuthenticated }: { setIsAuthenticated: (v
         style: "destructive",
         onPress: async () => {
           try {
+            console.log("🚪 Iniciando proceso de logout...")
+
             // 🧹 LIMPIAR TODA LA INFORMACIÓN DEL USUARIO
             await clearUserRole()
+
+            // 🔄 RESETEAR ESTADOS LOCALES
+            setUserRole(null)
+            setUserInfo(null)
+
+            // 🚀 NAVEGAR AL LOGIN Y RESETEAR STACK
+            navigation.dispatch(
+              CommonActions.reset({
+                index: 0,
+                routes: [{ name: "Login" }], // Asegúrate que 'Login' sea el nombre correcto de tu pantalla
+              }),
+            )
+
+            // 🔐 CAMBIAR ESTADO DE AUTENTICACIÓN
             setIsAuthenticated(false)
-            console.log("👋 Sesión cerrada exitosamente")
+
+            console.log("✅ Logout completado - Usuario redirigido al login")
           } catch (error) {
             console.error("❌ Error al cerrar sesión:", error)
+            // En caso de error, al menos cambiar el estado de autenticación
+            setIsAuthenticated(false)
           }
         },
       },

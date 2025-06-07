@@ -8,6 +8,7 @@ import { useFocusEffect } from "@react-navigation/native"
 import { useCallback } from "react"
 import { MissionManager } from "../ComponentesQuiz/mission-manager" // 🔍 IMPORTAR LA VERSIÓN ACTUALIZADA
 import { Audio } from "expo-av"
+import { CommonActions } from "@react-navigation/native"
 
 type CharacterName = "Qhapaq" | "Amaru" | "Killa"
 type VillainName = "Corporatus" | "Toxicus" | "Shadowman"
@@ -189,8 +190,13 @@ const fetchQuestionsFromAPI = async (roomId: string): Promise<ApiQuestion[]> => 
       console.error("- Data:", JSON.stringify(error.response.data, null, 2))
       console.log("=".repeat(50))
 
-      if (error.response.status === 401 || error.response.status === 403) {
+      // 🔐 MEJORAR DETECCIÓN DE ERRORES DE AUTENTICACIÓN
+      if (error.response.status === 401) {
         throw new Error("Token de autenticación inválido. Por favor, inicia sesión nuevamente.")
+      } else if (error.response.status === 403) {
+        throw new Error("No tienes permisos para acceder a este contenido. Por favor, inicia sesión nuevamente.")
+      } else if (error.response.status === 404) {
+        throw new Error("No se encontraron preguntas para esta sala. Contacta a tu profesor.")
       }
 
       throw new Error(error.response.data?.message || `Error del servidor: ${error.response.status}`)
@@ -200,7 +206,7 @@ const fetchQuestionsFromAPI = async (roomId: string): Promise<ApiQuestion[]> => 
       console.log("=".repeat(50))
       console.error("Request:", error.request)
       console.log("=".repeat(50))
-      throw new Error("No se pudo conectar con el servidor")
+      throw new Error("No se pudo conectar con el servidor. Verifica tu conexión a internet.")
     } else {
       console.log("=".repeat(50))
       console.log("❌ ERROR GENERAL:")
@@ -515,8 +521,113 @@ const QuizScreen = ({ navigation }) => {
     }
   }, [backgroundMusic])
 
+  const loadQuestionsAndBuildMissions = async () => {
+    try {
+      setLoading(true)
+
+      const characterNameRaw = await AsyncStorage.getItem("selectedCharacterName")
+      const villainNameRaw = await AsyncStorage.getItem("selectedVillainName")
+
+      const characterName = (characterNameRaw || "Qhapaq") as CharacterName
+      const villainName = (villainNameRaw || "Corporatus") as VillainName
+
+      console.log("Personaje seleccionado:", characterName)
+      console.log("Villano seleccionado:", villainName)
+
+      setSelectedCharacter(characterName)
+
+      const roomId = await AsyncStorage.getItem("roomId")
+      if (!roomId) {
+        await AsyncStorage.setItem("roomId", "7642a6c9-9978-43b8-b0c6-a0d2e15d7629")
+      }
+
+      const missions = await buildMissionsFromAPI(characterName, villainName)
+      console.log(`🎮 Se crearon ${missions.length} misiones exitosamente`)
+      setMissionsData(missions)
+
+      await playBackgroundMusic(characterName)
+    } catch (error: any) {
+      console.error("Error cargando preguntas:", error)
+
+      // 🔐 DETECTAR ERRORES DE AUTENTICACIÓN
+      const isAuthError =
+        error.message?.includes("Token de autenticación inválido") ||
+        error.message?.includes("inicia sesión nuevamente") ||
+        error.message?.includes("No se encontró el token del estudiante")
+
+      if (isAuthError) {
+        console.log("🚨 ERROR DE AUTENTICACIÓN DETECTADO - Redirigiendo al login")
+
+        Alert.alert(
+          "Sesión Expirada",
+          "Tu sesión ha expirado. Por favor, inicia sesión nuevamente.",
+          [
+            {
+              text: "Ir al Login",
+              onPress: async () => {
+                console.log("🔐 Navegando al login por error de autenticación")
+
+                // 🧹 LIMPIAR DATOS DE USUARIO
+                const keysToRemove = [
+                  "userRole",
+                  "userInfo",
+                  "authMethod",
+                  "userToken",
+                  "studentToken",
+                  "isAuthenticated",
+                  "selectedCharacterName",
+                  "selectedVillainName",
+                  "roomId",
+                  "quizResults",
+                ]
+
+                try {
+                  await AsyncStorage.multiRemove(keysToRemove)
+                  console.log("✅ Datos de usuario limpiados")
+                } catch (cleanupError) {
+                  console.error("❌ Error limpiando datos:", cleanupError)
+                }
+
+                // 🛑 DETENER MÚSICA
+                await stopBackgroundMusic()
+                setIsQuizActive(false)
+
+                // 🚀 NAVEGAR AL LOGIN Y RESETEAR STACK
+                navigation.dispatch(
+                  CommonActions.reset({
+                    index: 0,
+                    routes: [{ name: "Login" }],
+                  }),
+                )
+              },
+            },
+          ],
+          { cancelable: false },
+        )
+      } else {
+        // 🔄 ERRORES NORMALES - MOSTRAR OPCIONES DE REINTENTAR
+        Alert.alert("Error al cargar preguntas", error.message || "No se pudieron cargar las preguntas", [
+          {
+            text: "Reintentar",
+            onPress: () => loadQuestionsAndBuildMissions(),
+          },
+          {
+            text: "Volver",
+            onPress: async () => {
+              await stopBackgroundMusic()
+              setIsQuizActive(false)
+              navigation.navigate("StudentDashboard")
+            },
+          },
+        ])
+      }
+    } finally {
+      setLoading(false)
+    }
+  }
+
   useEffect(() => {
-    const loadQuestionsAndBuildMissions = async () => {
+    const loadQuestionsAndBuildMissionsWrapper = async () => {
       try {
         setLoading(true)
 
