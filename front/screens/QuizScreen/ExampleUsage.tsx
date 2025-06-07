@@ -6,7 +6,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage"
 import axios from "axios"
 import { useFocusEffect } from "@react-navigation/native"
 import { useCallback } from "react"
-import { MissionManager } from "../ComponentesQuiz/mission-manager"
+import { MissionManager } from "../ComponentesQuiz/mission-manager" // 🔍 IMPORTAR LA VERSIÓN ACTUALIZADA
 import { Audio } from "expo-av"
 
 type CharacterName = "Qhapaq" | "Amaru" | "Killa"
@@ -19,7 +19,7 @@ type ApiQuestion = {
   type: "MULTIPLE_CHOICE_SINGLE" | "MULTIPLE_CHOICE_MULTIPLE" | "OPEN_ENDED"
   config: {
     options?: string[]
-    correct_option?: number // Índice de la opción correcta (si existe)
+    correct_option?: number
   }
   score: number
   difficulty: "EASY" | "MEDIUM" | "HARD"
@@ -44,7 +44,7 @@ const characterMusic: Record<CharacterName, any> = {
   Killa: require("../../assets/Musica/Qhapac.mp3"),
 }
 
-// Imágenes del villano para cada misión (3 por villano, se repetirán según sea necesario)
+// Imágenes del villano para cada misión
 const villainCharacterImages: Record<VillainName, any[]> = {
   Corporatus: [
     require("../../assets/PersonajesQuiz/Corporatus/CorporatusLevel-1.png"),
@@ -63,7 +63,7 @@ const villainCharacterImages: Record<VillainName, any[]> = {
   ],
 }
 
-// Imágenes incorrectas para cada villano y misión (3 por villano, se repetirán según sea necesario)
+// Imágenes incorrectas para cada villano y misión
 const villainIncorrectImages: Record<VillainName, any[]> = {
   Corporatus: [
     require("../../assets/PersonajesQuiz/Corporatus/CorporatusLevel-1.png"),
@@ -82,7 +82,7 @@ const villainIncorrectImages: Record<VillainName, any[]> = {
   ],
 }
 
-// Fondos y correctImages por personaje (3 por personaje, se repetirán según sea necesario)
+// Fondos y correctImages por personaje
 const characterAssets: Record<CharacterName, { backgroundImages: any[]; correctImages: any[] }> = {
   Qhapaq: {
     backgroundImages: [
@@ -127,7 +127,6 @@ const fetchQuestionsFromAPI = async (roomId: string): Promise<ApiQuestion[]> => 
   try {
     console.log("🔍 Obteniendo preguntas del API para room:", roomId)
 
-    // Obtener el token del estudiante del localStorage
     const studentToken = await AsyncStorage.getItem("studentToken")
 
     if (!studentToken) {
@@ -146,7 +145,6 @@ const fetchQuestionsFromAPI = async (roomId: string): Promise<ApiQuestion[]> => 
       },
     )
 
-    // 🔍 LOGS DETALLADOS DE LA RESPUESTA
     console.log("=".repeat(50))
     console.log("📡 RESPUESTA COMPLETA DEL ENDPOINT:")
     console.log("=".repeat(50))
@@ -158,7 +156,6 @@ const fetchQuestionsFromAPI = async (roomId: string): Promise<ApiQuestion[]> => 
     if (response.data.success && response.data.data) {
       console.log(`📚 Se obtuvieron ${response.data.data.length} preguntas`)
 
-      // 🔍 LOG DETALLADO DE CADA PREGUNTA
       response.data.data.forEach((question, index) => {
         console.log(`\n📝 PREGUNTA ${index + 1}:`)
         console.log("- ID:", question.id)
@@ -182,7 +179,6 @@ const fetchQuestionsFromAPI = async (roomId: string): Promise<ApiQuestion[]> => 
   } catch (error: any) {
     console.error("💥 Error al obtener preguntas del API:", error)
 
-    // 🔍 LOG DETALLADO DEL ERROR
     if (error.response) {
       console.log("=".repeat(50))
       console.log("❌ ERROR DE RESPUESTA:")
@@ -224,7 +220,6 @@ const buildMissionsFromAPI = async (characterName: CharacterName, villainName: V
   const incorrectImgs = villainIncorrectImages[villainName]
 
   try {
-    // Obtener room_id del localStorage
     const roomId = await AsyncStorage.getItem("roomId")
 
     if (!roomId) {
@@ -233,14 +228,12 @@ const buildMissionsFromAPI = async (characterName: CharacterName, villainName: V
 
     console.log("🏠 Room ID obtenido del localStorage:", roomId)
 
-    // Obtener preguntas del API
     const apiQuestions = await fetchQuestionsFromAPI(roomId)
 
     if (apiQuestions.length === 0) {
       throw new Error("No se encontraron preguntas para este room")
     }
 
-    // 🔥 USAR TODAS LAS PREGUNTAS, NO SOLO 3
     console.log("🎯 PROCESANDO TODAS LAS PREGUNTAS PARA MISIONES:")
     console.log(`- Total de preguntas recibidas: ${apiQuestions.length}`)
     console.log(`- Se crearán ${apiQuestions.length} misiones`)
@@ -250,26 +243,20 @@ const buildMissionsFromAPI = async (characterName: CharacterName, villainName: V
       console.log("- Tipo original:", apiQuestion.type)
       console.log("- Config original:", JSON.stringify(apiQuestion.config, null, 2))
 
-      // Preparar opciones según el tipo de pregunta
       let options = []
 
       if (apiQuestion.type === "OPEN_ENDED") {
-        // Para preguntas abiertas, NO crear opciones - dejar array vacío
         options = []
         console.log("✏️ PREGUNTA ABIERTA - NO se crean opciones")
-        console.log("- Tipo de pregunta:", apiQuestion.type)
-        console.log("- Config de la pregunta:", JSON.stringify(apiQuestion.config, null, 2))
       } else if (apiQuestion.type === "MULTIPLE_CHOICE_SINGLE" && apiQuestion.config.options) {
-        // Para preguntas de opción múltiple con respuesta única
         const correctOptionIndex =
           apiQuestion.config.correct_option !== undefined ? apiQuestion.config.correct_option : 0
 
         console.log("- Opción correcta (índice):", correctOptionIndex)
         console.log("- Opciones disponibles:", apiQuestion.config.options)
 
-        // Soportar hasta 5 opciones (A, B, C, D, E)
         options = apiQuestion.config.options.slice(0, 5).map((optionText, optIndex) => ({
-          id: String.fromCharCode(65 + optIndex), // A, B, C, D, E
+          id: String.fromCharCode(65 + optIndex),
           text: optionText,
           isCorrect: optIndex === correctOptionIndex,
         }))
@@ -279,18 +266,16 @@ const buildMissionsFromAPI = async (characterName: CharacterName, villainName: V
           options.map((o) => `${o.id}: ${o.text} (${o.isCorrect ? "CORRECTA" : "incorrecta"})`),
         )
       } else if (apiQuestion.type === "MULTIPLE_CHOICE_MULTIPLE" && apiQuestion.config.options) {
-        // Para preguntas de opción múltiple con múltiples respuestas correctas
         const correctOptionIndex = 0
 
         console.log("- Tipo de pregunta con múltiples respuestas correctas")
         console.log("- Tratando como pregunta de opción única para compatibilidad")
         console.log("- Opciones disponibles:", apiQuestion.config.options)
 
-        // Convertimos a formato de opción única para mantener compatibilidad
         options = apiQuestion.config.options.slice(0, 5).map((optionText, optIndex) => ({
-          id: String.fromCharCode(65 + optIndex), // A, B, C, D, E
+          id: String.fromCharCode(65 + optIndex),
           text: optionText,
-          isCorrect: optIndex === correctOptionIndex, // Asumimos primera opción como correcta
+          isCorrect: optIndex === correctOptionIndex,
         }))
 
         console.log(
@@ -298,7 +283,6 @@ const buildMissionsFromAPI = async (characterName: CharacterName, villainName: V
           options.map((o) => `${o.id}: ${o.text} (${o.isCorrect ? "CORRECTA" : "incorrecta"})`),
         )
       } else {
-        // Si el tipo no es reconocido, tratamos como pregunta abierta por defecto
         console.log("- Tipo de pregunta no reconocido:", apiQuestion.type)
         console.log("- Tratando como pregunta abierta por defecto")
         options = []
@@ -306,7 +290,6 @@ const buildMissionsFromAPI = async (characterName: CharacterName, villainName: V
 
       console.log(`✅ Pregunta ${index + 1} procesada exitosamente`)
 
-      // Función para obtener imagen con índice cíclico
       const getImageByIndex = (imageArray: any[], index: number) => {
         return imageArray[index % imageArray.length]
       }
@@ -334,7 +317,6 @@ const buildMissionsFromAPI = async (characterName: CharacterName, villainName: V
         return "Prepárate para responder esta pregunta"
       }
 
-      // Generar feedback personalizado basado en el tipo de pregunta
       const getFeedback = () => {
         if (apiQuestion.type === "MULTIPLE_CHOICE_SINGLE") {
           return {
@@ -346,10 +328,9 @@ const buildMissionsFromAPI = async (characterName: CharacterName, villainName: V
             incorrectDescription: "No te preocupes, sigue intentando. ¡Puedes hacerlo mejor!",
           }
         } else {
-          // Para preguntas abiertas, siempre mostramos feedback positivo
           return {
             correctImage: getImageByIndex(assets.correctImages, index),
-            incorrectImage: getImageByIndex(assets.correctImages, index), // Usamos la misma imagen
+            incorrectImage: getImageByIndex(assets.correctImages, index),
             correctBackground: getImageByIndex(assets.backgroundImages, index),
             incorrectBackground: getImageByIndex(assets.backgroundImages, index),
             correctDescription: "¡Gracias por tu respuesta! Continuemos con la siguiente pregunta.",
@@ -359,14 +340,14 @@ const buildMissionsFromAPI = async (characterName: CharacterName, villainName: V
       }
 
       return {
-        id: apiQuestion.id, // Usar el ID real de la pregunta para el endpoint de feedback
+        id: apiQuestion.id,
         missionNumber: index + 1,
         backgroundImage: getImageByIndex(assets.backgroundImages, index),
         villainImage: getImageByIndex(vilImgs, index),
         characterImage: getImageByIndex(charImgs, index),
         question: apiQuestion.text,
-        questionType: apiQuestion.type, // 🔥 USAR DIRECTAMENTE EL TIPO DE LA API
-        options: options, // Array vacío para OPEN_ENDED, opciones reales para MULTIPLE_CHOICE
+        questionType: apiQuestion.type,
+        options: options,
         feedback: getFeedback(),
         transition: {
           backgroundImage: getImageByIndex(assets.backgroundImages, index),
@@ -374,13 +355,16 @@ const buildMissionsFromAPI = async (characterName: CharacterName, villainName: V
           title: getTransitionTitle(),
           description: getTransitionDescription(),
         },
-        // 🔍 CONFIGURACIÓN DEL AMPLIFICADOR MEJORADO
+        // 🔍 CONFIGURACIÓN DEL AMPLIFICADOR
         amplifier: {
-          enabled: true, // Siempre habilitado
-          threshold: 1, // Mostrar desde el primer carácter
+          enabled: true,
+          threshold: 1,
           modalTitle: `Pregunta ${index + 1} - ${getTransitionTitle()}`,
           modalDescription: getTransitionDescription(),
         },
+        difficulty: apiQuestion.difficulty,
+        tags: apiQuestion.tags,
+        score: apiQuestion.score,
       }
     })
   } catch (error) {
@@ -403,7 +387,6 @@ const QuizScreen = ({ navigation }) => {
     try {
       console.log(`🎵 Iniciando música de fondo para ${characterName}`)
 
-      // Detener música anterior si existe
       if (backgroundMusic) {
         console.log("🛑 Deteniendo música anterior")
         await backgroundMusic.stopAsync()
@@ -411,7 +394,6 @@ const QuizScreen = ({ navigation }) => {
         setBackgroundMusic(null)
       }
 
-      // Configurar audio para reproducción en bucle
       await Audio.setAudioModeAsync({
         allowsRecordingIOS: false,
         staysActiveInBackground: false,
@@ -420,12 +402,11 @@ const QuizScreen = ({ navigation }) => {
         playThroughEarpieceAndroid: false,
       })
 
-      // Cargar y reproducir nueva música
       const musicSource = characterMusic[characterName]
       const { sound } = await Audio.Sound.createAsync(musicSource, {
         shouldPlay: true,
         isLooping: true,
-        volume: 0.6, // Volumen al 60%
+        volume: 0.6,
       })
 
       setBackgroundMusic(sound)
@@ -456,11 +437,9 @@ const QuizScreen = ({ navigation }) => {
       console.log("🎯 QuizScreen ENFOCADO - Activando quiz y configurando navegación back")
       setIsQuizActive(true)
 
-      // 🏠 INTERCEPTAR EL BOTÓN DE BACK PARA IR AL STUDENT DASHBOARD
       const onBackPress = () => {
         console.log("🏠 BOTÓN BACK PRESIONADO - Navegando a StudentDashboard")
 
-        // Mostrar alerta de confirmación antes de salir
         Alert.alert(
           "¿Salir del Quiz?",
           "Si sales ahora, perderás todo tu progreso. ¿Estás seguro?",
@@ -477,11 +456,9 @@ const QuizScreen = ({ navigation }) => {
               onPress: async () => {
                 console.log("✅ Usuario confirmó salir del quiz - Navegando a StudentDashboard")
 
-                // 🎵 DETENER MÚSICA AL SALIR
                 await stopBackgroundMusic()
 
                 setIsQuizActive(false)
-                // 🏠 NAVEGAR ESPECÍFICAMENTE AL STUDENT DASHBOARD
                 navigation.navigate("StudentDashboard")
               },
               style: "destructive",
@@ -490,44 +467,37 @@ const QuizScreen = ({ navigation }) => {
           { cancelable: false },
         )
 
-        // Retornar true previene la navegación automática hacia atrás
         return true
       }
 
-      // Agregar el listener del botón de back
       const backHandler = BackHandler.addEventListener("hardwareBackPress", onBackPress)
 
-      // 🔒 DESHABILITAR GESTOS DE NAVEGACIÓN (si es posible)
       if (navigation.setOptions) {
         navigation.setOptions({
-          gestureEnabled: false, // Deshabilitar gestos de swipe back en iOS
-          headerLeft: () => null, // Remover botón de back del header si existe
-          headerBackVisible: false, // Ocultar botón de back
-          headerBackButtonMenuEnabled: false, // Deshabilitar menú de back
-          headerBackTitleVisible: false, // Ocultar título de back
+          gestureEnabled: false,
+          headerLeft: () => null,
+          headerBackVisible: false,
+          headerBackButtonMenuEnabled: false,
+          headerBackTitleVisible: false,
         })
       }
 
-      // Función de limpieza cuando se pierde el foco
       return () => {
         console.log("🎯 QuizScreen DESENFOCADO - Desactivando quiz y restaurando navegación")
 
-        // 🎵 DETENER MÚSICA AL PERDER FOCO
         stopBackgroundMusic()
 
         setIsQuizActive(false)
 
-        // Remover el listener del botón de back
         backHandler.remove()
 
-        // 🔓 RESTAURAR NAVEGACIÓN NORMAL
         if (navigation.setOptions) {
           navigation.setOptions({
-            gestureEnabled: true, // Restaurar gestos de navegación
-            headerLeft: undefined, // Restaurar botón de back
-            headerBackVisible: true, // Mostrar botón de back
-            headerBackButtonMenuEnabled: true, // Habilitar menú de back
-            headerBackTitleVisible: true, // Mostrar título de back
+            gestureEnabled: true,
+            headerLeft: undefined,
+            headerBackVisible: true,
+            headerBackButtonMenuEnabled: true,
+            headerBackTitleVisible: true,
           })
         }
       }
@@ -539,7 +509,6 @@ const QuizScreen = ({ navigation }) => {
     return () => {
       console.log("🧹 QuizScreen DESMONTÁNDOSE - Limpieza final")
 
-      // 🎵 DETENER MÚSICA AL DESMONTAR COMPONENTE
       stopBackgroundMusic()
 
       setIsQuizActive(false)
@@ -560,27 +529,21 @@ const QuizScreen = ({ navigation }) => {
         console.log("Personaje seleccionado:", characterName)
         console.log("Villano seleccionado:", villainName)
 
-        // 🎵 GUARDAR PERSONAJE SELECCIONADO Y REPRODUCIR SU MÚSICA
         setSelectedCharacter(characterName)
 
-        // Guardar room_id en AsyncStorage para el endpoint de feedback
         const roomId = await AsyncStorage.getItem("roomId")
         if (!roomId) {
-          // Si no existe, podrías obtenerlo de otro lugar o usar un valor por defecto
           await AsyncStorage.setItem("roomId", "7642a6c9-9978-43b8-b0c6-a0d2e15d7629")
         }
 
-        // Obtener misiones con preguntas del API
         const missions = await buildMissionsFromAPI(characterName, villainName)
         console.log(`🎮 Se crearon ${missions.length} misiones exitosamente`)
         setMissionsData(missions)
 
-        // 🎵 REPRODUCIR MÚSICA DE FONDO DESPUÉS DE CARGAR MISIONES
         await playBackgroundMusic(characterName)
       } catch (error: any) {
         console.error("Error cargando preguntas:", error)
 
-        // Mostrar alerta de error
         Alert.alert("Error al cargar preguntas", error.message || "No se pudieron cargar las preguntas", [
           {
             text: "Reintentar",
@@ -589,11 +552,9 @@ const QuizScreen = ({ navigation }) => {
           {
             text: "Volver",
             onPress: async () => {
-              // 🎵 DETENER MÚSICA AL VOLVER POR ERROR
               await stopBackgroundMusic()
 
               setIsQuizActive(false)
-              // 🏠 TAMBIÉN NAVEGAR AL STUDENT DASHBOARD EN CASO DE ERROR
               navigation.navigate("StudentDashboard")
             },
           },
@@ -603,7 +564,6 @@ const QuizScreen = ({ navigation }) => {
       }
     }
 
-    // Solo cargar si el quiz está activo
     if (isQuizActive) {
       loadQuestionsAndBuildMissions()
     }
@@ -620,10 +580,8 @@ const QuizScreen = ({ navigation }) => {
     console.log(`🏁 Quiz completado: ${score}/${totalMissions}`)
     console.log(`📊 Respuestas correctas: ${correctAnswers}, incorrectas: ${incorrectAnswers}`)
 
-    // 🎵 DETENER MÚSICA AL COMPLETAR QUIZ
     await stopBackgroundMusic()
 
-    // Desactivar quiz al completar
     setIsQuizActive(false)
 
     navigation.navigate("Results", {

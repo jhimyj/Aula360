@@ -1,15 +1,15 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { View, StyleSheet, Text, ActivityIndicator, Animated, Dimensions } from "react-native"
-import { MissionScreen } from "./mission-screen"
+import { View, StyleSheet, Text, Animated, Dimensions } from "react-native"
+import { MissionScreen } from "./mission-screen" // 🔍 IMPORTAR LA VERSIÓN ACTUALIZADA
 import { FeedbackScreen } from "./feedback-screen"
 import { TransitionScreen } from "./transition-screen"
 import { CharacterFeedback } from "./character-feedback"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import { Feather } from "@expo/vector-icons"
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window')
+const { width: screenWidth, height: screenHeight } = Dimensions.get("window")
 
 // Tipo para imágenes (puede ser require local o URL)
 type ImageSource = number | { uri: string }
@@ -45,6 +45,16 @@ type MissionType = {
     title: string
     description: string
   }
+  // 🔍 NUEVO: Configuración del amplificador
+  amplifier?: {
+    enabled: boolean
+    threshold: number
+    modalTitle: string
+    modalDescription: string
+  }
+  difficulty?: "EASY" | "MEDIUM" | "HARD"
+  tags?: string[]
+  score?: number
 }
 
 // Estados posibles de la misión
@@ -92,7 +102,7 @@ const AIEvaluationScreen = () => {
   const scaleAnim = useRef(new Animated.Value(0.8)).current
   const fadeAnim = useRef(new Animated.Value(0)).current
   const slideAnim = useRef(new Animated.Value(50)).current
-  
+
   // Animación de partículas
   const particle1 = useRef(new Animated.Value(0)).current
   const particle2 = useRef(new Animated.Value(0)).current
@@ -131,7 +141,7 @@ const AIEvaluationScreen = () => {
           duration: 1000,
           useNativeDriver: true,
         }),
-      ])
+      ]),
     )
 
     // Animación de rotación continua
@@ -140,7 +150,7 @@ const AIEvaluationScreen = () => {
         toValue: 1,
         duration: 3000,
         useNativeDriver: true,
-      })
+      }),
     )
 
     // Animaciones de partículas
@@ -156,7 +166,7 @@ const AIEvaluationScreen = () => {
           duration: 2000,
           useNativeDriver: true,
         }),
-      ])
+      ]),
     )
 
     const particleAnimation2 = Animated.loop(
@@ -171,7 +181,7 @@ const AIEvaluationScreen = () => {
           duration: 2500,
           useNativeDriver: true,
         }),
-      ])
+      ]),
     )
 
     const particleAnimation3 = Animated.loop(
@@ -186,13 +196,13 @@ const AIEvaluationScreen = () => {
           duration: 1800,
           useNativeDriver: true,
         }),
-      ])
+      ]),
     )
 
     // Iniciar animaciones
     pulseAnimation.start()
     rotateAnimation.start()
-    
+
     // Delay para las partículas
     setTimeout(() => particleAnimation1.start(), 500)
     setTimeout(() => particleAnimation2.start(), 1000)
@@ -209,7 +219,7 @@ const AIEvaluationScreen = () => {
 
   const spin = rotateAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: ['0deg', '360deg'],
+    outputRange: ["0deg", "360deg"],
   })
 
   const particle1Y = particle1.interpolate({
@@ -246,163 +256,105 @@ const AIEvaluationScreen = () => {
     <View style={styles.aiLoadingContainer}>
       {/* Fondo con gradiente simulado */}
       <View style={styles.gradientBackground} />
-      
+
       {/* Partículas flotantes */}
-      <Animated.View 
+      <Animated.View
         style={[
           styles.particle,
           styles.particle1,
           {
             opacity: particle1Opacity,
-            transform: [{ translateY: particle1Y }]
-          }
+            transform: [{ translateY: particle1Y }],
+          },
         ]}
       >
         <Feather name="cpu" size={20} color="#4CAF50" />
       </Animated.View>
-      
-      <Animated.View 
+
+      <Animated.View
         style={[
           styles.particle,
           styles.particle2,
           {
             opacity: particle2Opacity,
-            transform: [{ translateY: particle2Y }]
-          }
+            transform: [{ translateY: particle2Y }],
+          },
         ]}
       >
         <Feather name="zap" size={16} color="#2196F3" />
       </Animated.View>
-      
-      <Animated.View 
+
+      <Animated.View
         style={[
           styles.particle,
           styles.particle3,
           {
             opacity: particle3Opacity,
-            transform: [{ translateY: particle3Y }]
-          }
+            transform: [{ translateY: particle3Y }],
+          },
         ]}
       >
         <Feather name="activity" size={18} color="#FF9800" />
       </Animated.View>
 
       {/* Contenedor principal animado */}
-      <Animated.View 
+      <Animated.View
         style={[
           styles.aiMainContainer,
           {
             opacity: fadeAnim,
-            transform: [
-              { translateY: slideAnim },
-              { scale: scaleAnim }
-            ]
-          }
+            transform: [{ translateY: slideAnim }, { scale: scaleAnim }],
+          },
         ]}
       >
         {/* Robot/IA Icon con animaciones */}
         <View style={styles.robotContainer}>
           {/* Círculos de fondo animados */}
-          <Animated.View 
-            style={[
-              styles.robotCircle,
-              styles.robotCircle1,
-              { transform: [{ scale: pulseAnim }] }
-            ]} 
+          <Animated.View style={[styles.robotCircle, styles.robotCircle1, { transform: [{ scale: pulseAnim }] }]} />
+          <Animated.View style={[styles.robotCircle, styles.robotCircle2, { transform: [{ rotate: spin }] }]} />
+          <Animated.View
+            style={[styles.robotCircle, styles.robotCircle3, { transform: [{ scale: pulseAnim }, { rotate: spin }] }]}
           />
-          <Animated.View 
-            style={[
-              styles.robotCircle,
-              styles.robotCircle2,
-              { transform: [{ rotate: spin }] }
-            ]} 
-          />
-          <Animated.View 
-            style={[
-              styles.robotCircle,
-              styles.robotCircle3,
-              { transform: [{ scale: pulseAnim }, { rotate: spin }] }
-            ]} 
-          />
-          
+
           {/* Robot principal */}
-          <Animated.View 
-            style={[
-              styles.robotIcon,
-              { transform: [{ scale: pulseAnim }] }
-            ]}
-          >
+          <Animated.View style={[styles.robotIcon, { transform: [{ scale: pulseAnim }] }]}>
             <Feather name="cpu" size={40} color="#fff" />
           </Animated.View>
         </View>
 
         {/* Texto principal */}
-        <Animated.Text 
-          style={[
-            styles.aiMainText,
-            { opacity: fadeAnim }
-          ]}
-        >
-          🤖 IA Evaluando
-        </Animated.Text>
+        <Animated.Text style={[styles.aiMainText, { opacity: fadeAnim }]}>🤖 IA Evaluando</Animated.Text>
 
         {/* Subtexto con animación */}
-        <Animated.View 
+        <Animated.View
           style={[
             styles.aiSubtextContainer,
-            { 
+            {
               opacity: fadeAnim,
-              transform: [{ translateY: slideAnim }]
-            }
+              transform: [{ translateY: slideAnim }],
+            },
           ]}
         >
-          <Text style={styles.aiSubtext}>
-            Analizando tu respuesta con inteligencia artificial...
-          </Text>
+          <Text style={styles.aiSubtext}>Analizando tu respuesta con inteligencia artificial...</Text>
         </Animated.View>
 
         {/* Indicador de progreso personalizado */}
         <View style={styles.progressContainer}>
           <View style={styles.progressBar}>
-            <Animated.View 
-              style={[
-                styles.progressFill,
-                { transform: [{ scaleX: pulseAnim }] }
-              ]} 
-            />
+            <Animated.View style={[styles.progressFill, { transform: [{ scaleX: pulseAnim }] }]} />
           </View>
           <Text style={styles.progressText}>Procesando datos</Text>
         </View>
 
         {/* Puntos de carga animados */}
         <View style={styles.dotsContainer}>
-          <Animated.View 
-            style={[
-              styles.dot,
-              { transform: [{ scale: pulseAnim }] }
-            ]} 
-          />
-          <Animated.View 
-            style={[
-              styles.dot,
-              { transform: [{ scale: pulseAnim }] }
-            ]} 
-          />
-          <Animated.View 
-            style={[
-              styles.dot,
-              { transform: [{ scale: pulseAnim }] }
-            ]} 
-          />
+          <Animated.View style={[styles.dot, { transform: [{ scale: pulseAnim }] }]} />
+          <Animated.View style={[styles.dot, { transform: [{ scale: pulseAnim }] }]} />
+          <Animated.View style={[styles.dot, { transform: [{ scale: pulseAnim }] }]} />
         </View>
 
         {/* Información adicional */}
-        <Animated.View 
-          style={[
-            styles.infoContainer,
-            { opacity: fadeAnim }
-          ]}
-        >
+        <Animated.View style={[styles.infoContainer, { opacity: fadeAnim }]}>
           <View style={styles.infoItem}>
             <Feather name="brain" size={16} color="#4CAF50" />
             <Text style={styles.infoText}>Análisis semántico</Text>
@@ -815,6 +767,11 @@ export const MissionManager = ({ missions, onComplete }: MissionManagerProps) =>
             questionType={currentMission.questionType}
             options={currentMission.options}
             onSubmit={handleSubmit}
+            // 🔍 PASAR PROPS DEL AMPLIFICADOR
+            amplifier={currentMission.amplifier}
+            difficulty={currentMission.difficulty}
+            tags={currentMission.tags}
+            score={currentMission.score}
           />
         </View>
       )
@@ -914,66 +871,66 @@ const styles = StyleSheet.create({
   // 🤖 Estilos para la pantalla de evaluación de IA mejorada
   aiLoadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#0a0a0a',
-    position: 'relative',
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#0a0a0a",
+    position: "relative",
   },
   gradientBackground: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: "#0a0a0a",
     opacity: 0.95,
   },
   aiMainContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     paddingHorizontal: 40,
     zIndex: 10,
   },
   robotContainer: {
-    position: 'relative',
+    position: "relative",
     width: 120,
     height: 120,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: 30,
   },
   robotCircle: {
-    position: 'absolute',
+    position: "absolute",
     borderRadius: 100,
     borderWidth: 2,
   },
   robotCircle1: {
     width: 120,
     height: 120,
-    borderColor: 'rgba(76, 175, 80, 0.3)',
-    backgroundColor: 'rgba(76, 175, 80, 0.1)',
+    borderColor: "rgba(76, 175, 80, 0.3)",
+    backgroundColor: "rgba(76, 175, 80, 0.1)",
   },
   robotCircle2: {
     width: 90,
     height: 90,
-    borderColor: 'rgba(33, 150, 243, 0.4)',
-    backgroundColor: 'rgba(33, 150, 243, 0.1)',
-    borderStyle: 'dashed',
+    borderColor: "rgba(33, 150, 243, 0.4)",
+    backgroundColor: "rgba(33, 150, 243, 0.1)",
+    borderStyle: "dashed",
   },
   robotCircle3: {
     width: 60,
     height: 60,
-    borderColor: 'rgba(255, 152, 0, 0.5)',
-    backgroundColor: 'rgba(255, 152, 0, 0.1)',
+    borderColor: "rgba(255, 152, 0, 0.5)",
+    backgroundColor: "rgba(255, 152, 0, 0.1)",
   },
   robotIcon: {
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#4CAF50',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#4CAF50',
+    backgroundColor: "#4CAF50",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#4CAF50",
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.8,
     shadowRadius: 20,
@@ -981,9 +938,9 @@ const styles = StyleSheet.create({
   },
   aiMainText: {
     fontSize: 28,
-    fontWeight: 'bold',
-    color: '#fff',
-    textAlign: 'center',
+    fontWeight: "bold",
+    color: "#fff",
+    textAlign: "center",
     marginBottom: 15,
     letterSpacing: 1,
   },
@@ -993,81 +950,81 @@ const styles = StyleSheet.create({
   },
   aiSubtext: {
     fontSize: 16,
-    color: '#B0BEC5',
-    textAlign: 'center',
+    color: "#B0BEC5",
+    textAlign: "center",
     lineHeight: 24,
   },
   progressContainer: {
     width: screenWidth * 0.7,
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 25,
   },
   progressBar: {
-    width: '100%',
+    width: "100%",
     height: 6,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
     borderRadius: 3,
-    overflow: 'hidden',
+    overflow: "hidden",
     marginBottom: 10,
   },
   progressFill: {
-    height: '100%',
-    backgroundColor: '#4CAF50',
+    height: "100%",
+    backgroundColor: "#4CAF50",
     borderRadius: 3,
-    width: '70%',
+    width: "70%",
   },
   progressText: {
     fontSize: 12,
-    color: '#78909C',
-    textAlign: 'center',
+    color: "#78909C",
+    textAlign: "center",
   },
   dotsContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 30,
   },
   dot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#4CAF50',
+    backgroundColor: "#4CAF50",
     marginHorizontal: 4,
   },
   infoContainer: {
-    alignItems: 'center',
+    alignItems: "center",
   },
   infoItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginVertical: 5,
     paddingHorizontal: 15,
     paddingVertical: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderColor: "rgba(255, 255, 255, 0.1)",
   },
   infoText: {
     fontSize: 14,
-    color: '#E0E0E0',
+    color: "#E0E0E0",
     marginLeft: 10,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   // Partículas flotantes
   particle: {
-    position: 'absolute',
+    position: "absolute",
     zIndex: 5,
   },
   particle1: {
-    top: '30%',
-    left: '20%',
+    top: "30%",
+    left: "20%",
   },
   particle2: {
-    top: '40%',
-    right: '25%',
+    top: "40%",
+    right: "25%",
   },
   particle3: {
-    top: '60%',
-    left: '15%',
+    top: "60%",
+    left: "15%",
   },
 })

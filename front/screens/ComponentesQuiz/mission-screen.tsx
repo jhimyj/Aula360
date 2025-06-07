@@ -18,7 +18,9 @@ import {
   Keyboard,
   SafeAreaView,
   StatusBar,
+  Modal,
 } from "react-native"
+import { Ionicons } from "@expo/vector-icons"
 
 // Tipos para las propiedades
 type OptionType = {
@@ -39,10 +41,20 @@ type MissionScreenProps = {
   questionType?: "MULTIPLE_CHOICE_SINGLE" | "MULTIPLE_CHOICE_MULTIPLE" | "OPEN_ENDED"
   options: OptionType[]
   onSubmit?: (selectedOption: string | string[], isCorrect: boolean, userAnswer?: string) => void
+  // 🔍 NUEVAS PROPS PARA EL AMPLIFICADOR
+  amplifier?: {
+    enabled: boolean
+    threshold: number
+    modalTitle: string
+    modalDescription: string
+  }
+  difficulty?: "EASY" | "MEDIUM" | "HARD"
+  tags?: string[]
+  score?: number
 }
 
 const { width, height } = Dimensions.get("window")
-const isTablet = width >= 768;
+const isTablet = width >= 768
 
 export const MissionScreen = ({
   missionNumber,
@@ -52,32 +64,40 @@ export const MissionScreen = ({
   questionType = "MULTIPLE_CHOICE_SINGLE",
   options,
   onSubmit,
+  // 🔍 NUEVAS PROPS
+  amplifier,
+  difficulty,
+  tags,
+  score,
 }: MissionScreenProps) => {
-  // Para MULTIPLE_CHOICE_SINGLE usamos selectedOption (string)
+  // Estados existentes
   const [selectedOption, setSelectedOption] = useState<string | null>(null)
-  // Para MULTIPLE_CHOICE_MULTIPLE usamos selectedOptions (array)
   const [selectedOptions, setSelectedOptions] = useState<string[]>([])
   const [userAnswer, setUserAnswer] = useState<string>("")
   const [answered, setAnswered] = useState<boolean>(false)
   const [isCorrect, setIsCorrect] = useState<boolean>(false)
   const [fadeAnim] = useState(new Animated.Value(0))
   const [isFocused, setIsFocused] = useState<boolean>(false)
-  const [dimensions, setDimensions] = useState(Dimensions.get('window'))
+  const [dimensions, setDimensions] = useState(Dimensions.get("window"))
   const textInputRef = useRef<TextInput>(null)
   const scrollViewRef = useRef<ScrollView>(null)
 
+  // 🔍 NUEVOS ESTADOS PARA EL AMPLIFICADOR
+  const [amplifierVisible, setAmplifierVisible] = useState(false)
+  const [showAmplifierButton, setShowAmplifierButton] = useState(true)
+
   // Actualizar dimensiones cuando cambia la orientación
   useEffect(() => {
-    const subscription = Dimensions.addEventListener('change', ({ window }) => {
-      setDimensions(window);
-    });
-    
+    const subscription = Dimensions.addEventListener("change", ({ window }) => {
+      setDimensions(window)
+    })
+
     return () => {
       if (subscription?.remove) {
-        subscription.remove();
+        subscription.remove()
       }
-    };
-  }, []);
+    }
+  }, [])
 
   // Reset states when mission changes
   useEffect(() => {
@@ -88,6 +108,8 @@ export const MissionScreen = ({
     setAnswered(false)
     setIsCorrect(false)
     setIsFocused(false)
+    // 🔍 RESETEAR AMPLIFICADOR
+    setAmplifierVisible(false)
   }, [missionNumber, question])
 
   useEffect(() => {
@@ -97,6 +119,7 @@ export const MissionScreen = ({
     console.log("- options length:", options.length)
     console.log("- question:", question)
     console.log("- options:", options)
+    console.log("- amplifier:", amplifier)
 
     Animated.timing(fadeAnim, {
       toValue: 1,
@@ -105,22 +128,58 @@ export const MissionScreen = ({
     }).start()
   }, [missionNumber])
 
+  // 🔍 FUNCIONES DEL AMPLIFICADOR
+  const getDifficultyColor = (difficulty?: string) => {
+    switch (difficulty) {
+      case "EASY":
+        return "#10B981" // green-500
+      case "MEDIUM":
+        return "#F59E0B" // yellow-500
+      case "HARD":
+        return "#EF4444" // red-500
+      default:
+        return "#6B7280" // gray-500
+    }
+  }
+
+  const getTypeIcon = (type: string) => {
+    switch (type) {
+      case "MULTIPLE_CHOICE_SINGLE":
+        return "radio-button-on"
+      case "MULTIPLE_CHOICE_MULTIPLE":
+        return "checkbox"
+      case "OPEN_ENDED":
+        return "create"
+      default:
+        return "help-circle"
+    }
+  }
+
+  const getTypeLabel = (type: string) => {
+    switch (type) {
+      case "MULTIPLE_CHOICE_SINGLE":
+        return "Opción Múltiple Simple"
+      case "MULTIPLE_CHOICE_MULTIPLE":
+        return "Opción Múltiple Múltiple"
+      case "OPEN_ENDED":
+        return "Pregunta Abierta"
+      default:
+        return "Pregunta"
+    }
+  }
+
   const handleOptionPress = (optionId: string) => {
     if (!answered && (questionType === "MULTIPLE_CHOICE_SINGLE" || questionType === "MULTIPLE_CHOICE_MULTIPLE")) {
       if (questionType === "MULTIPLE_CHOICE_SINGLE") {
-        // Comportamiento original para selección única
         setSelectedOption(optionId)
         console.log("✅ Opción seleccionada (única):", optionId)
       } else if (questionType === "MULTIPLE_CHOICE_MULTIPLE") {
-        // Nuevo comportamiento para selección múltiple
         setSelectedOptions((prev) => {
           if (prev.includes(optionId)) {
-            // Si ya está seleccionada, la removemos
             const newSelection = prev.filter((id) => id !== optionId)
             console.log("✅ Opciones seleccionadas (múltiple):", newSelection)
             return newSelection
           } else {
-            // Si no está seleccionada, la agregamos
             const newSelection = [...prev, optionId]
             console.log("✅ Opciones seleccionadas (múltiple):", newSelection)
             return newSelection
@@ -133,10 +192,9 @@ export const MissionScreen = ({
   const handleTextInputFocus = () => {
     console.log("📝 TextInput recibió foco")
     setIsFocused(true)
-    // Scroll al área de texto cuando recibe foco
     setTimeout(() => {
-      scrollViewRef.current?.scrollToEnd({ animated: true });
-    }, 300);
+      scrollViewRef.current?.scrollToEnd({ animated: true })
+    }, 300)
   }
 
   const handleTextInputBlur = () => {
@@ -167,8 +225,6 @@ export const MissionScreen = ({
     if (isOpenEndedQuestion) {
       if (userAnswer.trim()) {
         console.log("✅ Enviando respuesta abierta:", userAnswer)
-
-        // Para preguntas abiertas, siempre consideramos la respuesta como "correcta"
         setIsCorrect(true)
         setAnswered(true)
 
@@ -177,9 +233,7 @@ export const MissionScreen = ({
         }
       }
     } else if (questionType === "MULTIPLE_CHOICE_SINGLE") {
-      // Comportamiento original para selección única
       if (selectedOption) {
-        // Encontrar la opción seleccionada
         const selected = options.find((option) => option.id === selectedOption)
         const correct = selected?.isCorrect || false
 
@@ -193,9 +247,7 @@ export const MissionScreen = ({
         }
       }
     } else if (questionType === "MULTIPLE_CHOICE_MULTIPLE") {
-      // Nuevo comportamiento para selección múltiple
       if (selectedOptions.length > 0) {
-        // Para múltiples selecciones, verificar si al menos una es correcta
         const selectedOptionObjects = options.filter((option) => selectedOptions.includes(option.id))
         const hasCorrectAnswer = selectedOptionObjects.some((option) => option.isCorrect)
 
@@ -205,7 +257,6 @@ export const MissionScreen = ({
         setAnswered(true)
 
         if (onSubmit) {
-          // 🔥 ENVIAR TODAS LAS OPCIONES SELECCIONADAS, NO SOLO LA PRIMERA
           onSubmit(selectedOptions, hasCorrectAnswer)
         }
       }
@@ -214,13 +265,11 @@ export const MissionScreen = ({
 
   const getOptionStyle = (optionId: string, isOptionCorrect?: boolean) => {
     if (!answered) {
-      // Verificar si está seleccionada según el tipo de pregunta
       const isSelected =
         questionType === "MULTIPLE_CHOICE_SINGLE" ? selectedOption === optionId : selectedOptions.includes(optionId)
 
       return [styles.optionButton, isSelected && styles.selectedOption]
     } else {
-      // Verificar si está seleccionada según el tipo de pregunta
       const isSelected =
         questionType === "MULTIPLE_CHOICE_SINGLE" ? selectedOption === optionId : selectedOptions.includes(optionId)
 
@@ -254,7 +303,7 @@ export const MissionScreen = ({
                   styles.openEndedInput,
                   isFocused && styles.openEndedInputFocused,
                   answered && styles.openEndedInputDisabled,
-                  isTablet && styles.tabletOpenEndedInput
+                  isTablet && styles.tabletOpenEndedInput,
                 ]}
                 placeholder="Escribe tu respuesta aquí..."
                 placeholderTextColor="#999"
@@ -277,18 +326,14 @@ export const MissionScreen = ({
             </View>
           </TouchableWithoutFeedback>
 
-          {/* Indicador de caracteres */}
           <Text style={styles.characterCount}>{userAnswer.length} caracteres</Text>
         </View>
       )
     } else {
       console.log("📝 Renderizando opciones de opción múltiple")
       return (
-        <ScrollView 
-          style={[
-            styles.optionsContainer,
-            isTablet && styles.tabletOptionsContainer
-          ]} 
+        <ScrollView
+          style={[styles.optionsContainer, isTablet && styles.tabletOptionsContainer]}
           showsVerticalScrollIndicator={true}
           nestedScrollEnabled={true}
           persistentScrollbar={true}
@@ -302,9 +347,7 @@ export const MissionScreen = ({
               disabled={answered}
               activeOpacity={0.7}
             >
-              {/* Renderizar checkbox o radio button según el tipo */}
               {questionType === "MULTIPLE_CHOICE_MULTIPLE" ? (
-                // Checkbox para selección múltiple
                 <View style={styles.checkboxContainer}>
                   <View
                     style={[
@@ -318,7 +361,6 @@ export const MissionScreen = ({
                   </View>
                 </View>
               ) : (
-                // Radio button para selección única (comportamiento original)
                 <View style={styles.radioContainer}>
                   <View
                     style={[
@@ -365,7 +407,6 @@ export const MissionScreen = ({
               </View>
             </TouchableOpacity>
           ))}
-          {/* Espacio adicional al final para mejor scroll */}
           <View style={styles.optionsBottomSpace} />
         </ScrollView>
       )
@@ -374,7 +415,6 @@ export const MissionScreen = ({
 
   const isOpenEndedQuestion = questionType === "OPEN_ENDED"
 
-  // Determinar si el botón debe estar habilitado
   const isSubmitDisabled = () => {
     if (isOpenEndedQuestion) {
       return !userAnswer.trim()
@@ -386,17 +426,97 @@ export const MissionScreen = ({
     return true
   }
 
+  // 🔍 RENDERIZAR MODAL DEL AMPLIFICADOR - VERSIÓN AMIGABLE Y ENCANTADORA
+  const renderAmplifierModal = () => {
+    if (!amplifier || !amplifier.enabled) return null
+
+    return (
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={amplifierVisible}
+        onRequestClose={() => setAmplifierVisible(false)}
+        statusBarTranslucent={true}
+      >
+        <View style={styles.modalOverlay}>
+          <StatusBar backgroundColor="rgba(0,0,0,0.7)" barStyle="light-content" />
+          <SafeAreaView style={styles.modalContainer}>
+            <View style={styles.modalContentFriendly}>
+              {/* Decoración superior */}
+              <View style={styles.topDecoration}>
+                <Text style={styles.decorativeIcon}>📖</Text>
+                <Text style={styles.readingTitle}>¡Hora de Leer!</Text>
+                <Text style={styles.decorativeIcon}>✨</Text>
+              </View>
+
+              {/* Botón de cerrar amigable */}
+              <TouchableOpacity
+                style={styles.closeButtonFriendly}
+                onPress={() => setAmplifierVisible(false)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.closeButtonText}>❌</Text>
+              </TouchableOpacity>
+
+              {/* Contenedor de la pregunta con diseño de libro */}
+              <ScrollView
+                style={styles.bookContainer}
+                contentContainerStyle={styles.bookContent}
+                showsVerticalScrollIndicator={false}
+              >
+                {/* Decoración de esquinas */}
+                <View style={styles.cornerDecorations}>
+                  <Text style={[styles.cornerIcon, { top: 10, left: 10 }]}>🌟</Text>
+                  <Text style={[styles.cornerIcon, { top: 10, right: 10 }]}>🌟</Text>
+                  <Text style={[styles.cornerIcon, { bottom: 10, left: 10 }]}>🌟</Text>
+                  <Text style={[styles.cornerIcon, { bottom: 10, right: 10 }]}>🌟</Text>
+                </View>
+
+                {/* La pregunta principal */}
+                <View style={styles.questionBookPage}>
+                  <Text style={styles.questionFriendlyText}>{question}</Text>
+                </View>
+
+                {/* Decoración inferior */}
+                <View style={styles.bottomDecoration}>
+                  <Text style={styles.encouragementText}>💡 ¡Tómate tu tiempo para leer! 💡</Text>
+                </View>
+              </ScrollView>
+
+              {/* Botón de continuar amigable */}
+              <TouchableOpacity
+                style={styles.continueButtonFriendly}
+                onPress={() => setAmplifierVisible(false)}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.continueButtonFriendlyText}>🚀 ¡Entendido, vamos!</Text>
+              </TouchableOpacity>
+            </View>
+          </SafeAreaView>
+        </View>
+      </Modal>
+    )
+  }
+
   return (
     <ImageBackground source={backgroundImage} style={styles.background} resizeMode="cover">
       <SafeAreaView style={styles.safeArea}>
         <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
+
+        {/* 🔍 BOTÓN FLOTANTE DEL AMPLIFICADOR */}
+        {amplifier && amplifier.enabled && showAmplifierButton && (
+          <TouchableOpacity style={styles.floatingButton} onPress={() => setAmplifierVisible(true)} activeOpacity={0.8}>
+            <Ionicons name="search" size={24} color="white" />
+          </TouchableOpacity>
+        )}
+
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
           style={styles.keyboardAvoidingView}
           keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
         >
           <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-            <ScrollView 
+            <ScrollView
               ref={scrollViewRef}
               contentContainerStyle={styles.scrollContainer}
               showsVerticalScrollIndicator={true}
@@ -405,27 +525,15 @@ export const MissionScreen = ({
               bounces={true}
             >
               <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
-                {/* Título de la misión */}
-                <Text style={[styles.missionTitle, isTablet && styles.tabletMissionTitle]}>
-                  Misión {missionNumber}
-                </Text>
+                <Text style={[styles.missionTitle, isTablet && styles.tabletMissionTitle]}>Misión {missionNumber}</Text>
 
-                {/* Imagen del personaje */}
-                <Image 
-                  source={characterImage} 
-                  style={[
-                    styles.characterImage,
-                    isTablet && styles.tabletCharacterImage
-                  ]} 
+                <Image
+                  source={characterImage}
+                  style={[styles.characterImage, isTablet && styles.tabletCharacterImage]}
                 />
 
-                {/* Contenedor de la pregunta */}
-                <View style={[
-                  styles.questionContainer,
-                  isTablet && styles.tabletQuestionContainer
-                ]}>
-                  {/* ScrollView para la pregunta */}
-                  <ScrollView 
+                <View style={[styles.questionContainer, isTablet && styles.tabletQuestionContainer]}>
+                  <ScrollView
                     style={styles.questionScrollView}
                     contentContainerStyle={styles.questionScrollContent}
                     showsVerticalScrollIndicator={true}
@@ -433,33 +541,23 @@ export const MissionScreen = ({
                     indicatorStyle="black"
                     nestedScrollEnabled={true}
                   >
-                    <Text style={[
-                      styles.questionText,
-                      isTablet && styles.tabletQuestionText
-                    ]}>
-                      {question}
-                    </Text>
+                    <Text style={[styles.questionText, isTablet && styles.tabletQuestionText]}>{question}</Text>
                   </ScrollView>
 
-                  {/* Opciones o campo de texto según el tipo */}
                   {renderOptions()}
                 </View>
 
-                {/* Botón de enviar */}
                 {!answered && (
                   <TouchableOpacity
                     style={[
-                      styles.submitButton, 
+                      styles.submitButton,
                       isSubmitDisabled() ? styles.disabledButton : null,
-                      isTablet && styles.tabletSubmitButton
+                      isTablet && styles.tabletSubmitButton,
                     ]}
                     onPress={handleSubmit}
                     disabled={isSubmitDisabled()}
                   >
-                    <Text style={[
-                      styles.submitButtonText,
-                      isTablet && styles.tabletSubmitButtonText
-                    ]}>
+                    <Text style={[styles.submitButtonText, isTablet && styles.tabletSubmitButtonText]}>
                       {isOpenEndedQuestion
                         ? "Enviar Respuesta"
                         : questionType === "MULTIPLE_CHOICE_MULTIPLE" && selectedOptions.length > 1
@@ -472,6 +570,9 @@ export const MissionScreen = ({
             </ScrollView>
           </TouchableWithoutFeedback>
         </KeyboardAvoidingView>
+
+        {/* 🔍 MODAL DEL AMPLIFICADOR */}
+        {renderAmplifierModal()}
       </SafeAreaView>
     </ImageBackground>
   )
@@ -526,7 +627,7 @@ const styles = StyleSheet.create({
     padding: 15,
     width: width * 0.85,
     marginBottom: 20,
-    maxHeight: undefined, // Eliminar altura máxima fija
+    maxHeight: undefined,
   },
   tabletQuestionContainer: {
     width: width * 0.75,
@@ -534,7 +635,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   questionScrollView: {
-    maxHeight: 150, // Altura máxima para la pregunta
+    maxHeight: 150,
   },
   questionScrollContent: {
     paddingBottom: 10,
@@ -552,13 +653,13 @@ const styles = StyleSheet.create({
   },
   optionsContainer: {
     width: "100%",
-    maxHeight: 300, // Aumentar altura máxima para opciones
+    maxHeight: 300,
   },
   tabletOptionsContainer: {
     maxHeight: 400,
   },
   optionsBottomSpace: {
-    height: 20, // Espacio adicional al final de las opciones
+    height: 20,
   },
   optionButton: {
     backgroundColor: "#E0E0E0",
@@ -672,7 +773,6 @@ const styles = StyleSheet.create({
     marginTop: 5,
     fontStyle: "italic",
   },
-  // Estilos para checkboxes (MULTIPLE_CHOICE_MULTIPLE)
   checkboxContainer: {
     marginRight: 12,
     alignItems: "center",
@@ -705,7 +805,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
   },
-  // Estilos para radio buttons (MULTIPLE_CHOICE_SINGLE)
   radioContainer: {
     marginRight: 12,
     alignItems: "center",
@@ -740,5 +839,441 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
+  },
+
+  // 🔍 ESTILOS DEL AMPLIFICADOR
+  floatingButton: {
+    position: "absolute",
+    top: 50,
+    right: 20,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: "#2563EB",
+    justifyContent: "center",
+    alignItems: "center",
+    elevation: 8,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 4.65,
+    zIndex: 1000,
+  },
+
+  // Modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContainer: {
+    flex: 1,
+    width: "100%",
+    paddingHorizontal: 16,
+    paddingTop: 20,
+  },
+  modalContent: {
+    flex: 1,
+    backgroundColor: "white",
+    borderRadius: 16,
+    maxHeight: height * 0.9,
+    overflow: "hidden",
+  },
+
+  // Header
+  modalHeader: {
+    padding: 24,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E7EB",
+  },
+  headerTop: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#1F2937",
+    flex: 1,
+    marginRight: 16,
+  },
+  closeButton: {
+    padding: 4,
+  },
+  badgeContainer: {
+    flexDirection: "row",
+    gap: 8,
+    marginBottom: 16,
+  },
+  badge: {
+    backgroundColor: "#F3F4F6",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#D1D5DB",
+  },
+  badgeText: {
+    fontSize: 14,
+    color: "#374151",
+    fontWeight: "500",
+  },
+  difficultyBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  difficultyText: {
+    fontSize: 14,
+    color: "white",
+    fontWeight: "600",
+  },
+  modalDescription: {
+    fontSize: 18,
+    color: "#6B7280",
+    lineHeight: 26,
+  },
+
+  // Contenido scrolleable
+  scrollContent: {
+    flex: 1,
+    paddingHorizontal: 24,
+  },
+
+  // Tarjeta de información
+  questionInfoCard: {
+    backgroundColor: "#F8FAFC",
+    borderRadius: 12,
+    padding: 20,
+    marginVertical: 16,
+    borderLeftWidth: 4,
+    borderLeftColor: "#3B82F6",
+  },
+  questionInfoHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 16,
+  },
+  questionInfoText: {
+    flex: 1,
+  },
+  questionTypeLabel: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#374151",
+    marginBottom: 8,
+  },
+  questionMetadata: {
+    gap: 8,
+  },
+  metadataItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  metadataText: {
+    fontSize: 14,
+    color: "#6B7280",
+  },
+
+  // Tarjeta de pregunta
+  questionCard: {
+    backgroundColor: "#EFF6FF",
+    borderRadius: 12,
+    padding: 24,
+    marginBottom: 16,
+    borderWidth: 2,
+    borderColor: "#BFDBFE",
+  },
+  questionLabel: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#1F2937",
+    marginBottom: 12,
+  },
+
+  // Tarjeta de opciones
+  optionsCard: {
+    backgroundColor: "white",
+    borderRadius: 12,
+    padding: 20,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+  },
+  optionsLabel: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#1F2937",
+    marginBottom: 16,
+  },
+  optionsList: {
+    gap: 12,
+  },
+  optionItem: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 12,
+    padding: 16,
+    backgroundColor: "#F9FAFB",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+  },
+  optionId: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#DBEAFE",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  optionIdText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#1D4ED8",
+  },
+  optionTextModal: {
+    fontSize: 16,
+    lineHeight: 24,
+    color: "#374151",
+    flex: 1,
+  },
+
+  // Tarjeta de instrucciones
+  instructionsCard: {
+    backgroundColor: "#FFFBEB",
+    borderRadius: 12,
+    padding: 20,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "#FDE68A",
+  },
+  instructionsHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 12,
+  },
+  instructionsTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#92400E",
+  },
+  instructionsText: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: "#B45309",
+  },
+
+  // Footer
+  modalFooter: {
+    padding: 24,
+    borderTopWidth: 1,
+    borderTopColor: "#E5E7EB",
+  },
+  continueButton: {
+    backgroundColor: "#2563EB",
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  continueButtonText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "white",
+  },
+
+  // 🔍 ESTILOS SIMPLIFICADOS PARA EL MODAL
+  modalContentSimple: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.9)",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingVertical: 60,
+  },
+  closeButtonSimple: {
+    position: "absolute",
+    top: 50,
+    right: 20,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 1000,
+  },
+  questionOnlyContainer: {
+    flex: 1,
+    width: "100%",
+  },
+  questionOnlyContent: {
+    flexGrow: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 20,
+  },
+  questionOnlyText: {
+    fontSize: 28,
+    lineHeight: 40,
+    color: "#fff",
+    textAlign: "center",
+    fontWeight: "500",
+    letterSpacing: 0.5,
+    textShadowColor: "rgba(0, 0, 0, 0.5)",
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
+  },
+
+  // 📖 ESTILOS AMIGABLES PARA EL MODAL
+  modalContentFriendly: {
+    flex: 1,
+    backgroundColor: "transparent",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingVertical: 40,
+  },
+  topDecoration: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 20,
+    backgroundColor: "rgba(255, 255, 255, 0.95)",
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 25,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  decorativeIcon: {
+    fontSize: 24,
+    marginHorizontal: 8,
+  },
+  readingTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#2D3748",
+    marginHorizontal: 10,
+  },
+  closeButtonFriendly: {
+    position: "absolute",
+    top: 50,
+    right: 20,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: "rgba(255, 255, 255, 0.9)",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 1000,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  closeButtonText: {
+    fontSize: 20,
+  },
+  bookContainer: {
+    flex: 1,
+    width: "100%",
+    maxWidth: width * 0.9,
+  },
+  bookContent: {
+    flexGrow: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 20,
+  },
+  cornerDecorations: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 1,
+    pointerEvents: "none",
+  },
+  cornerIcon: {
+    position: "absolute",
+    fontSize: 16,
+    color: "#FFD700",
+  },
+  questionBookPage: {
+    backgroundColor: "rgba(255, 255, 255, 0.98)",
+    borderRadius: 20,
+    padding: 30,
+    marginHorizontal: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 8,
+    borderWidth: 3,
+    borderColor: "#E2E8F0",
+    position: "relative",
+    // Gradiente simulado con múltiples sombras
+    shadowColor: "#4299E1",
+  },
+  questionFriendlyText: {
+    fontSize: 24,
+    lineHeight: 36,
+    color: "#2D3748",
+    textAlign: "center",
+    fontWeight: "500",
+    letterSpacing: 0.5,
+    fontFamily: Platform.OS === "ios" ? "Georgia" : "serif",
+  },
+  bottomDecoration: {
+    marginTop: 20,
+    backgroundColor: "rgba(72, 187, 120, 0.9)",
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  encouragementText: {
+    fontSize: 16,
+    color: "white",
+    textAlign: "center",
+    fontWeight: "600",
+  },
+  continueButtonFriendly: {
+    backgroundColor: "#4299E1",
+    paddingVertical: 16,
+    paddingHorizontal: 30,
+    borderRadius: 25,
+    marginTop: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 8,
+    borderWidth: 2,
+    borderColor: "#63B3ED",
+  },
+  continueButtonFriendlyText: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "white",
+    textAlign: "center",
   },
 })
