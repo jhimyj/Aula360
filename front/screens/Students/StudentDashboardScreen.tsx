@@ -1,11 +1,10 @@
 "use client"
 
 import { useState, useRef, useEffect, useCallback } from "react"
-import { SafeAreaView, StyleSheet, View, TouchableOpacity, Dimensions, Alert, type ScaledSize } from "react-native"
+import { SafeAreaView, StyleSheet, View, Dimensions, Alert, type ScaledSize } from "react-native"
 import { StatusBar } from "expo-status-bar"
 import { Audio } from "expo-av"
-import { Feather } from "@expo/vector-icons"
-import { useIsFocused, useNavigation, type NavigationProp } from "@react-navigation/native"
+import { useIsFocused, useNavigation, CommonActions, type NavigationProp } from "@react-navigation/native"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import CharacterDisplay from "../ComponentesHero/CharacterDisplay"
 import CharacterList from "../ComponentesHero/CharacterList"
@@ -141,21 +140,20 @@ export default function StudentDashboardScreen() {
     }
   }, [isFocused, playBackgroundSound, stopSound])
 
-  // ------------- Toggle manual (botón volumen) ------
-  const togglePlayback = async () => {
-    if (!soundRef.current) return
-
-    try {
-      if (isPlaying) {
-        await soundRef.current.pauseAsync()
-      } else {
-        await soundRef.current.playAsync()
-      }
-      setIsPlaying(!isPlaying)
-    } catch (error) {
-      console.error("Error al cambiar reproducción:", error)
-    }
-  }
+  // 🔧 FUNCIÓN TOGGLEPLAYBACK REMOVIDA - YA NO SE NECESITA
+  // const togglePlayback = async () => {
+  //   if (!soundRef.current) return
+  //   try {
+  //     if (isPlaying) {
+  //       await soundRef.current.pauseAsync()
+  //     } else {
+  //       await soundRef.current.playAsync()
+  //     }
+  //     setIsPlaying(!isPlaying)
+  //   } catch (error) {
+  //     console.error("Error al cambiar reproducción:", error)
+  //   }
+  // }
 
   // ------------- Guardar personaje seleccionado ------
   const handleSelectCharacter = (character: CharacterWithSize) => {
@@ -163,7 +161,22 @@ export default function StudentDashboardScreen() {
     console.log(`🎯 Personaje seleccionado: ${character.name}`)
   }
 
-  // 🎯 FUNCIÓN PARA CONFIRMAR PERSONAJE
+  // 🔍 FUNCIÓN PARA VERIFICAR RUTAS DISPONIBLES EN TODOS LOS NIVELES
+  const checkAvailableRoutes = () => {
+    let currentNav = navigation
+    let level = 0
+
+    console.log("🔍 VERIFICANDO RUTAS DISPONIBLES EN TODOS LOS NIVELES:")
+
+    while (currentNav) {
+      const state = currentNav.getState()
+      console.log(`📋 Nivel ${level} - Rutas:`, state?.routeNames || [])
+      currentNav = currentNav.getParent()
+      level++
+    }
+  }
+
+  // 🎯 FUNCIÓN PARA CONFIRMAR PERSONAJE - VERSIÓN MEJORADA
   const handleConfirmCharacter = async () => {
     if (isNavigating) {
       console.log("⚠️ Ya se está navegando, ignorando...")
@@ -181,19 +194,17 @@ export default function StudentDashboardScreen() {
 
       console.log(`✅ Personaje guardado: ${selectedCharacter.name}`)
 
-      // 🔍 VERIFICAR ESTADO DE NAVEGACIÓN
-      const state = navigation.getState()
-      console.log("📋 Estado de navegación:", JSON.stringify(state, null, 2))
-      console.log("📋 Rutas disponibles:", state?.routeNames)
+      // 🔍 VERIFICAR RUTAS DISPONIBLES EN TODOS LOS NIVELES
+      checkAvailableRoutes()
 
-      // ✅ VILLAINSELECTION DEBERÍA ESTAR DISPONIBLE EN AUTHSTACK
-      if (!state?.routeNames?.includes("VillainSelection")) {
-        throw new Error("La ruta VillainSelection no está disponible en AuthStack")
-      }
+      // 🚀 MÉTODO 1: USANDO COMMONACTIONS (SOLUCIÓN PRINCIPAL)
+      console.log("🚀 EJECUTANDO NAVEGACIÓN CON COMMONACTIONS...")
+      navigation.dispatch(
+        CommonActions.navigate({
+          name: "VillainSelection",
+        }),
+      )
 
-      // 🚀 NAVEGACIÓN DIRECTA
-      console.log("🚀 EJECUTANDO NAVEGACIÓN A VillainSelection...")
-      navigation.navigate("VillainSelection")
       console.log("✅ NAVEGACIÓN EJECUTADA EXITOSAMENTE")
 
       // Timeout para resetear flag
@@ -249,7 +260,8 @@ export default function StudentDashboardScreen() {
     <SafeAreaView style={styles.container}>
       <StatusBar style="light" />
       <View style={styles.content}>
-        {/* Botón de volumen */}
+        {/* 🚫 BOTÓN DE VOLUMEN REMOVIDO COMPLETAMENTE */}
+        {/* 
         <TouchableOpacity
           style={[
             styles.musicButton,
@@ -266,6 +278,7 @@ export default function StudentDashboardScreen() {
         >
           <Feather name={isPlaying ? "volume-2" : "volume-x"} size={getResponsiveSize(24)} color="#FFD700" />
         </TouchableOpacity>
+        */}
 
         <View style={styles.characterContainer}>
           <CharacterDisplay
@@ -308,13 +321,14 @@ const styles = StyleSheet.create({
     flex: 1,
     marginBottom: 10,
   },
-  musicButton: {
-    position: "absolute",
-    zIndex: 100,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "rgba(255,215,0,0.3)",
-  },
+  // 🚫 ESTILOS DEL BOTÓN DE MÚSICA REMOVIDOS
+  // musicButton: {
+  //   position: "absolute",
+  //   zIndex: 100,
+  //   backgroundColor: "rgba(0,0,0,0.5)",
+  //   justifyContent: "center",
+  //   alignItems: "center",
+  //   borderWidth: 1,
+  //   borderColor: "rgba(255,215,0,0.3)",
+  // },
 })

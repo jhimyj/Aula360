@@ -171,12 +171,23 @@ function MainNavigator({
       {/* 🎮 PANTALLAS DE JUEGO PARA ESTUDIANTES */}
       {isStudent() && (
         <>
+          {/* 🔧 PANTALLA DE SELECCIÓN DE VILLANOS - SIN BOTÓN DE REGRESO */}
           <Stack.Screen
             name="VillainSelection"
             component={VillainSelectionScreen}
             options={{
               title: "👹 Selección de Villanos",
               headerBackTitleVisible: false,
+              // 🚫 OCULTAR COMPLETAMENTE EL BOTÓN DE REGRESO
+              headerLeft: () => null,
+              // 🚫 DESHABILITAR GESTOS DE NAVEGACIÓN HACIA ATRÁS
+              gestureEnabled: false,
+              // 🔧 HEADER PERSONALIZADO SOLO CON LOGOUT
+              headerRight: () => (
+                <TouchableOpacity onPress={onLogout} style={{ marginRight: 15, padding: 5 }}>
+                  <Ionicons name="log-out-outline" size={24} color="#fff" />
+                </TouchableOpacity>
+              ),
             }}
           />
           <Stack.Screen
@@ -196,6 +207,14 @@ function MainNavigator({
             options={{
               title: "🗺️ Misiones",
               headerBackTitleVisible: false,
+              // 🚫 OCULTAR BOTÓN DE REGRESO TAMBIÉN EN MISIONES
+              headerLeft: () => null,
+              gestureEnabled: false,
+              headerRight: () => (
+                <TouchableOpacity onPress={onLogout} style={{ marginRight: 15, padding: 5 }}>
+                  <Ionicons name="log-out-outline" size={24} color="#fff" />
+                </TouchableOpacity>
+              ),
             }}
           />
           <Stack.Screen
@@ -204,6 +223,14 @@ function MainNavigator({
             options={{
               title: "🎮 Juego de Misión",
               headerBackTitleVisible: false,
+              // 🚫 OCULTAR BOTÓN DE REGRESO TAMBIÉN EN JUEGO DE MISIÓN
+              headerLeft: () => null,
+              gestureEnabled: false,
+              headerRight: () => (
+                <TouchableOpacity onPress={onLogout} style={{ marginRight: 15, padding: 5 }}>
+                  <Ionicons name="log-out-outline" size={24} color="#fff" />
+                </TouchableOpacity>
+              ),
             }}
           />
           <Stack.Screen

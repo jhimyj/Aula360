@@ -146,7 +146,7 @@ const MissionInfo = ({ onStartMission, onClose }: MissionInfoProps) => {
             id: "mission-killa-1",
             title: "Desenmascarar al infiltrado",
             description:
-              "rKilla debe descubrir quién está espiando a los líderes de la tribu y tratando de obtener información secreta para proteger a su gente de una amenaza oculta",
+              "Killa debe descubrir quién está espiando a los líderes de la tribu y tratando de obtener información secreta para proteger a su gente de una amenaza oculta",
             image: require("../../assets/Personajes/Amaru1.png"),
             video: require("../../assets/MisionesGame/MIsion-killa.mp4"),
             difficulty: "easy",

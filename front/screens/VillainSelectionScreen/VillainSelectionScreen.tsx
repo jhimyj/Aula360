@@ -11,6 +11,7 @@ import {
   StatusBar as RNStatusBar,
   type ScaledSize,
   Alert,
+  Platform,
 } from "react-native"
 import { LinearGradient } from "expo-linear-gradient"
 import { Audio } from "expo-av"
@@ -20,7 +21,6 @@ import AsyncStorage from "@react-native-async-storage/async-storage"
 import BackButton from "../ComponentesVillano/UI/back-button"
 import VillainCarousel from "../ComponentesVillano/villain-carousel"
 import VillainCard from "../ComponentesVillano/villain-card"
-import ActionButton from "../ComponentesVillano/UI/action-button"
 
 // -------------------- Datos de villanos --------------------
 const villains = [
@@ -58,7 +58,7 @@ const villains = [
 
 // -------------------- Componente ---------------------------
 export default function VillainSelectionScreen({ navigation }) {
-  const isFocused = useIsFocused() // ← detecta foco
+  const isFocused = useIsFocused()
   const soundRef = useRef<Audio.Sound | null>(null)
   const [dimensions, setDimensions] = useState<ScaledSize>(Dimensions.get("window"))
 
@@ -66,6 +66,7 @@ export default function VillainSelectionScreen({ navigation }) {
   const [animateCard, setAnimateCard] = useState(false)
   const [isPlaying, setIsPlaying] = useState(true)
   const [selectedVillainSaved, setSelectedVillainSaved] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
 
   // Detect screen size changes
   useEffect(() => {
@@ -76,43 +77,117 @@ export default function VillainSelectionScreen({ navigation }) {
     return () => subscription.remove()
   }, [])
 
-  // Calculate if device is a tablet based on screen size and pixel density
-  const isTablet = useCallback(() => {
+  // 🔧 CÁLCULOS RESPONSIVOS MEJORADOS
+  const deviceInfo = useCallback(() => {
     const { width, height } = dimensions
-    const screenSize = Math.sqrt(width * width + height * height) / 160
-    return screenSize >= 7 // Common threshold for tablets
+    const aspectRatio = width / height
+    const isLandscape = width > height
+
+    // Detectar tipo de dispositivo basado en múltiples factores
+    const screenSize = Math.sqrt(width * width + height * height) / (Platform.OS === "ios" ? 163 : 160)
+    const isTablet = screenSize >= 7
+    const isSmallPhone = width < 350 || height < 600
+    const isLargePhone = width > 400 && !isTablet
+
+    return {
+      width,
+      height,
+      isTablet,
+      isLandscape,
+      isSmallPhone,
+      isLargePhone,
+      aspectRatio,
+      screenSize,
+    }
   }, [dimensions])
 
-  // Get responsive size based on device type
-  const getResponsiveSize = (size: number, tabletMultiplier = 1.3) => {
-    return isTablet() ? size * tabletMultiplier : size
-  }
+  // 🔧 FUNCIÓN DE TAMAÑO RESPONSIVO MEJORADA
+  const getResponsiveSize = useCallback(
+    (baseSize: number, options = {}) => {
+      const device = deviceInfo()
+      const {
+        tabletMultiplier = 1.4,
+        landscapeMultiplier = 0.8,
+        smallPhoneMultiplier = 0.85,
+        largePhoneMultiplier = 1.1,
+      } = options
+
+      let size = baseSize
+
+      if (device.isTablet) {
+        size *= tabletMultiplier
+      } else if (device.isLargePhone) {
+        size *= largePhoneMultiplier
+      } else if (device.isSmallPhone) {
+        size *= smallPhoneMultiplier
+      }
+
+      if (device.isLandscape) {
+        size *= landscapeMultiplier
+      }
+
+      return Math.round(size)
+    },
+    [deviceInfo],
+  )
+
+  // 🔧 CÁLCULOS DE LAYOUT RESPONSIVOS
+  const getLayoutDimensions = useCallback(() => {
+    const device = deviceInfo()
+    const { width, height } = device
+
+    // Padding responsivo
+    const horizontalPadding = device.isTablet ? width * 0.08 : device.isSmallPhone ? width * 0.04 : width * 0.05
+
+    // Alturas de secciones responsivas
+    const headerHeight = device.isTablet ? height * 0.08 : device.isLandscape ? height * 0.12 : height * 0.07
+
+    const carouselHeight = device.isTablet ? height * 0.35 : device.isLandscape ? height * 0.45 : height * 0.28
+
+    // Espacio disponible para la card - Ahora más grande ya que no tenemos botón inferior
+    const availableCardHeight = height - headerHeight - carouselHeight - horizontalPadding * 2
+
+    return {
+      horizontalPadding,
+      headerHeight,
+      carouselHeight,
+      availableCardHeight,
+    }
+  }, [deviceInfo])
 
   // ------------------ Audio helpers ------------------------
   const playBackgroundSound = useCallback(async () => {
-    if (soundRef.current) return // ya cargado
+    if (soundRef.current) return
 
-    await Audio.setAudioModeAsync({
-      playsInSilentModeIOS: true,
-      shouldDuckAndroid: true,
-    })
+    try {
+      await Audio.setAudioModeAsync({
+        playsInSilentModeIOS: true,
+        shouldDuckAndroid: true,
+      })
 
-    const { sound } = await Audio.Sound.createAsync(require("../../assets/SonidoJuego/SonidoFondoOriginal.mp3"), {
-      isLooping: true,
-      volume: 0.5,
-      shouldPlay: true,
-    })
+      const { sound } = await Audio.Sound.createAsync(require("../../assets/SonidoJuego/SonidoFondoOriginal.mp3"), {
+        isLooping: true,
+        volume: 0.5,
+        shouldPlay: true,
+      })
 
-    soundRef.current = sound
-    setIsPlaying(true)
+      soundRef.current = sound
+      setIsPlaying(true)
+    } catch (error) {
+      console.error("Error al cargar audio:", error)
+    }
   }, [])
 
   const stopSound = useCallback(async () => {
     if (!soundRef.current) return
-    await soundRef.current.stopAsync()
-    await soundRef.current.unloadAsync()
-    soundRef.current = null
-    setIsPlaying(false)
+    try {
+      await soundRef.current.stopAsync()
+      await soundRef.current.unloadAsync()
+      soundRef.current = null
+      setIsPlaying(false)
+    } catch (error) {
+      console.error("Error al detener audio:", error)
+    }
   }, [])
 
   // ------------------ Control de foco ----------------------
@@ -120,7 +195,7 @@ export default function VillainSelectionScreen({ navigation }) {
     if (isFocused) playBackgroundSound()
     else stopSound()
 
-    return () => stopSound() // limpieza al desmontar
+    return () => stopSound()
   }, [isFocused, playBackgroundSound, stopSound])
 
   // ----------- Resto de lógica de componente ---------------
@@ -130,81 +205,78 @@ export default function VillainSelectionScreen({ navigation }) {
     return () => clearTimeout(t)
   }, [selectedVillain])
 
-  // Cargar el villano seleccionado al iniciar
+  // 🔧 LIMPIAR ESTADO AL ENTRAR A LA PANTALLA
   useEffect(() => {
-    const loadSelectedVillain = async () => {
+    const initializeScreen = async () => {
       try {
-        const savedVillain = await AsyncStorage.getItem("selectedVillain")
-        if (savedVillain) {
-          const villainInfo = JSON.parse(savedVillain)
-          // Buscar el villano en la lista por ID
-          const villainIndex = villains.findIndex((v) => v.id === villainInfo.id)
-          if (villainIndex !== -1) {
-            setSelectedVillain(villainIndex)
-            setSelectedVillainSaved(true)
-          }
-        }
+        // 🔧 LIMPIAR ESTADO DE SELECCIÓN PREVIA
+        console.log("🧹 Limpiando estado de selección previa...")
+        await AsyncStorage.removeItem("selectedVillain")
+        await AsyncStorage.removeItem("selectedVillainName")
+        await AsyncStorage.removeItem("selectedVillainId")
+        await AsyncStorage.removeItem("villainSelectionComplete")
+
+        // 🔧 ASEGURAR QUE SIEMPRE EMPIECE CON "SELECCIONAR VILLANO"
+        setSelectedVillainSaved(false)
+        setSelectedVillain(0) // Empezar siempre con el primer villano
+
+        console.log("✅ Estado inicial limpio - Botón mostrará 'SELECCIONAR VILLANO'")
       } catch (error) {
-        console.error("Error al cargar el villano:", error)
+        console.error("Error al limpiar estado inicial:", error)
       }
     }
 
-    loadSelectedVillain()
-  }, [])
+    initializeScreen()
+  }, []) // Solo se ejecuta una vez al montar el componente
 
   const handleBack = () => {
     navigation?.goBack?.()
   }
 
+  // 🔧 FUNCIÓN ORIGINAL DEL CARRUSEL - SIN CAMBIOS
   const handleVillainSelect = (index) => {
     setSelectedVillain(index)
-    setSelectedVillainSaved(false) // Resetear el estado de guardado cuando se selecciona otro villano
+    // 🔧 ASEGURAR QUE AL CAMBIAR VILLANO, EL BOTÓN VUELVA A "SELECCIONAR"
+    setSelectedVillainSaved(false)
   }
 
   // 🎯 FUNCIÓN ACTUALIZADA PARA NAVEGAR A MISSIONGAMESCREEN
   const handleStartMission = async () => {
-    if (selectedVillainSaved) {
-      try {
-        // 🎯 GUARDAR DATOS ADICIONALES PARA EL JUEGO
-        await AsyncStorage.multiSet([
-          ["gameMode", "mission"],
-          ["battleReady", "true"],
-          ["missionStarted", "true"],
-          ["gameState", "starting_mission"]
-        ])
+    try {
+      setIsLoading(true)
 
-        console.log("🎮 Iniciando misión con villano:", villains[selectedVillain].name)
-        console.log("🚀 Navegando a MissionGameScreen...")
-
-        // 🎯 NAVEGAR A MISSIONGAMESCREEN EN LUGAR DE BATTLESCREEN
-        navigation?.navigate?.("MissionGameScreen")
-        
-        console.log("✅ Navegación a MissionGameScreen ejecutada")
-      } catch (error) {
-        console.error("❌ Error al iniciar misión:", error)
-        Alert.alert("Error", "No se pudo iniciar la misión", [
-          { text: "Reintentar", onPress: handleStartMission },
-          { text: "Cancelar", style: "cancel" }
-        ])
-      }
-    } else {
-      // Si no hay villano guardado, mostrar alerta
-      Alert.alert("Selecciona un villano", "Debes seleccionar un villano antes de iniciar la misión", [
-        { text: "Entendido", style: "default" },
+      await AsyncStorage.multiSet([
+        ["gameMode", "mission"],
+        ["battleReady", "true"],
+        ["missionStarted", "true"],
+        ["gameState", "starting_mission"],
       ])
-    }
-  }
 
-  const handleMoreInfo = (villainId) => {
-    alert(`Más información sobre ${villains.find((v) => v.id === villainId).name}`)
+      console.log("🎮 Iniciando misión con villano:", villains[selectedVillain].name)
+      console.log("🚀 Navegando a MissionGameScreen...")
+
+      // Pequeño retraso para mostrar el estado de carga
+      await new Promise((resolve) => setTimeout(resolve, 800))
+
+      navigation?.navigate?.("MissionGameScreen")
+      console.log("✅ Navegación a MissionGameScreen ejecutada")
+    } catch (error) {
+      console.error("❌ Error al iniciar misión:", error)
+      Alert.alert("Error", "No se pudo iniciar la misión", [
+        { text: "Reintentar", onPress: handleStartMission },
+        { text: "Cancelar", style: "cancel" },
+      ])
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   // 🎯 FUNCIÓN MEJORADA PARA GUARDAR VILLANO
   const handleSelectVillain = async () => {
     try {
+      setIsLoading(true)
       const villain = villains[selectedVillain]
 
-      // 🎯 CREAR OBJETO COMPLETO CON INFORMACIÓN DEL VILLANO
       const villainInfo = {
         id: villain.id,
         name: villain.name,
@@ -212,69 +284,97 @@ export default function VillainSelectionScreen({ navigation }) {
         power: villain.power,
         danger: villain.danger,
         reach: villain.reach,
-        image: villain.image, // Agregar referencia a la imagen
-        selectedAt: new Date().toISOString() // Timestamp de selección
+        image: villain.image,
+        selectedAt: new Date().toISOString(),
       }
 
-      // 🎯 GUARDAR MÚLTIPLES DATOS RELACIONADOS
       await AsyncStorage.multiSet([
         ["selectedVillain", JSON.stringify(villainInfo)],
         ["selectedVillainName", villain.name],
         ["selectedVillainId", villain.id.toString()],
-        ["villainSelectionComplete", "true"]
+        ["villainSelectionComplete", "true"],
       ])
+
+      // Pequeño retraso para mostrar el estado de carga
+      await new Promise((resolve) => setTimeout(resolve, 600))
 
       console.log(`✅ Villano ${villain.name} guardado completamente en AsyncStorage`)
 
-      // Actualizar el estado para mostrar que se ha guardado
+      // 🔧 CAMBIAR ESTADO A "INICIAR MISIÓN"
       setSelectedVillainSaved(true)
 
-      // 🎯 MOSTRAR CONFIRMACIÓN MEJORADA
       Alert.alert(
-        "Villano seleccionado", 
-        `Has seleccionado a ${villain.name} como tu oponente.\n\n¡Prepárate para la misión!`, 
-        [
-          { text: "¡A la batalla!", style: "default" },
-        ]
+        "Villano seleccionado",
+        `Has seleccionado a ${villain.name} como tu oponente.\n\n¡Prepárate para la misión!`,
+        [{ text: "¡A la batalla!", style: "default" }],
       )
     } catch (error) {
       console.error("❌ Error al guardar el villano:", error)
       Alert.alert("Error", "No se pudo guardar el villano seleccionado", [
         { text: "Intentar de nuevo", onPress: handleSelectVillain },
-        { text: "Cancelar", style: "cancel" }
+        { text: "Cancelar", style: "cancel" },
       ])
+    } finally {
+      setIsLoading(false)
     }
   }
+
+  // 🎯 FUNCIÓN PARA MANEJAR LA ACCIÓN DEL BOTÓN PRINCIPAL
+  const handleMainButtonAction = async () => {
+    // Si ya hay un villano seleccionado, iniciamos la misión
+    if (selectedVillainSaved) {
+      await handleStartMission()
+    }
+    // Si no hay villano seleccionado, lo seleccionamos
+    else {
+      await handleSelectVillain()
+    }
+  }
+
+  // 🔧 OBTENER DIMENSIONES DE LAYOUT
+  const layout = getLayoutDimensions()
+  const device = deviceInfo()
 
   // -------------------- UI --------------------------------
   return (
     <SafeAreaView style={styles.safeArea}>
       <RNStatusBar barStyle="light-content" backgroundColor="#051438" />
       <LinearGradient colors={["#051438", "#0A2463", "#1E3A8A"]} style={styles.gradient}>
-        <View style={styles.container}>
-          {/* Header */}
-          <View
-            style={[
-              styles.header,
-              isTablet() && {
-                height: dimensions.height * 0.08,
-                paddingTop: dimensions.height * 0.01,
-              },
-            ]}
-          >
+        <View style={[styles.container, { paddingHorizontal: layout.horizontalPadding }]}>
+          {/* 🔧 HEADER RESPONSIVO */}
+          <View style={[styles.header, { height: layout.headerHeight }]}>
             <BackButton onPress={handleBack} />
-            <Text style={[styles.title, { fontSize: getResponsiveSize(22, 1.4) }]}>SELECCIÓN DE VILLANO</Text>
-            <View style={[styles.placeholder, isTablet() && { width: 50, height: 50 }]} />
+            <Text
+              style={[
+                styles.title,
+                {
+                  fontSize: getResponsiveSize(device.isLandscape ? 18 : 22, {
+                    tabletMultiplier: 1.3,
+                    smallPhoneMultiplier: 0.9,
+                  }),
+                },
+              ]}
+            >
+              SELECCIÓN DE VILLANO
+            </Text>
+            <View
+              style={[
+                styles.placeholder,
+                {
+                  width: getResponsiveSize(40),
+                  height: getResponsiveSize(40),
+                },
+              ]}
+            />
           </View>
 
-          {/* Carrusel */}
+          {/* 🔧 CARRUSEL RESPONSIVO */}
           <View
             style={[
               styles.carouselSection,
               {
-                height: dimensions.height * (isTablet() ? 0.32 : 0.28),
-                marginTop: dimensions.height * (isTablet() ? 0.03 : 0.02),
-                marginBottom: dimensions.height * (isTablet() ? 0.03 : 0.02),
+                height: layout.carouselHeight,
+                marginVertical: getResponsiveSize(device.isLandscape ? 8 : 12),
               },
             ]}
           >
@@ -285,8 +385,8 @@ export default function VillainSelectionScreen({ navigation }) {
                   style={[
                     styles.villainPreview,
                     {
-                      width: dimensions.width * (isTablet() ? 0.65 : 0.6),
-                      height: dimensions.height * (isTablet() ? 0.26 : 0.22),
+                      width: device.width * (device.isTablet ? 0.65 : device.isLandscape ? 0.5 : 0.6),
+                      height: layout.carouselHeight * 0.85,
                       padding: getResponsiveSize(12),
                       borderRadius: getResponsiveSize(16),
                     },
@@ -298,8 +398,14 @@ export default function VillainSelectionScreen({ navigation }) {
                       style={[
                         styles.villainImage,
                         {
-                          width: getResponsiveSize(120, 1.5),
-                          height: getResponsiveSize(120, 1.5),
+                          width: getResponsiveSize(device.isLandscape ? 100 : 120, {
+                            tabletMultiplier: 1.5,
+                            smallPhoneMultiplier: 0.8,
+                          }),
+                          height: getResponsiveSize(device.isLandscape ? 100 : 120, {
+                            tabletMultiplier: 1.5,
+                            smallPhoneMultiplier: 0.8,
+                          }),
                         },
                       ]}
                     />
@@ -314,48 +420,42 @@ export default function VillainSelectionScreen({ navigation }) {
                       },
                     ]}
                   >
-                    <Text style={[styles.villainName, { fontSize: getResponsiveSize(16, 1.3) }]}>{villain.name}</Text>
+                    <Text
+                      style={[
+                        styles.villainName,
+                        {
+                          fontSize: getResponsiveSize(device.isLandscape ? 14 : 16, {
+                            tabletMultiplier: 1.3,
+                            smallPhoneMultiplier: 0.9,
+                          }),
+                        },
+                      ]}
+                    >
+                      {villain.name}
+                    </Text>
                   </View>
                 </View>
               ))}
             </VillainCarousel>
           </View>
 
-          {/* Tarjeta */}
+          {/* 🔧 TARJETA RESPONSIVA CON BOTÓN DINÁMICO */}
           <View
             style={[
               styles.cardSection,
               {
-                flex: isTablet() ? 1.2 : 1,
-                marginTop: dimensions.height * (isTablet() ? 0.02 : 0.01),
-                marginBottom: dimensions.height * (isTablet() ? 0.03 : 0.02),
+                height: layout.availableCardHeight,
+                marginVertical: getResponsiveSize(device.isLandscape ? 8 : 12),
               },
             ]}
           >
             <VillainCard
               villain={villains[selectedVillain]}
               onPress={() => {}}
-              onMorePress={() => handleMoreInfo(villains[selectedVillain].id)}
-              onSelect={handleSelectVillain}
-            />
-          </View>
-
-          {/* Botón de acción */}
-          <View
-            style={[
-              styles.actionSection,
-              {
-                height: dimensions.height * (isTablet() ? 0.12 : 0.1),
-                marginBottom: dimensions.height * (isTablet() ? 0.03 : 0.02),
-              },
-            ]}
-          >
-            <ActionButton
-              title={selectedVillainSaved ? "¡INICIAR MISIÓN!" : "SELECCIONA UN VILLANO"}
-              onPress={handleStartMission}
-              primary={selectedVillainSaved}
-              icon={selectedVillainSaved ? "play-circle" : "alert-circle"}
-              disabled={!selectedVillainSaved}
+              onMorePress={() => {}}
+              onSelect={handleMainButtonAction}
+              isSelected={selectedVillainSaved}
+              isLoading={isLoading}
             />
           </View>
         </View>
@@ -364,7 +464,7 @@ export default function VillainSelectionScreen({ navigation }) {
   )
 }
 
-// ------------------ Estilos -------------------------------
+// 🔧 ESTILOS RESPONSIVOS MEJORADOS
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
@@ -374,15 +474,13 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    padding: Dimensions.get("window").width * 0.05,
     justifyContent: "space-between",
   },
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingTop: Dimensions.get("window").height * 0.0000000001,
-    height: Dimensions.get("window").height * 0.065,
+    paddingTop: Platform.OS === "android" ? 10 : 0,
   },
   title: {
     fontWeight: "800",
@@ -392,14 +490,14 @@ const styles = StyleSheet.create({
     textShadowColor: "rgba(0, 0, 0, 0.5)",
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 3,
+    flex: 1,
   },
   placeholder: {
-    width: 40,
-    height: 40,
+    // Placeholder para mantener el balance del header
   },
   carouselSection: {
-    marginTop: Dimensions.get("window").height * 0.02,
-    marginBottom: Dimensions.get("window").height * 0.02,
+    justifyContent: "center",
+    alignItems: "center",
   },
   villainPreview: {
     alignItems: "center",
@@ -428,12 +526,8 @@ const styles = StyleSheet.create({
     textShadowRadius: 2,
   },
   cardSection: {
-    flex: 1,
     justifyContent: "flex-start",
     alignItems: "center",
-  },
-  actionSection: {
-    justifyContent: "center",
-    alignItems: "center",
+    flex: 1,
   },
 })

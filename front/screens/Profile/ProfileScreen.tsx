@@ -34,11 +34,16 @@ interface UserProfile {
   [key: string]: any // Para campos adicionales
 }
 
-export default function ProfileScreen() {
+interface Props {
+  setIsAuthenticated?: (value: boolean) => void // Opcional para manejar logout
+}
+
+export default function ProfileScreen({ setIsAuthenticated }: Props) {
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [userRole, setUserRole] = useState<string | null>(null)
 
   const [fontsLoaded] = useFonts({
     Poppins_400Regular,
@@ -47,27 +52,136 @@ export default function ProfileScreen() {
     Poppins_700Bold,
   })
 
-  // 🔑 FUNCIÓN PARA OBTENER TOKEN
-  const getAuthToken = async () => {
+  // 🎯 FUNCIÓN PARA DETERMINAR EL ENDPOINT CORRECTO
+  const getProfileEndpoint = (role: string | null) => {
+    if (role === "STUDENT") {
+      return "https://iza2ya8d9j.execute-api.us-east-1.amazonaws.com/dev/students/me"
+    } else {
+      // Para TEACHER, ADMIN u otros roles
+      return "https://9l68voxzvc.execute-api.us-east-1.amazonaws.com/dev/user/me"
+    }
+  }
+
+  // 🔑 FUNCIÓN PARA OBTENER TOKEN CON VALIDACIÓN MEJORADA
+  const getAuthToken = async (role: string | null) => {
     try {
-      const token = await AsyncStorage.getItem("userToken")
-      if (!token) {
-        throw new Error("No se encontró el token de autenticación")
+      let token = null
+
+      if (role === "STUDENT") {
+        // Para estudiantes, priorizar studentToken
+        token = await AsyncStorage.getItem("studentToken")
+        console.log("🎓 Buscando token de estudiante:", token ? `${token.substring(0, 15)}...` : "NO TOKEN")
+      } else {
+        // Para otros roles, usar userToken
+        token = await AsyncStorage.getItem("userToken")
+        console.log("🏫 Buscando token de usuario:", token ? `${token.substring(0, 15)}...` : "NO TOKEN")
       }
-      return token.trim()
+
+      // Fallback: si no encontramos el token específico, buscar en otros lugares
+      if (!token) {
+        console.log("⚠️ Token específico no encontrado, buscando alternativas...")
+        token =
+          (await AsyncStorage.getItem("studentToken")) ||
+          (await AsyncStorage.getItem("userToken")) ||
+          (await AsyncStorage.getItem("teacherToken")) ||
+          (await AsyncStorage.getItem("adminToken"))
+      }
+
+      console.log("🔑 TOKEN FINAL OBTENIDO:", token ? `${token.substring(0, 15)}...` : "NO TOKEN")
+
+      if (!token) {
+        throw new Error("No se encontró ningún token de autenticación")
+      }
+
+      // Validar formato básico del token (no vacío y sin espacios extras)
+      token = token.trim()
+      if (!token) {
+        throw new Error("Token inválido (vacío)")
+      }
+
+      return token
     } catch (error) {
       console.error("❌ Error al obtener el token:", error)
       throw error
     }
   }
 
-  // 🎯 FUNCIÓN PARA OBTENER DATOS DEL PERFIL
+  // 🔍 FUNCIÓN PARA OBTENER EL ROL DEL USUARIO
+  const getUserRole = async () => {
+    try {
+      const role = await AsyncStorage.getItem("userRole")
+      console.log("👤 Rol del usuario obtenido:", role)
+      return role
+    } catch (error) {
+      console.error("❌ Error al obtener el rol:", error)
+      return null
+    }
+  }
+
+  // 🚪 FUNCIÓN PARA MANEJAR LOGOUT
+  const handleLogout = async () => {
+    try {
+      console.log("🚪 Iniciando proceso de logout...")
+
+      // Lista de todas las claves relacionadas con autenticación
+      const authKeys = [
+        "studentToken",
+        "studentData",
+        "authMethod",
+        "userRole",
+        "userInfo",
+        "room_code",
+        "roomId",
+        "teacherToken",
+        "teacherData",
+        "adminToken",
+        "adminData",
+        "userToken",
+        "isAuthenticated",
+      ]
+
+      // Eliminar todas las claves de autenticación
+      await AsyncStorage.multiRemove(authKeys)
+
+      console.log("✅ Sesión cerrada correctamente")
+
+      // Si tenemos la función para cambiar estado de autenticación, la usamos
+      if (setIsAuthenticated) {
+        setIsAuthenticated(false)
+      }
+
+      Alert.alert("Sesión Cerrada", "Has cerrado sesión correctamente.", [{ text: "OK" }])
+    } catch (error) {
+      console.error("❌ Error al cerrar sesión:", error)
+      Alert.alert("Error", "No se pudo cerrar la sesión correctamente.")
+    }
+  }
+
+  // 🎯 FUNCIÓN PARA OBTENER DATOS DEL PERFIL CON ENDPOINT DINÁMICO
   const fetchUserProfile = async () => {
     try {
       console.log("🔍 Obteniendo datos del perfil...")
 
-      const token = await getAuthToken()
-      console.log("🔑 Token obtenido:", token ? `${token.substring(0, 15)}...` : "NO TOKEN")
+      // Primero obtener el rol del usuario
+      const role = await getUserRole()
+      setUserRole(role)
+
+      if (!role) {
+        throw new Error("No se pudo determinar el rol del usuario")
+      }
+
+      // Obtener el token apropiado para el rol
+      const token = await getAuthToken(role)
+
+      // Verificar si el token parece válido (formato básico)
+      if (!token || token.length < 10) {
+        console.error("❌ Token inválido o muy corto:", token)
+        throw new Error("Token de autenticación inválido")
+      }
+
+      // Determinar el endpoint correcto según el rol
+      const endpoint = getProfileEndpoint(role)
+      console.log("🎯 Endpoint seleccionado para rol", role, ":", endpoint)
 
       const headers = {
         Authorization: `Bearer ${token}`,
@@ -78,7 +192,7 @@ export default function ProfileScreen() {
 
       console.log("📤 Enviando petición al perfil...")
 
-      const response = await fetch("https://9l68voxzvc.execute-api.us-east-1.amazonaws.com/dev/user/me", {
+      const response = await fetch(endpoint, {
         method: "GET",
         headers: headers,
       })
@@ -88,6 +202,7 @@ export default function ProfileScreen() {
       const responseText = await response.text()
       console.log("📄 Response del perfil:", responseText)
 
+      // Manejar errores HTTP
       if (!response.ok) {
         let errorMessage = `Error ${response.status}`
 
@@ -105,9 +220,19 @@ export default function ProfileScreen() {
           errorMessage = responseText || `Error ${response.status}`
         }
 
-        if (response.status === 401) {
-          console.error("❌ Token expirado o inválido")
-          await AsyncStorage.removeItem("userToken")
+        // Manejar específicamente errores de autenticación
+        if (
+          response.status === 401 ||
+          response.status === 403 ||
+          errorMessage.includes("no encontrado") ||
+          errorMessage.includes("expirado") ||
+          errorMessage.includes("invalid")
+        ) {
+          console.error("❌ Token expirado o inválido - Status:", response.status)
+
+          // Limpiar tokens
+          await AsyncStorage.multiRemove(["studentToken", "userToken", "teacherToken", "adminToken"])
+
           throw new Error("Sesión expirada. Inicia sesión nuevamente.")
         }
 
@@ -124,9 +249,10 @@ export default function ProfileScreen() {
         throw new Error("Respuesta del servidor inválida")
       }
 
-      // ✅ EXTRAER DATOS DEL USUARIO
+      // ✅ EXTRAER DATOS DEL USUARIO - MANEJO MEJORADO DE ESTRUCTURA
       let userProfile: UserProfile
 
+      // Intentar extraer el perfil de diferentes estructuras posibles
       if (data.body) {
         // Si la respuesta viene en data.body
         userProfile = typeof data.body === "string" ? JSON.parse(data.body) : data.body
@@ -136,15 +262,42 @@ export default function ProfileScreen() {
       } else if (data.data) {
         // Si la respuesta viene en data.data
         userProfile = data.data
+      } else if (data.student) {
+        // Si la respuesta viene en data.student (específico para estudiantes)
+        userProfile = data.student
+      } else if (data.teacher) {
+        // Si la respuesta viene en data.teacher (específico para profesores)
+        userProfile = data.teacher
       } else {
         // Si la respuesta es directamente el usuario
         userProfile = data
       }
 
+      // Verificar que tenemos datos mínimos necesarios
+      if (!userProfile || !userProfile.id || !userProfile.username) {
+        console.error("❌ Datos de perfil incompletos:", userProfile)
+        throw new Error("Los datos del perfil están incompletos")
+      }
+
+      // Asegurar que el rol esté presente en el perfil
+      if (!userProfile.role && role) {
+        userProfile.role = role
+      }
+
       console.log("✅ Perfil del usuario obtenido:", userProfile)
+      console.log("🎯 Endpoint usado:", endpoint)
+      console.log("👤 Rol confirmado:", userProfile.role)
+
       return userProfile
-    } catch (error) {
+    } catch (error: any) {
       console.error("❌ Error completo en fetchUserProfile:", error)
+
+      // Si es error de sesión expirada, manejar específicamente
+      if (error.message.includes("expirada") || error.message.includes("inicia sesión")) {
+        // Intentar limpiar tokens
+        await AsyncStorage.multiRemove(["studentToken", "userToken", "teacherToken", "adminToken"])
+      }
+
       throw error
     }
   }
@@ -161,14 +314,11 @@ export default function ProfileScreen() {
       console.error("❌ Error al cargar perfil:", error)
       setError(error.message)
 
-      if (error.message.includes("Sesión expirada")) {
+      if (error.message.includes("Sesión expirada") || error.message.includes("token")) {
         Alert.alert("Sesión Expirada", "Tu sesión ha expirado. Por favor, inicia sesión nuevamente.", [
           {
-            text: "OK",
-            onPress: () => {
-              // Aquí podrías llamar a logout o redirigir al login
-              console.log("🚪 Redirigiendo al login...")
-            },
+            text: "Cerrar Sesión",
+            onPress: () => handleLogout(),
           },
         ])
       }
@@ -229,7 +379,7 @@ export default function ProfileScreen() {
       case "TEACHER":
         return "#FF8C00"
       case "STUDENT":
-        return "#4CAF50"
+        return "#4361EE"
       case "ADMIN":
         return "#9C27B0"
       default:
@@ -237,10 +387,24 @@ export default function ProfileScreen() {
     }
   }
 
+  // 🎨 FUNCIÓN PARA OBTENER TEXTO DE ROL
+  const getRoleText = (role: string) => {
+    switch (role?.toUpperCase()) {
+      case "TEACHER":
+        return "Profesor"
+      case "STUDENT":
+        return "Estudiante"
+      case "ADMIN":
+        return "Administrador"
+      default:
+        return role || "Usuario"
+    }
+  }
+
   if (!fontsLoaded) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#FF8C00" />
+        <ActivityIndicator size="large" color="#4361EE" />
       </View>
     )
   }
@@ -248,8 +412,11 @@ export default function ProfileScreen() {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#FF8C00" />
+        <ActivityIndicator size="large" color="#4361EE" />
         <Text style={styles.loadingText}>Cargando perfil...</Text>
+        {userRole && (
+          <Text style={styles.debugText}>Endpoint: {userRole === "STUDENT" ? "students/me" : "user/me"}</Text>
+        )}
       </View>
     )
   }
@@ -260,9 +427,19 @@ export default function ProfileScreen() {
         <Ionicons name="alert-circle" size={64} color="#FF4444" />
         <Text style={styles.errorTitle}>Error al cargar perfil</Text>
         <Text style={styles.errorText}>{error}</Text>
-        <TouchableOpacity style={styles.retryButton} onPress={loadProfile}>
-          <Text style={styles.retryButtonText}>Reintentar</Text>
-        </TouchableOpacity>
+        {userRole && (
+          <Text style={styles.debugText}>
+            Rol: {userRole} | Endpoint: {userRole === "STUDENT" ? "students/me" : "user/me"}
+          </Text>
+        )}
+        <View style={styles.errorButtonsContainer}>
+          <TouchableOpacity style={styles.retryButton} onPress={loadProfile}>
+            <Text style={styles.retryButtonText}>Reintentar</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+            <Text style={styles.logoutButtonText}>Cerrar Sesión</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     )
   }
@@ -272,9 +449,14 @@ export default function ProfileScreen() {
       <View style={styles.errorContainer}>
         <Ionicons name="person-circle" size={64} color="#666" />
         <Text style={styles.errorTitle}>No se encontró el perfil</Text>
-        <TouchableOpacity style={styles.retryButton} onPress={loadProfile}>
-          <Text style={styles.retryButtonText}>Reintentar</Text>
-        </TouchableOpacity>
+        <View style={styles.errorButtonsContainer}>
+          <TouchableOpacity style={styles.retryButton} onPress={loadProfile}>
+            <Text style={styles.retryButtonText}>Reintentar</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+            <Text style={styles.logoutButtonText}>Cerrar Sesión</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     )
   }
@@ -283,7 +465,7 @@ export default function ProfileScreen() {
     <ScrollView
       style={styles.container}
       contentContainerStyle={styles.scrollContent}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={["#FF8C00"]} />}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={["#4361EE"]} />}
     >
       {/* 🎯 HEADER DEL PERFIL */}
       <View style={styles.profileHeader}>
@@ -301,10 +483,10 @@ export default function ProfileScreen() {
           <Text style={styles.userName}>{profile.name || profile.username}</Text>
           <View style={styles.roleContainer}>
             <Ionicons name={getRoleIcon(profile.role)} size={16} color={getRoleColor(profile.role)} />
-            <Text style={[styles.userRole, { color: getRoleColor(profile.role) }]}>
-              {profile.role === "TEACHER" ? "Profesor" : profile.role === "STUDENT" ? "Estudiante" : profile.role}
-            </Text>
+            <Text style={[styles.userRole, { color: getRoleColor(profile.role) }]}>{getRoleText(profile.role)}</Text>
           </View>
+          {/* 🔍 INDICADOR DE ENDPOINT USADO */}
+          <Text style={styles.endpointIndicator}>API: {profile.role === "STUDENT" ? "students/me" : "user/me"}</Text>
         </View>
       </View>
 
@@ -397,11 +579,18 @@ export default function ProfileScreen() {
         </View>
       )}
 
-      {/* 🔄 BOTÓN DE ACTUALIZAR */}
-      <TouchableOpacity style={styles.refreshButton} onPress={onRefresh}>
-        <Ionicons name="refresh" size={20} color="#fff" />
-        <Text style={styles.refreshButtonText}>Actualizar Perfil</Text>
-      </TouchableOpacity>
+      {/* 🔄 BOTONES DE ACCIÓN */}
+      <View style={styles.actionButtonsContainer}>
+        <TouchableOpacity style={styles.refreshButton} onPress={onRefresh}>
+          <Ionicons name="refresh" size={20} color="#fff" />
+          <Text style={styles.refreshButtonText}>Actualizar Perfil</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.logoutButtonFull} onPress={handleLogout}>
+          <Ionicons name="log-out" size={20} color="#fff" />
+          <Text style={styles.logoutButtonText}>Cerrar Sesión</Text>
+        </TouchableOpacity>
+      </View>
     </ScrollView>
   )
 }
@@ -427,6 +616,13 @@ const styles = StyleSheet.create({
     color: "#666",
     fontFamily: "Poppins_400Regular",
   },
+  debugText: {
+    marginTop: 5,
+    fontSize: 12,
+    color: "#999",
+    fontFamily: "Poppins_400Regular",
+    textAlign: "center",
+  },
   errorContainer: {
     flex: 1,
     justifyContent: "center",
@@ -448,13 +644,28 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 20,
   },
+  errorButtonsContainer: {
+    flexDirection: "row",
+    gap: 12,
+  },
   retryButton: {
-    backgroundColor: "#FF8C00",
+    backgroundColor: "#4361EE",
     borderRadius: 12,
     paddingVertical: 12,
     paddingHorizontal: 24,
   },
   retryButtonText: {
+    color: "#fff",
+    fontSize: 14,
+    fontFamily: "Poppins_600SemiBold",
+  },
+  logoutButton: {
+    backgroundColor: "#FF4444",
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+  },
+  logoutButtonText: {
     color: "#fff",
     fontSize: 14,
     fontFamily: "Poppins_600SemiBold",
@@ -499,11 +710,18 @@ const styles = StyleSheet.create({
   roleContainer: {
     flexDirection: "row",
     alignItems: "center",
+    marginBottom: 4,
   },
   userRole: {
     fontSize: 14,
     fontFamily: "Poppins_500Medium",
     marginLeft: 6,
+  },
+  endpointIndicator: {
+    fontSize: 10,
+    fontFamily: "Poppins_400Regular",
+    color: "#999",
+    fontStyle: "italic",
   },
   section: {
     marginBottom: 20,
@@ -546,19 +764,30 @@ const styles = StyleSheet.create({
     fontFamily: "Poppins_400Regular",
     color: "#333",
   },
+  actionButtonsContainer: {
+    gap: 12,
+    marginTop: 10,
+  },
   refreshButton: {
-    backgroundColor: "#FF8C00",
+    backgroundColor: "#4361EE",
     borderRadius: 12,
     padding: 16,
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    marginTop: 10,
   },
   refreshButtonText: {
     color: "#fff",
     fontSize: 16,
     fontFamily: "Poppins_600SemiBold",
     marginLeft: 8,
+  },
+  logoutButtonFull: {
+    backgroundColor: "#FF4444",
+    borderRadius: 12,
+    padding: 16,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
   },
 })

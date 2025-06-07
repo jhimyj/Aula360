@@ -20,7 +20,6 @@ import { CameraView, useCameraPermissions } from "expo-camera"
 import { Ionicons } from "@expo/vector-icons"
 import axios from "axios"
 import AsyncStorage from "@react-native-async-storage/async-storage"
-import MissionScreen from "../Students/StudentDashboardScreen"
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window")
 
@@ -39,8 +38,6 @@ export default function StudentAuthScreen({ setIsAuthenticated, onBack }: Props)
   const [showQRScanner, setShowQRScanner] = useState(false)
   const [permission, requestPermission] = useCameraPermissions()
   const [dimensions, setDimensions] = useState(Dimensions.get("window"))
-
-  const [showMissionScreen, setShowMissionScreen] = useState(false)
 
   useEffect(() => {
     const subscription = Dimensions.addEventListener("change", ({ window }) => {
@@ -96,9 +93,84 @@ export default function StudentAuthScreen({ setIsAuthenticated, onBack }: Props)
     Alert.alert("¡QR Escaneado!", `Room code detectado: ${extractedRoomCode}`, [{ text: "OK" }])
   }
 
+  // Función para limpiar completamente la sesión anterior
+  const clearPreviousSession = async () => {
+    try {
+      console.log("🧹 LIMPIANDO SESIÓN ANTERIOR")
+      
+      // Lista de todas las claves relacionadas con autenticación
+      const authKeys = [
+        "studentToken",
+        "studentData", 
+        "authMethod",
+        "userRole",
+        "userInfo",
+        "room_code",
+        "roomId",
+        "selectedCharacterName",
+        // Agregar cualquier otra clave relacionada con la sesión
+        "teacherToken",
+        "teacherData",
+        "adminToken",
+        "adminData"
+      ]
+
+      // Eliminar todas las claves de autenticación anteriores
+      await AsyncStorage.multiRemove(authKeys)
+      
+      console.log("✅ Sesión anterior limpiada completamente")
+    } catch (error) {
+      console.error("❌ Error al limpiar sesión anterior:", error)
+      // No lanzar error aquí, solo loggearlo
+    }
+  }
+
+  // Función para guardar datos de autenticación de forma segura
+  const saveAuthenticationData = async (token: string, studentInfo: any) => {
+    try {
+      console.log("💾 GUARDANDO NUEVA SESIÓN DE AUTENTICACIÓN")
+      console.log("🔑 Nuevo token:", token)
+      console.log("📋 Información del estudiante:", studentInfo)
+
+      // PASO 1: Limpiar completamente la sesión anterior
+      await clearPreviousSession()
+
+      // PASO 2: Guardar los nuevos datos de autenticación
+      const authData = [
+        ["studentToken", token],
+        ["studentData", JSON.stringify(studentInfo)],
+        ["authMethod", "student_with_token"],
+        ["userRole", "STUDENT"],
+        ["userInfo", JSON.stringify(studentInfo)],
+        ["room_code", studentInfo.room_code],
+        ["roomId", studentInfo.room_id || studentInfo.room_code]
+      ]
+
+      // Usar multiSet para operación atómica
+      await AsyncStorage.multiSet(authData)
+
+      console.log("✅ Nueva sesión guardada exitosamente")
+      
+      // Verificar que el token se guardó correctamente
+      
+      const savedToken = await AsyncStorage.getItem("studentToken")
+      if (savedToken === token) {
+        console.log("✅ Token verificado correctamente en AsyncStorage")
+      } else {
+        throw new Error("Error: Token no se guardó correctamente")
+      }
+      
+      return true
+    } catch (error) {
+      console.error("❌ Error al guardar datos de autenticación:", error)
+      throw new Error("Error al guardar datos de autenticación")
+    }
+  }
+
   const createStudent = async (room_code: string, username: string) => {
     try {
       console.log("🎓 CREANDO ESTUDIANTE - Primera vez")
+      
       const response = await axios.post(
         "https://iza2ya8d9j.execute-api.us-east-1.amazonaws.com/dev/students/create",
         {
@@ -108,6 +180,7 @@ export default function StudentAuthScreen({ setIsAuthenticated, onBack }: Props)
         },
         { headers: { "Content-Type": "application/json" } },
       )
+      
       console.log("✅ Estudiante creado exitosamente:", response.data)
 
       // Extraer datos de la nueva estructura de respuesta
@@ -123,17 +196,17 @@ export default function StudentAuthScreen({ setIsAuthenticated, onBack }: Props)
       const roomId = studentData?.room_id
 
       if (!token) {
-        throw new Error("Token no encontrado en la respuesta")
+        throw new Error("Token no encontrado en la respuesta del servidor")
       }
 
-      console.log("🔑 Token obtenido del create:", token)
+      console.log("🔑 NUEVO TOKEN RECIBIDO DEL REGISTRO:", token)
       console.log("🏠 Room ID obtenido:", roomId)
 
       const studentInfo = {
         id: studentId,
         username,
         room_code,
-        room_id: roomId, // Usar el room_id del objeto student
+        room_id: roomId,
         role: "STUDENT",
         loginMethod: "student_create",
         created_at: new Date().toISOString(),
@@ -142,24 +215,20 @@ export default function StudentAuthScreen({ setIsAuthenticated, onBack }: Props)
         authType: "student",
         score_student: studentData?.score_student || 0,
         score_villain: studentData?.score_villain || 0,
-        status: studentData?.status || "CREATED"
+        status: studentData?.status || "CREATED",
+        token: token,
+        lastLogin: new Date().toISOString()
       }
 
-      await AsyncStorage.setItem("studentToken", token)
-      await AsyncStorage.setItem("studentData", JSON.stringify(studentInfo))
-      await AsyncStorage.setItem("authMethod", "student_with_token")
-      await AsyncStorage.setItem("userRole", "STUDENT")
-      await AsyncStorage.setItem("userInfo", JSON.stringify(studentInfo))
+      // Guardar la nueva sesión (esto limpia automáticamente la anterior)
+      await saveAuthenticationData(token, studentInfo)
 
-      // Guardar room_code y roomId por separado
-      await AsyncStorage.setItem("room_code", room_code)  // El código ingresado por el usuario
-      await AsyncStorage.setItem("roomId", roomId || room_code)  // El ID que viene del servidor
-
+      // Guardar personaje por defecto para nuevos estudiantes
       await AsyncStorage.setItem("selectedCharacterName", "Qhapaq")
 
-      console.log("📋 Información del estudiante guardada:", studentInfo)
+      console.log("📋 NUEVA SESIÓN DE REGISTRO GUARDADA COMPLETAMENTE")
 
-      return { success: true, token, message, studentData }
+      return { success: true, token, message, studentData, studentInfo }
     } catch (error: any) {
       console.error("❌ Error al crear estudiante:", error.response?.data || error.message)
       const apiMessage = error.response?.data?.message || error.response?.data?.error
@@ -170,6 +239,8 @@ export default function StudentAuthScreen({ setIsAuthenticated, onBack }: Props)
   const loginStudent = async (room_code: string, username: string) => {
     try {
       console.log("🎓 LOGIN DE ESTUDIANTE - Usuario existente")
+      console.log("User:", username)
+      
       const response = await axios.post(
         "https://iza2ya8d9j.execute-api.us-east-1.amazonaws.com/dev/students/login",
         {
@@ -189,46 +260,48 @@ export default function StudentAuthScreen({ setIsAuthenticated, onBack }: Props)
       }
 
       const token = responseData?.token
+      console.log("Token de estudiante ",token)
       const roomId = responseData?.room_id
+      const studentData = responseData?.student
 
       if (!token) {
         console.error("❌ Token no encontrado en la respuesta:", response.data)
-        throw new Error("Token no encontrado en la respuesta")
+        throw new Error("Token no encontrado en la respuesta del servidor")
       }
 
-      console.log("🔑 Token obtenido exitosamente:", token)
+      console.log("🔑 NUEVO TOKEN RECIBIDO DEL LOGIN:", token)
       console.log("🏠 Room ID obtenido:", roomId)
 
       const studentInfo = {
+        id: studentData?.id || responseData?.id,
         username,
         room_code,
-        room_id: roomId, // Usar el room_id de la respuesta
+        room_id: roomId,
         role: "STUDENT",
         loginMethod: "student_login",
         created_at: new Date().toISOString(),
         isFirstTime: false,
         authType: "student",
+        score_student: studentData?.score_student || 0,
+        score_villain: studentData?.score_villain || 0,
+        status: studentData?.status || "ACTIVE",
+        token: token,
+        lastLogin: new Date().toISOString()
       }
 
-      await AsyncStorage.setItem("studentToken", token)
-      await AsyncStorage.setItem("studentData", JSON.stringify(studentInfo))
-      await AsyncStorage.setItem("authMethod", "student_with_token")
-      await AsyncStorage.setItem("userRole", "STUDENT")
-      await AsyncStorage.setItem("userInfo", JSON.stringify(studentInfo))
+      // Guardar la nueva sesión (esto limpia automáticamente la anterior)
+      await saveAuthenticationData(token, studentInfo)
 
-      // Guardar room_code y roomId por separado  
-      await AsyncStorage.setItem("room_code", room_code)  // El código ingresado por el usuario
-      await AsyncStorage.setItem("roomId", roomId || room_code)  // El ID que viene del servidor
-
+      // Verificar si ya tiene un personaje asignado, si no asignar uno por defecto
       const existingCharacter = await AsyncStorage.getItem("selectedCharacterName")
       if (!existingCharacter) {
         await AsyncStorage.setItem("selectedCharacterName", "Amaru")
         console.log("- Personaje asignado:", "Amaru")
       }
 
-      console.log("📋 Información del estudiante guardada:", studentInfo)
+      console.log("📋 NUEVA SESIÓN DE LOGIN GUARDADA COMPLETAMENTE")
 
-      return { token, message }
+      return { token, message, studentInfo }
     } catch (error: any) {
       console.error("❌ Error al hacer login:", error.response?.data || error.message)
       const apiMessage = error.response?.data?.message || error.response?.data?.error
@@ -245,62 +318,60 @@ export default function StudentAuthScreen({ setIsAuthenticated, onBack }: Props)
     setIsLoading(true)
     try {
       if (isFirstTime) {
+        console.log("🚀 INICIANDO PROCESO DE REGISTRO...")
         const createResult = await createStudent(roomCode, username)
 
-        if (createResult.token) {
+        if (createResult.token && createResult.success) {
+          console.log("✅ REGISTRO EXITOSO - Token guardado:", createResult.token)
           Alert.alert(
             "¡Cuenta creada! 🎓",
-            `¡Hola ${username}! Tu cuenta de estudiante ha sido creada exitosamente. ¡Prepárate para tu primera misión!`,
+            `¡Hola ${username}! Tu cuenta de estudiante ha sido creada exitosamente. ¡Bienvenido al dashboard!`,
             [
               {
                 text: "OK",
-                onPress: () => setShowMissionScreen(true),
+                onPress: () => {
+                  console.log("🎯 Navegando al dashboard con nueva sesión")
+                  setIsAuthenticated(true)
+                },
               },
             ],
           )
         } else {
           // Fallback al login si no se pudo crear
-          await loginStudent(roomCode, username)
-          setShowMissionScreen(true)
+          console.log("⚠️ Fallback: Intentando login...")
+          const loginResult = await loginStudent(roomCode, username)
+          if (loginResult.token) {
+            console.log("✅ LOGIN FALLBACK EXITOSO - Token guardado:", loginResult.token)
+            setIsAuthenticated(true)
+          }
         }
       } else {
-        await loginStudent(roomCode, username)
-        Alert.alert(
-          "¡Bienvenido de vuelta! 👋",
-          `¡Hola ${username}! Has iniciado sesión exitosamente. ¡Continúa con tus misiones!`,
-          [
-            {
-              text: "OK",
-              onPress: () => setShowMissionScreen(true),
-            },
-          ],
-        )
+        console.log("🔑 INICIANDO PROCESO DE LOGIN...")
+        const loginResult = await loginStudent(roomCode, username)
+        
+        if (loginResult.token) {
+          console.log("✅ LOGIN EXITOSO - Token guardado:", loginResult.token)
+          Alert.alert(
+            "¡Bienvenido de vuelta! 👋",
+            `¡Hola ${username}! Has iniciado sesión exitosamente. ¡Accediendo al dashboard!`,
+            [
+              {
+                text: "OK",
+                onPress: () => {
+                  console.log("🎯 Navegando al dashboard con nueva sesión")
+                  setIsAuthenticated(true)
+                },
+              },
+            ],
+          )
+        }
       }
     } catch (error: any) {
+      console.error("❌ Error en handleSubmit:", error.message)
       Alert.alert("Error", error.message)
     } finally {
       setIsLoading(false)
     }
-  }
-
-  const handleCloseMissionScreen = () => {
-    setShowMissionScreen(false)
-    setIsAuthenticated(true)
-  }
-
-  const handleStartMission = () => {
-    setShowMissionScreen(false)
-    setIsAuthenticated(true)
-  }
-
-  if (showMissionScreen) {
-    return (
-      <MissionScreen
-        visible={true}
-        onClose={handleCloseMissionScreen}
-        onStartMission={handleStartMission}
-      />
-    )
   }
 
   if (step === "choice") {
