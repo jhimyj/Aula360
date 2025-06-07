@@ -16,6 +16,8 @@ import {
   ScrollView,
   TouchableWithoutFeedback,
   Keyboard,
+  SafeAreaView,
+  StatusBar,
 } from "react-native"
 
 // Tipos para las propiedades
@@ -39,7 +41,8 @@ type MissionScreenProps = {
   onSubmit?: (selectedOption: string | string[], isCorrect: boolean, userAnswer?: string) => void
 }
 
-const { width } = Dimensions.get("window")
+const { width, height } = Dimensions.get("window")
+const isTablet = width >= 768;
 
 export const MissionScreen = ({
   missionNumber,
@@ -59,7 +62,22 @@ export const MissionScreen = ({
   const [isCorrect, setIsCorrect] = useState<boolean>(false)
   const [fadeAnim] = useState(new Animated.Value(0))
   const [isFocused, setIsFocused] = useState<boolean>(false)
+  const [dimensions, setDimensions] = useState(Dimensions.get('window'))
   const textInputRef = useRef<TextInput>(null)
+  const scrollViewRef = useRef<ScrollView>(null)
+
+  // Actualizar dimensiones cuando cambia la orientación
+  useEffect(() => {
+    const subscription = Dimensions.addEventListener('change', ({ window }) => {
+      setDimensions(window);
+    });
+    
+    return () => {
+      if (subscription?.remove) {
+        subscription.remove();
+      }
+    };
+  }, []);
 
   // Reset states when mission changes
   useEffect(() => {
@@ -115,6 +133,10 @@ export const MissionScreen = ({
   const handleTextInputFocus = () => {
     console.log("📝 TextInput recibió foco")
     setIsFocused(true)
+    // Scroll al área de texto cuando recibe foco
+    setTimeout(() => {
+      scrollViewRef.current?.scrollToEnd({ animated: true });
+    }, 300);
   }
 
   const handleTextInputBlur = () => {
@@ -232,6 +254,7 @@ export const MissionScreen = ({
                   styles.openEndedInput,
                   isFocused && styles.openEndedInputFocused,
                   answered && styles.openEndedInputDisabled,
+                  isTablet && styles.tabletOpenEndedInput
                 ]}
                 placeholder="Escribe tu respuesta aquí..."
                 placeholderTextColor="#999"
@@ -261,13 +284,23 @@ export const MissionScreen = ({
     } else {
       console.log("📝 Renderizando opciones de opción múltiple")
       return (
-        <ScrollView style={styles.optionsContainer} showsVerticalScrollIndicator={false} nestedScrollEnabled={true}>
+        <ScrollView 
+          style={[
+            styles.optionsContainer,
+            isTablet && styles.tabletOptionsContainer
+          ]} 
+          showsVerticalScrollIndicator={true}
+          nestedScrollEnabled={true}
+          persistentScrollbar={true}
+          indicatorStyle="white"
+        >
           {options.map((option) => (
             <TouchableOpacity
               key={option.id}
               style={getOptionStyle(option.id, option.isCorrect)}
               onPress={() => handleOptionPress(option.id)}
               disabled={answered}
+              activeOpacity={0.7}
             >
               {/* Renderizar checkbox o radio button según el tipo */}
               {questionType === "MULTIPLE_CHOICE_MULTIPLE" ? (
@@ -304,6 +337,7 @@ export const MissionScreen = ({
                 <Text
                   style={[
                     styles.optionLabel,
+                    isTablet && styles.tabletOptionLabel,
                     answered && option.isCorrect && styles.correctOptionText,
                     answered &&
                       ((questionType === "MULTIPLE_CHOICE_SINGLE" && selectedOption === option.id) ||
@@ -317,6 +351,7 @@ export const MissionScreen = ({
                 <Text
                   style={[
                     styles.optionText,
+                    isTablet && styles.tabletOptionText,
                     answered && option.isCorrect && styles.correctOptionText,
                     answered &&
                       ((questionType === "MULTIPLE_CHOICE_SINGLE" && selectedOption === option.id) ||
@@ -330,6 +365,8 @@ export const MissionScreen = ({
               </View>
             </TouchableOpacity>
           ))}
+          {/* Espacio adicional al final para mejor scroll */}
+          <View style={styles.optionsBottomSpace} />
         </ScrollView>
       )
     }
@@ -351,48 +388,91 @@ export const MissionScreen = ({
 
   return (
     <ImageBackground source={backgroundImage} style={styles.background} resizeMode="cover">
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={styles.keyboardAvoidingView}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
-      >
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <ScrollView contentContainerStyle={styles.scrollContainer}>
-            <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
-              {/* Título de la misión */}
-              <Text style={styles.missionTitle}>Misión {missionNumber}</Text>
+      <SafeAreaView style={styles.safeArea}>
+        <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={styles.keyboardAvoidingView}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+        >
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+            <ScrollView 
+              ref={scrollViewRef}
+              contentContainerStyle={styles.scrollContainer}
+              showsVerticalScrollIndicator={true}
+              persistentScrollbar={true}
+              indicatorStyle="white"
+              bounces={true}
+            >
+              <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
+                {/* Título de la misión */}
+                <Text style={[styles.missionTitle, isTablet && styles.tabletMissionTitle]}>
+                  Misión {missionNumber}
+                </Text>
 
-              {/* Imagen del personaje */}
-              <Image source={characterImage} style={styles.characterImage} />
+                {/* Imagen del personaje */}
+                <Image 
+                  source={characterImage} 
+                  style={[
+                    styles.characterImage,
+                    isTablet && styles.tabletCharacterImage
+                  ]} 
+                />
 
-              {/* Contenedor de la pregunta */}
-              <View style={styles.questionContainer}>
-                <Text style={styles.questionText}>{question}</Text>
+                {/* Contenedor de la pregunta */}
+                <View style={[
+                  styles.questionContainer,
+                  isTablet && styles.tabletQuestionContainer
+                ]}>
+                  {/* ScrollView para la pregunta */}
+                  <ScrollView 
+                    style={styles.questionScrollView}
+                    contentContainerStyle={styles.questionScrollContent}
+                    showsVerticalScrollIndicator={true}
+                    persistentScrollbar={true}
+                    indicatorStyle="black"
+                    nestedScrollEnabled={true}
+                  >
+                    <Text style={[
+                      styles.questionText,
+                      isTablet && styles.tabletQuestionText
+                    ]}>
+                      {question}
+                    </Text>
+                  </ScrollView>
 
-                {/* Opciones o campo de texto según el tipo */}
-                {renderOptions()}
-              </View>
+                  {/* Opciones o campo de texto según el tipo */}
+                  {renderOptions()}
+                </View>
 
-              {/* Botón de enviar */}
-              {!answered && (
-                <TouchableOpacity
-                  style={[styles.submitButton, isSubmitDisabled() ? styles.disabledButton : null]}
-                  onPress={handleSubmit}
-                  disabled={isSubmitDisabled()}
-                >
-                  <Text style={styles.submitButtonText}>
-                    {isOpenEndedQuestion
-                      ? "Enviar Respuesta"
-                      : questionType === "MULTIPLE_CHOICE_MULTIPLE" && selectedOptions.length > 1
-                        ? `Enviar (${selectedOptions.length})`
-                        : "Enviar"}
-                  </Text>
-                </TouchableOpacity>
-              )}
-            </Animated.View>
-          </ScrollView>
-        </TouchableWithoutFeedback>
-      </KeyboardAvoidingView>
+                {/* Botón de enviar */}
+                {!answered && (
+                  <TouchableOpacity
+                    style={[
+                      styles.submitButton, 
+                      isSubmitDisabled() ? styles.disabledButton : null,
+                      isTablet && styles.tabletSubmitButton
+                    ]}
+                    onPress={handleSubmit}
+                    disabled={isSubmitDisabled()}
+                  >
+                    <Text style={[
+                      styles.submitButtonText,
+                      isTablet && styles.tabletSubmitButtonText
+                    ]}>
+                      {isOpenEndedQuestion
+                        ? "Enviar Respuesta"
+                        : questionType === "MULTIPLE_CHOICE_MULTIPLE" && selectedOptions.length > 1
+                          ? `Enviar (${selectedOptions.length})`
+                          : "Enviar"}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </Animated.View>
+            </ScrollView>
+          </TouchableWithoutFeedback>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
     </ImageBackground>
   )
 }
@@ -402,16 +482,19 @@ const styles = StyleSheet.create({
     flex: 1,
     width: "100%",
   },
+  safeArea: {
+    flex: 1,
+  },
   keyboardAvoidingView: {
     flex: 1,
   },
   scrollContainer: {
     flexGrow: 1,
+    paddingVertical: 20,
   },
   container: {
     flex: 1,
     alignItems: "center",
-    paddingTop: 20,
     paddingBottom: 40,
   },
   missionTitle: {
@@ -423,11 +506,19 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 2,
   },
+  tabletMissionTitle: {
+    fontSize: 36,
+    marginBottom: 15,
+  },
   characterImage: {
     width: width * 0.5,
     height: width * 0.5,
     resizeMode: "contain",
     marginBottom: 20,
+  },
+  tabletCharacterImage: {
+    width: width * 0.4,
+    height: width * 0.4,
   },
   questionContainer: {
     backgroundColor: "rgba(255, 255, 255, 0.9)",
@@ -435,7 +526,18 @@ const styles = StyleSheet.create({
     padding: 15,
     width: width * 0.85,
     marginBottom: 20,
-    maxHeight: width * 0.8,
+    maxHeight: undefined, // Eliminar altura máxima fija
+  },
+  tabletQuestionContainer: {
+    width: width * 0.75,
+    padding: 20,
+    borderRadius: 20,
+  },
+  questionScrollView: {
+    maxHeight: 150, // Altura máxima para la pregunta
+  },
+  questionScrollContent: {
+    paddingBottom: 10,
   },
   questionText: {
     fontSize: 16,
@@ -444,15 +546,25 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     color: "#333",
   },
+  tabletQuestionText: {
+    fontSize: 20,
+    marginBottom: 20,
+  },
   optionsContainer: {
     width: "100%",
-    maxHeight: width * 0.5,
+    maxHeight: 300, // Aumentar altura máxima para opciones
+  },
+  tabletOptionsContainer: {
+    maxHeight: 400,
+  },
+  optionsBottomSpace: {
+    height: 20, // Espacio adicional al final de las opciones
   },
   optionButton: {
     backgroundColor: "#E0E0E0",
     borderRadius: 10,
     padding: 12,
-    marginVertical: 3,
+    marginVertical: 5,
     flexDirection: "row",
     alignItems: "center",
     minHeight: 50,
@@ -472,10 +584,17 @@ const styles = StyleSheet.create({
     marginRight: 8,
     minWidth: 20,
   },
+  tabletOptionLabel: {
+    fontSize: 18,
+    minWidth: 25,
+  },
   optionText: {
     fontSize: 14,
     flex: 1,
     flexWrap: "wrap",
+  },
+  tabletOptionText: {
+    fontSize: 18,
   },
   correctOptionText: {
     color: "white",
@@ -490,6 +609,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 30,
     marginTop: 10,
   },
+  tabletSubmitButton: {
+    paddingVertical: 15,
+    paddingHorizontal: 40,
+    borderRadius: 30,
+  },
   disabledButton: {
     backgroundColor: "#A5D6A7",
     opacity: 0.7,
@@ -498,6 +622,9 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 16,
     fontWeight: "bold",
+  },
+  tabletSubmitButtonText: {
+    fontSize: 20,
   },
   openEndedContainer: {
     width: "100%",
@@ -520,6 +647,14 @@ const styles = StyleSheet.create({
     color: "#333",
     fontFamily: Platform.OS === "ios" ? "System" : "Roboto",
     lineHeight: 22,
+  },
+  tabletOpenEndedInput: {
+    minHeight: 200,
+    maxHeight: 300,
+    fontSize: 18,
+    lineHeight: 26,
+    padding: 20,
+    borderRadius: 15,
   },
   openEndedInputFocused: {
     borderColor: "#4CAF50",

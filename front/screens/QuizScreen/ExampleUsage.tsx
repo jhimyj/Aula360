@@ -7,7 +7,7 @@ import axios from "axios"
 import { useFocusEffect } from "@react-navigation/native"
 import { useCallback } from "react"
 import { MissionManager } from "../ComponentesQuiz/mission-manager"
-import { Audio } from 'expo-av'
+import { Audio } from "expo-av"
 
 type CharacterName = "Qhapaq" | "Amaru" | "Killa"
 type VillainName = "Corporatus" | "Toxicus" | "Shadowman"
@@ -374,6 +374,13 @@ const buildMissionsFromAPI = async (characterName: CharacterName, villainName: V
           title: getTransitionTitle(),
           description: getTransitionDescription(),
         },
+        // 🔍 CONFIGURACIÓN DEL AMPLIFICADOR MEJORADO
+        amplifier: {
+          enabled: true, // Siempre habilitado
+          threshold: 1, // Mostrar desde el primer carácter
+          modalTitle: `Pregunta ${index + 1} - ${getTransitionTitle()}`,
+          modalDescription: getTransitionDescription(),
+        },
       }
     })
   } catch (error) {
@@ -386,7 +393,7 @@ const QuizScreen = ({ navigation }) => {
   const [missionsData, setMissionsData] = useState([])
   const [loading, setLoading] = useState(true)
   const [isQuizActive, setIsQuizActive] = useState(false)
-  
+
   // 🎵 ESTADO PARA MANEJAR LA MÚSICA DE FONDO
   const [backgroundMusic, setBackgroundMusic] = useState<Audio.Sound | null>(null)
   const [selectedCharacter, setSelectedCharacter] = useState<CharacterName>("Qhapaq")
@@ -395,7 +402,7 @@ const QuizScreen = ({ navigation }) => {
   const playBackgroundMusic = async (characterName: CharacterName) => {
     try {
       console.log(`🎵 Iniciando música de fondo para ${characterName}`)
-      
+
       // Detener música anterior si existe
       if (backgroundMusic) {
         console.log("🛑 Deteniendo música anterior")
@@ -415,18 +422,14 @@ const QuizScreen = ({ navigation }) => {
 
       // Cargar y reproducir nueva música
       const musicSource = characterMusic[characterName]
-      const { sound } = await Audio.Sound.createAsync(
-        musicSource,
-        {
-          shouldPlay: true,
-          isLooping: true,
-          volume: 0.6, // Volumen al 60%
-        }
-      )
+      const { sound } = await Audio.Sound.createAsync(musicSource, {
+        shouldPlay: true,
+        isLooping: true,
+        volume: 0.6, // Volumen al 60%
+      })
 
       setBackgroundMusic(sound)
       console.log(`✅ Música de ${characterName} iniciada exitosamente`)
-      
     } catch (error) {
       console.error("❌ Error al reproducir música de fondo:", error)
     }
@@ -473,10 +476,10 @@ const QuizScreen = ({ navigation }) => {
               text: "Salir",
               onPress: async () => {
                 console.log("✅ Usuario confirmó salir del quiz - Navegando a StudentDashboard")
-                
+
                 // 🎵 DETENER MÚSICA AL SALIR
                 await stopBackgroundMusic()
-                
+
                 setIsQuizActive(false)
                 // 🏠 NAVEGAR ESPECÍFICAMENTE AL STUDENT DASHBOARD
                 navigation.navigate("StudentDashboard")
@@ -508,10 +511,10 @@ const QuizScreen = ({ navigation }) => {
       // Función de limpieza cuando se pierde el foco
       return () => {
         console.log("🎯 QuizScreen DESENFOCADO - Desactivando quiz y restaurando navegación")
-        
+
         // 🎵 DETENER MÚSICA AL PERDER FOCO
         stopBackgroundMusic()
-        
+
         setIsQuizActive(false)
 
         // Remover el listener del botón de back
@@ -535,10 +538,10 @@ const QuizScreen = ({ navigation }) => {
   useEffect(() => {
     return () => {
       console.log("🧹 QuizScreen DESMONTÁNDOSE - Limpieza final")
-      
+
       // 🎵 DETENER MÚSICA AL DESMONTAR COMPONENTE
       stopBackgroundMusic()
-      
+
       setIsQuizActive(false)
     }
   }, [backgroundMusic])
@@ -559,7 +562,7 @@ const QuizScreen = ({ navigation }) => {
 
         // 🎵 GUARDAR PERSONAJE SELECCIONADO Y REPRODUCIR SU MÚSICA
         setSelectedCharacter(characterName)
-        
+
         // Guardar room_id en AsyncStorage para el endpoint de feedback
         const roomId = await AsyncStorage.getItem("roomId")
         if (!roomId) {
@@ -574,7 +577,6 @@ const QuizScreen = ({ navigation }) => {
 
         // 🎵 REPRODUCIR MÚSICA DE FONDO DESPUÉS DE CARGAR MISIONES
         await playBackgroundMusic(characterName)
-        
       } catch (error: any) {
         console.error("Error cargando preguntas:", error)
 
@@ -589,7 +591,7 @@ const QuizScreen = ({ navigation }) => {
             onPress: async () => {
               // 🎵 DETENER MÚSICA AL VOLVER POR ERROR
               await stopBackgroundMusic()
-              
+
               setIsQuizActive(false)
               // 🏠 TAMBIÉN NAVEGAR AL STUDENT DASHBOARD EN CASO DE ERROR
               navigation.navigate("StudentDashboard")
