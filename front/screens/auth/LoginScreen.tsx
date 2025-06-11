@@ -107,6 +107,7 @@ export default function LoginScreen({ navigation, setIsAuthenticated }: Props) {
 
             <TextInput
               placeholder="Nombre de Usuario"
+              placeholderTextColor="#999"          
               style={styles.input}
               value={username}
               onChangeText={setUsername}
@@ -116,6 +117,7 @@ export default function LoginScreen({ navigation, setIsAuthenticated }: Props) {
             <View style={styles.passwordContainer}>
               <TextInput
                 placeholder="Contraseña"
+                placeholderTextColor="#999" 
                 style={styles.inputPassword}
                 secureTextEntry={!showPassword}
                 value={password}
@@ -221,6 +223,7 @@ const styles = StyleSheet.create({
     borderColor: '#FF8C00',
     borderRadius: 10,
     backgroundColor: '#F9F9F9',
+    color: '#333',  // ← AGREGADO: Color del texto que escribes
   },
   passwordContainer: {
     width: 300,
@@ -234,6 +237,7 @@ const styles = StyleSheet.create({
     marginBottom: 5,
   },
   inputPassword: {
+    color: '#333',  // ← YA ESTABA: Color del texto que escribes
     flex: 1,
     fontSize: 16,
     padding: 10,
