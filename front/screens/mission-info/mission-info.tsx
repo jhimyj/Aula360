@@ -110,7 +110,7 @@ const MissionInfo = ({ onStartMission, onClose }: MissionInfoProps) => {
             description:
               "Qhapaq debe proteger las tierras sagradas de su pueblo, enfrentando poderosas fuerzas que amenazan destruir su herencia y el equilibrio de la naturaleza.",
             image: require("../../assets/Personajes/Amaru1.png"),
-            video: require("../../assets/MisionesGame/Qhapac-mision.mp4"),
+            video: { uri: "https://titels.s3.us-east-2.amazonaws.com/Qhapac-mision.mp4" },
             difficulty: "medium",
             rewards: { xp: 500, items: ["Amuleto de protección", "Poción de sabiduría ancestral"] },
             objectives: ["Defender el bosque sagrado", "Reunir a los ancianos", "Realizar el ritual"],
@@ -129,7 +129,7 @@ const MissionInfo = ({ onStartMission, onClose }: MissionInfoProps) => {
             description:
               "Amaru debe enfrentarse a una amenaza que ha contaminado los ríos sagrados, luchando por restaurar la pureza del agua y proteger la vida y el equilibrio de su comunidad.",
             image: require("../../assets/Personajes/Amaru1.png"),
-            video: require("../../assets/MisionesGame/Amaru-misión.mp4"),
+            video: { uri: "https://titels.s3.us-east-2.amazonaws.com/Amaru-mision.mp4" },
             difficulty: "hard",
             rewards: { xp: 750, items: ["Guantes de fuerza", "Escudo de la naturaleza"] },
             objectives: ["Localizar la fuente", "Derrotar secuaces", "Instalar filtros"],
@@ -148,7 +148,7 @@ const MissionInfo = ({ onStartMission, onClose }: MissionInfoProps) => {
             description:
               "Killa debe descubrir quién está espiando a los líderes de la tribu y tratando de obtener información secreta para proteger a su gente de una amenaza oculta",
             image: require("../../assets/Personajes/Amaru1.png"),
-            video: require("../../assets/MisionesGame/MIsion-killa.mp4"),
+            video: { uri: "https://titels.s3.us-east-2.amazonaws.com/MIsion-killa.mp4" },
             difficulty: "easy",
             rewards: { xp: 450, items: ["Capa de sigilo", "Amuleto de visión"] },
             objectives: ["Investigar al consejo", "Recolectar pruebas", "Exponer al enemigo"],

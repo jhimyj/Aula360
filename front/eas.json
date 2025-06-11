@@ -6,13 +6,20 @@
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "channel": "dev-misiones"
     },
     "preview": {
-      "distribution": "internal"
+      "distribution": "internal",
+      "channel": "liv",
+      "android": {
+        "buildType": "apk",
+        "gradleCommand": ":app:assembleRelease"
+      }
     },
     "production": {
       "autoIncrement": true,
+      "channel": "aula360-live2",
       "android": {
         "buildType": "apk"
       }

@@ -12,6 +12,7 @@ import {
   ActivityIndicator,
   StatusBar,
   TextInput,
+  RefreshControl,
 } from "react-native"
 import { useNavigation } from "@react-navigation/native"
 import { Ionicons } from "@expo/vector-icons"
@@ -30,13 +31,16 @@ interface Room {
   course: string
   topic: string
   description: string
-  created_at: string // 📅 Campo original de la API para ordenamiento
+  created_at: string
+  max_score?: number
 }
 
 const RoomSelectorForStudents: React.FC = () => {
   const navigation = useNavigation()
-  const { rooms, loading, error, refetchRooms } = useRooms()
+  const { rooms, loading, error, refetchRooms, loadMoreRooms, hasMoreRooms, isLoadingMore } = useRooms(10) // 10 salas por página
+
   const [searchText, setSearchText] = useState("")
+  const [refreshing, setRefreshing] = useState(false)
 
   // 📅 FUNCIÓN MEJORADA PARA ORDENAR SALAS POR FECHA DE CREACIÓN (MÁS RECIENTES PRIMERO)
   const sortRoomsByDate = (roomsToSort: Room[]): Room[] => {
@@ -44,35 +48,21 @@ const RoomSelectorForStudents: React.FC = () => {
     console.log("- Salas a ordenar:", roomsToSort.length)
 
     const sorted = [...roomsToSort].sort((a, b) => {
-      // Si alguna sala no tiene fecha, ponerla al final
       if (!a.created_at && !b.created_at) return 0
       if (!a.created_at) return 1
       if (!b.created_at) return -1
 
-      // Convertir fechas y ordenar (más recientes primero)
       const dateA = new Date(a.created_at).getTime()
       const dateB = new Date(b.created_at).getTime()
 
       return dateB - dateA // Orden descendente (más recientes primero)
     })
 
-    console.log("✅ ORDENAMIENTO COMPLETADO:")
-    console.log("- Total ordenadas:", sorted.length)
-    if (sorted.length > 0) {
-      console.log("- Sala MÁS RECIENTE:", sorted[0].name, "->", sorted[0].created_at)
-      console.log("- Sala MÁS ANTIGUA:", sorted[sorted.length - 1].name, "->", sorted[sorted.length - 1].created_at)
-    }
-
-    // 📊 LOG DETALLADO DE TODAS LAS SALAS ORDENADAS
-    console.log("📋 ORDEN FINAL DE SALAS:")
-    sorted.forEach((room, index) => {
-      console.log(`${index + 1}. ${room.name} - ${room.created_at}`)
-    })
-
+    console.log("✅ ORDENAMIENTO COMPLETADO:", sorted.length)
     return sorted
   }
 
-  // 📅 FUNCIÓN PARA OBTENER TIEMPO RELATIVO (ej: "hace 2 días")
+  // 📅 FUNCIÓN PARA OBTENER TIEMPO RELATIVO
   const getRelativeTime = (dateString: string) => {
     if (!dateString) return "Sin fecha"
 
@@ -100,10 +90,8 @@ const RoomSelectorForStudents: React.FC = () => {
     console.log("- Salas totales recibidas:", rooms.length)
     console.log("- Texto de búsqueda:", searchText)
 
-    // PASO 1: Ordenar TODAS las salas por fecha primero
     const allSortedRooms = sortRoomsByDate(rooms)
 
-    // PASO 2: Luego filtrar por texto de búsqueda
     const filtered = allSortedRooms.filter(
       (room) =>
         room.name.toLowerCase().includes(searchText.toLowerCase()) ||
@@ -112,27 +100,32 @@ const RoomSelectorForStudents: React.FC = () => {
         (room.description && room.description.toLowerCase().includes(searchText.toLowerCase())),
     )
 
-    console.log("✅ PROCESAMIENTO FINAL:")
-    console.log("- Salas después del filtro:", filtered.length)
-    console.log("- Orden mantenido por fecha de creación")
-
+    console.log("✅ PROCESAMIENTO FINAL:", filtered.length)
     return filtered
-  }, [rooms, searchText]) // Se recalcula cuando cambian las salas o el texto de búsqueda
+  }, [rooms, searchText])
 
   // 🎯 MANEJAR SELECCIÓN DE SALA
   const handleSelectRoom = (room: Room) => {
-    console.log("🎯 Sala seleccionada para ver estudiantes:", {
-      id: room.id,
-      name: room.name,
-      created_at: room.created_at,
-      studentCount: room.studentCount,
-      course: room.course,
-      topic: room.topic,
-    })
+    console.log("🎯 Sala seleccionada:", room.name)
     navigation.navigate("StudentList", {
       roomId: room.id,
       roomName: room.name,
     })
+  }
+
+  // 🔄 MANEJAR REFRESH
+  const handleRefresh = async () => {
+    setRefreshing(true)
+    await refetchRooms()
+    setRefreshing(false)
+  }
+
+  // 📄 MANEJAR CARGA DE MÁS SALAS (PAGINACIÓN)
+  const handleLoadMore = () => {
+    if (!isLoadingMore && hasMoreRooms && !loading) {
+      console.log("📄 Cargando más salas...")
+      loadMoreRooms()
+    }
   }
 
   // 📅 FUNCIONES DE FORMATEO DE FECHAS
@@ -167,47 +160,50 @@ const RoomSelectorForStudents: React.FC = () => {
     })
   }
 
-  // 🎨 RENDERIZAR TARJETA DE SALA CON INDICADOR DE POSICIÓN
+  // 🎨 RENDERIZAR TARJETA DE SALA
   const renderRoom = ({ item, index }: { item: Room; index: number }) => (
     <TouchableOpacity style={styles.roomCard} onPress={() => handleSelectRoom(item)} activeOpacity={0.7}>
-      {/* Header de la sala */}
       <View style={styles.roomHeader}>
         <View style={styles.roomInfo}>
           <View style={styles.roomTitleRow}>
-            <Text style={styles.roomName}>{item.name}</Text>
-            {/* 📍 Indicador de posición en el ordenamiento */}
+            <Text style={styles.roomName}>{item.name || ""}</Text>
             <View style={styles.positionIndicator}>
               <Text style={styles.positionText}>#{index + 1}</Text>
             </View>
           </View>
 
-          {/* Tags informativos */}
           <View style={styles.tagsContainer}>
-            {item.course && item.course !== "Sin curso" && (
+            {item.course && item.course !== "Sin curso" ? (
               <View style={[styles.tag, { backgroundColor: "#E3F2FD" }]}>
                 <Ionicons name="book" size={10} color="#1976D2" />
                 <Text style={[styles.tagText, { color: "#1976D2" }]}>{item.course}</Text>
               </View>
-            )}
+            ) : null}
 
-            {item.topic && item.topic !== "Sin tema" && (
+            {item.topic && item.topic !== "Sin tema" ? (
               <View style={[styles.tag, { backgroundColor: "#F3E5F5" }]}>
                 <Ionicons name="pricetag" size={10} color="#7B1FA2" />
                 <Text style={[styles.tagText, { color: "#7B1FA2" }]}>{item.topic}</Text>
               </View>
-            )}
+            ) : null}
 
-            {/* 📅 Tag de tiempo relativo */}
             <View style={[styles.tag, { backgroundColor: "#E8F5E8" }]}>
               <Ionicons name="time" size={10} color="#2E7D32" />
               <Text style={[styles.tagText, { color: "#2E7D32" }]}>{getRelativeTime(item.created_at)}</Text>
             </View>
 
-            {/* 🎨 Tag de color de la sala */}
             <View style={[styles.tag, { backgroundColor: `${item.color}20` }]}>
               <View style={[styles.colorDot, { backgroundColor: item.color }]} />
               <Text style={[styles.tagText, { color: item.color }]}>Sala</Text>
             </View>
+
+            {/* Badge de Score Máximo */}
+            {item.max_score ? (
+              <View style={[styles.tag, { backgroundColor: "#FFF3E0" }]}>
+                <Ionicons name="star" size={10} color="#F57C00" />
+                <Text style={[styles.tagText, { color: "#F57C00" }]}>{item.max_score} pts</Text>
+              </View>
+            ) : null}
           </View>
         </View>
 
@@ -216,38 +212,25 @@ const RoomSelectorForStudents: React.FC = () => {
         </View>
       </View>
 
-      {/* Descripción de la sala */}
-      {item.description && (
+      {item.description ? (
         <Text style={styles.roomDescription} numberOfLines={2}>
           {item.description}
         </Text>
-      )}
+      ) : null}
 
-      {/* Footer con información detallada */}
       <View style={styles.roomFooter}>
         <View style={styles.footerLeft}>
-          {/* Fecha de creación */}
           <View style={styles.footerItem}>
             <Ionicons name="calendar" size={12} color="#999" />
             <Text style={styles.footerText}>Creada: {formatDate(item.created_at)}</Text>
           </View>
 
-          {/* Hora de creación */}
           <View style={styles.footerItem}>
             <Ionicons name="time-outline" size={12} color="#999" />
             <Text style={styles.footerText}>Hora: {formatTime(item.created_at)}</Text>
           </View>
-
-          {/* Fecha completa (tooltip) */}
-          <View style={styles.footerItem}>
-            <Ionicons name="information-circle-outline" size={12} color="#999" />
-            <Text style={styles.footerText} numberOfLines={1}>
-              {formatFullDate(item.created_at)}
-            </Text>
-          </View>
         </View>
 
-        {/* Indicador de estudiantes */}
         <View style={styles.studentsIndicator}>
           <Ionicons name="people" size={14} color="#4361EE" />
           <Text style={styles.studentsText}>
@@ -257,6 +240,48 @@ const RoomSelectorForStudents: React.FC = () => {
       </View>
     </TouchableOpacity>
   )
+
+  // 📄 RENDERIZAR FOOTER DE PAGINACIÓN
+  const renderPaginationFooter = () => {
+    if (!hasMoreRooms && !isLoadingMore) {
+      return (
+        <View style={styles.paginationFooter}>
+          <View style={styles.endOfListContainer}>
+            <Ionicons name="checkmark-circle" size={24} color="#4CAF50" />
+            <Text style={styles.endOfListText}>Has visto todas las salas</Text>
+            <Text style={styles.endOfListSubtext}>
+              Total: {rooms.length} sala{rooms.length !== 1 ? "s" : ""}
+            </Text>
+          </View>
+        </View>
+      )
+    }
+
+    if (isLoadingMore) {
+      return (
+        <View style={styles.paginationFooter}>
+          <View style={styles.loadingMoreContainer}>
+            <ActivityIndicator size="small" color="#4361EE" />
+            <Text style={styles.loadingMoreText}>Cargando más salas...</Text>
+          </View>
+        </View>
+      )
+    }
+
+    if (hasMoreRooms) {
+      return (
+        <View style={styles.paginationFooter}>
+          <TouchableOpacity style={styles.loadMoreButton} onPress={handleLoadMore} disabled={isLoadingMore}>
+            <Ionicons name="add-circle-outline" size={20} color="#4361EE" />
+            <Text style={styles.loadMoreButtonText}>Cargar más salas</Text>
+            <Ionicons name="chevron-down" size={16} color="#4361EE" />
+          </TouchableOpacity>
+        </View>
+      )
+    }
+
+    return null
+  }
 
   // 🚫 ESTADO VACÍO - NO HAY SALAS
   const renderEmptyState = () => (
@@ -310,17 +335,6 @@ const RoomSelectorForStudents: React.FC = () => {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#F8F9FA" />
 
-      {/* 📱 HEADER */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color="#333" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Seleccionar Sala</Text>
-        <TouchableOpacity style={styles.refreshButton} onPress={refetchRooms}>
-          <Ionicons name="refresh" size={24} color="#4361EE" />
-        </TouchableOpacity>
-      </View>
-
       {/* 🔍 BARRA DE BÚSQUEDA */}
       <View style={styles.searchContainer}>
         <View style={styles.searchInputContainer}>
@@ -332,15 +346,15 @@ const RoomSelectorForStudents: React.FC = () => {
             onChangeText={setSearchText}
             placeholderTextColor="#999"
           />
-          {searchText.length > 0 && (
+          {searchText.length > 0 ? (
             <TouchableOpacity onPress={() => setSearchText("")}>
               <Ionicons name="close-circle" size={20} color="#999" />
             </TouchableOpacity>
-          )}
+          ) : null}
         </View>
       </View>
 
-      {/* ℹ️ INFORMACIÓN Y ESTADÍSTICAS MEJORADAS */}
+      {/* ℹ️ INFORMACIÓN Y ESTADÍSTICAS CON PAGINACIÓN */}
       <View style={styles.infoContainer}>
         <View style={styles.infoHeader}>
           <Ionicons name="information-circle" size={16} color="#1976D2" />
@@ -354,22 +368,35 @@ const RoomSelectorForStudents: React.FC = () => {
           </View>
           <View style={styles.statItem}>
             <Text style={styles.statValue}>{rooms.length}</Text>
-            <Text style={styles.statLabel}>Total cargadas</Text>
+            <Text style={styles.statLabel}>Cargadas</Text>
           </View>
           <View style={styles.statItem}>
-            <Ionicons name="swap-vertical" size={16} color="#4CAF50" />
-            <Text style={[styles.statLabel, { color: "#4CAF50" }]}>Ordenadas</Text>
+            <Ionicons
+              name={hasMoreRooms ? "ellipsis-horizontal" : "checkmark-circle"}
+              size={16}
+              color={hasMoreRooms ? "#FF9800" : "#4CAF50"}
+            />
+            <Text
+              style={[
+                styles.statLabel,
+                {
+                  color: hasMoreRooms ? "#FF9800" : "#4CAF50",
+                },
+              ]}
+            >
+              {hasMoreRooms ? "Más disponibles" : "Todas cargadas"}
+            </Text>
           </View>
-          {error && (
+          {isLoadingMore ? (
             <View style={styles.statItem}>
-              <Ionicons name="warning" size={16} color="#FF5722" />
-              <Text style={[styles.statLabel, { color: "#FF5722" }]}>Error</Text>
+              <ActivityIndicator size={12} color="#4361EE" />
+              <Text style={[styles.statLabel, { color: "#4361EE" }]}>Cargando...</Text>
             </View>
-          )}
+          ) : null}
         </View>
       </View>
 
-      {/* 📋 LISTA DE SALAS ORDENADAS */}
+      {/* 📋 LISTA DE SALAS CON PAGINACIÓN */}
       <FlatList
         data={filteredAndSortedRooms}
         renderItem={renderRoom}
@@ -377,9 +404,19 @@ const RoomSelectorForStudents: React.FC = () => {
         contentContainerStyle={styles.listContainer}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={rooms.length === 0 ? renderEmptyState : renderSearchEmptyState}
-        refreshing={loading}
-        onRefresh={refetchRooms}
-        // 🚀 OPTIMIZACIONES PARA LISTAS GRANDES
+        ListFooterComponent={renderPaginationFooter}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            colors={["#4361EE"]}
+            tintColor="#4361EE"
+            title="Actualizando salas..."
+            titleColor="#4361EE"
+          />
+        }
+        onEndReached={handleLoadMore}
+        onEndReachedThreshold={0.1}
         removeClippedSubviews={true}
         maxToRenderPerBatch={10}
         updateCellsBatchingPeriod={50}
@@ -390,7 +427,7 @@ const RoomSelectorForStudents: React.FC = () => {
   )
 }
 
-// 🎨 ESTILOS COMPLETOS CON MEJORAS
+// 🎨 ESTILOS COMPLETOS CON PAGINACIÓN
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -523,7 +560,6 @@ const styles = StyleSheet.create({
   roomInfo: {
     flex: 1,
   },
-  // 🆕 Fila del título con indicador de posición
   roomTitleRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -536,7 +572,6 @@ const styles = StyleSheet.create({
     color: "#333",
     flex: 1,
   },
-  // 🆕 Indicador de posición en el ordenamiento
   positionIndicator: {
     backgroundColor: "#4361EE",
     borderRadius: 12,
@@ -622,6 +657,67 @@ const styles = StyleSheet.create({
     color: "#4361EE",
     fontWeight: "500",
     marginLeft: 4,
+  },
+
+  // 📄 ESTILOS DE PAGINACIÓN
+  paginationFooter: {
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+  },
+  loadMoreButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#F0F4FF",
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: "#E3F2FD",
+    borderStyle: "dashed",
+  },
+  loadMoreButtonText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#4361EE",
+    marginHorizontal: 8,
+  },
+  loadingMoreContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#F8F9FA",
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#E5E5E5",
+  },
+  loadingMoreText: {
+    fontSize: 14,
+    color: "#666",
+    marginLeft: 12,
+    fontWeight: "500",
+  },
+  endOfListContainer: {
+    alignItems: "center",
+    backgroundColor: "#E8F5E8",
+    paddingVertical: 20,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#C8E6C9",
+  },
+  endOfListText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#2E7D32",
+    marginTop: 8,
+  },
+  endOfListSubtext: {
+    fontSize: 14,
+    color: "#4CAF50",
+    marginTop: 4,
   },
 
   // 🚫 Estados vacíos

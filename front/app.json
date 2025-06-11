@@ -13,7 +13,8 @@
       "backgroundColor": "#ffffff"
     },
     "assetBundlePatterns": [
-      "**/*"
+      "**/*",
+      "assets/videos/*"
     ],
     "ios": {
       "supportsTablet": true,
@@ -31,13 +32,20 @@
     },
     "plugins": [
       "expo-font",
-      "expo-video"
+      "expo-video",
+      "expo-asset"
     ],
     "extra": {
       "eas": {
         "projectId": "6fca3991-f93f-41e2-824c-2ee543d2e4c8"
       }
     },
-    "owner": "aldairadrian"
+    "owner": "aldairadrian",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/6fca3991-f93f-41e2-824c-2ee543d2e4c8"
+    }
   }
 }

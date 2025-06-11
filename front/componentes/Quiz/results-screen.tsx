@@ -19,6 +19,7 @@ type QuestionResult = {
 
 // Imágenes de celebración por personaje
 const characterCelebrationImages: Record<CharacterName, any> = {
+
   Qhapaq: require("../../assets/images/chaman.png"),
   Amaru: require("../../assets/Personajes/Amaru1.png"),
   Killa: require("../../assets/Personajes/Guerrera.png"),

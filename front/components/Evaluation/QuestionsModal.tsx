@@ -35,7 +35,7 @@ interface QuestionsModalProps {
   questions: Question[];
   roomName: string;
   loading?: boolean;
-  error?: string;
+  error?: string | null;
 }
 
 const { width, height } = Dimensions.get('window');
@@ -138,7 +138,7 @@ const QuestionsModal = ({
         </View>
       </View>
       
-      <Text style={styles.questionText}>{item.text}</Text>
+      <Text style={styles.questionText}>{item.text || 'Sin texto'}</Text>
       
       <View style={styles.questionType}>
         <Feather name={getQuestionTypeIcon(item.type)} size={16} color="#4361EE" />
@@ -153,7 +153,7 @@ const QuestionsModal = ({
               <View style={styles.optionBullet}>
                 <Text style={styles.optionBulletText}>{String.fromCharCode(65 + optionIndex)}</Text>
               </View>
-              <Text style={styles.optionText}>{option}</Text>
+              <Text style={styles.optionText}>{option || 'Opción sin texto'}</Text>
             </View>
           ))}
         </View>
@@ -165,7 +165,7 @@ const QuestionsModal = ({
           <View style={styles.tagsWrapper}>
             {item.tags.map((tag, tagIndex) => (
               <View key={tagIndex} style={styles.tag}>
-                <Text style={styles.tagText}>{tag}</Text>
+                <Text style={styles.tagText}>{tag || 'Sin etiqueta'}</Text>
               </View>
             ))}
           </View>
@@ -199,7 +199,7 @@ const QuestionsModal = ({
     <View style={styles.errorContainer}>
       <Feather name="alert-circle" size={64} color="#F44336" />
       <Text style={styles.errorTitle}>Error al cargar preguntas</Text>
-      <Text style={styles.errorText}>{error}</Text>
+      <Text style={styles.errorText}>{error || 'Error desconocido'}</Text>
     </View>
   );
 
@@ -215,7 +215,7 @@ const QuestionsModal = ({
           <View style={styles.modalHeader}>
             <View style={styles.headerLeft}>
               <Text style={styles.modalTitle}>Preguntas</Text>
-              <Text style={styles.roomNameText}>{roomName}</Text>
+              <Text style={styles.roomNameText}>{roomName || 'Sin nombre'}</Text>
             </View>
             <TouchableOpacity 
               style={styles.closeButton} 
@@ -225,7 +225,7 @@ const QuestionsModal = ({
             </TouchableOpacity>
           </View>
           
-          {!loading && !error && questions.length > 0 && (
+          {!loading && !error && questions && questions.length > 0 && (
             <View style={styles.statsContainer}>
               <View style={styles.statItem}>
                 <Text style={styles.statNumber}>{questions.length}</Text>
@@ -233,7 +233,7 @@ const QuestionsModal = ({
               </View>
               <View style={styles.statItem}>
                 <Text style={styles.statNumber}>
-                  {questions.reduce((sum, q) => sum + q.score, 0)}
+                  {questions.reduce((sum, q) => sum + (q.score || 0), 0)}
                 </Text>
                 <Text style={styles.statLabel}>Puntos totales</Text>
               </View>
@@ -255,9 +255,9 @@ const QuestionsModal = ({
             <ErrorComponent />
           ) : (
             <FlatList
-              data={questions}
+              data={questions || []}
               renderItem={renderQuestionCard}
-              keyExtractor={(item) => item.id}
+              keyExtractor={(item) => item.id?.toString() || Math.random().toString()}
               contentContainerStyle={styles.questionsList}
               showsVerticalScrollIndicator={false}
               ListEmptyComponent={EmptyComponent}

@@ -8,6 +8,7 @@ import { Video } from "expo-av"
 import { LinearGradient } from "expo-linear-gradient"
 import type { Character } from "./types"
 import { useMemo } from "react"
+import { Asset } from "expo-asset"
 
 const { width, height } = Dimensions.get("window")
 
@@ -49,17 +50,18 @@ const CharacterDetailsDialog: React.FC<CharacterDetailsDialogProps> = ({ charact
 
   // Get the appropriate video source based on character name
   const getVideoSource = () => {
-    if (character.name === "Qhapaq") {
-      return require("../../assets/videos/Mago-intro.mp4")
-    } else if (character.name === "Amaru") {
-      return require("../../assets/videos/Amaru-intro.mp4")
-    } else if (character.name === "Killa") {
-      return require("../../assets/videos/Killa-intro.mp4")
-    } else {
-      // Default video if character doesn't match
-      return require("../../assets/videos/Killa-intro.mp4")
-    }
+  if (character.name === "Qhapaq") {
+    return { uri: "https://titels.s3.us-east-2.amazonaws.com/Mago-intro.mp4" }
+  } else if (character.name === "Amaru") {
+    return { uri: "https://titels.s3.us-east-2.amazonaws.com/Amaru-intro.mp4" }
+  } else if (character.name === "Killa") {
+    return { uri: "https://titels.s3.us-east-2.amazonaws.com/Killa-intro.mp4" }
+  } else {
+    return { uri: "https://titels.s3.us-east-2.amazonaws.com/Killa-intro.mp4" }
   }
+  
+}
+
 
   return (
     <Modal visible={visible} transparent={true} animationType="fade" onRequestClose={onClose}>

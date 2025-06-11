@@ -52,9 +52,9 @@ const VillainDetails: React.FC<CharacterDetailsDialogProps> = ({
   };
   
   const videos: Record<string, any> = {
-    Qhapaq: require("../../assets/videos/Mago-intro.mp4"),
-    Amaru: require("../../assets/videos/Amaru-intro.mp4"),
-    Killa: require("../../assets/videos/Killa-intro.mp4"),
+    Corporatus: { uri: "https://titels.s3.us-east-2.amazonaws.com/Corporatus-intro.mp4" },
+    Toxicus: { uri: "https://titels.s3.us-east-2.amazonaws.com/Toxicus-intro.mp4" },
+    Shadowman: { uri: "https://titels.s3.us-east-2.amazonaws.com/Shadowman-intro.mp4" },
   };
 
   const description =

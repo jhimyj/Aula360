@@ -13,6 +13,8 @@ interface RoomApiResponse {
   description: string
   id: string
   name: string
+  number_students:number,
+  max_score:number
 }
 
 interface Room {
@@ -26,6 +28,7 @@ interface Room {
   color: string
   course: string
   topic: string
+  max_score:number
   description: string
   created_at: string // ✅ AGREGADO: Campo original de la API
   short_code?: string
@@ -79,7 +82,7 @@ export const useRooms = (pageSize = 10) => {
     return {
       id: apiRoom.id,
       name: apiRoom.name,
-      studentCount: Math.floor(Math.random() * 10) + 1, // Hardcodeado como solicitaste
+      studentCount: apiRoom.number_students, // Hardcodeado como solicitaste
       startDate: formatDate(apiRoom.created_at),
       startTime: formatTime(apiRoom.created_at),
       endDate: formatDate(apiRoom.created_at), // Misma fecha para inicio y fin
@@ -87,8 +90,8 @@ export const useRooms = (pageSize = 10) => {
       color: ROOM_COLORS[index % ROOM_COLORS.length],
       course: apiRoom.course || "Sin curso",
       topic: apiRoom.topic || "Sin tema",
+      max_score:apiRoom.max_score,
       short_code: apiRoom.short_code,
-
       description: apiRoom.description,
       created_at: apiRoom.created_at, // ✅ AGREGADO: Mantener fecha original de la API
     }
@@ -161,25 +164,7 @@ export const useRooms = (pageSize = 10) => {
         setError(error.message || "Error al cargar las salas")
 
         // Si es la primera carga y hay error, mostrar datos de ejemplo
-        if (refresh || rooms.length === 0) {
-          const now = new Date().toISOString()
-          setRooms([
-            {
-              id: "1",
-              name: "Sala de Comunicación 1° Grado",
-              studentCount: 3,
-              startDate: "12/05/2025",
-              startTime: "9:00 am",
-              endDate: "19/05/2025",
-              endTime: "9:00 am",
-              color: "#4361EE",
-              course: "communication",
-              topic: "Comunicación básica",
-              description: "Sala para practicar comunicación",
-              created_at: now, // ✅ AGREGADO: Fecha de ejemplo
-            },
-          ])
-        }
+        
       } finally {
         setLoading(false)
         setIsLoadingMore(false)
