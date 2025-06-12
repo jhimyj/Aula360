@@ -20,7 +20,7 @@ import ResultsScreen from "../screens/ComponentesQuiz/results-screen"
 import AllRooms from "../screens/AllRooms/AllRooms"
 import UploadEvaluationScreen from "../screens/UploadEvaluation/UploadEvaluationScreen"
 import { useNavigation, CommonActions } from "@react-navigation/native"
-
+import StudentResponsesScreen  from "../componentes/Students/StudentResponsesScreen"
 // 🔥 NUEVAS IMPORTACIONES PARA ESTUDIANTES
 import RoomSelectorForStudents from "../componentes/Students/RoomSelectorForStudents"
 import StudentListScreen from "../componentes/Students/StudentListScreen"
@@ -100,6 +100,7 @@ function TabNavigator({ userRole }: { userRole: string }) {
       )}
 
       {/* 🏫 DASHBOARD SOLO PARA PROFESORES */}
+
       {isTeacher() && (
         <Tab.Screen
           name="Inicio"
@@ -136,6 +137,8 @@ function MainNavigator({
   const isTeacher = () => userRole === "TEACHER"
 
   return (
+
+     
     <Stack.Navigator
       initialRouteName="MainTabs"
       screenOptions={{
@@ -155,6 +158,22 @@ function MainNavigator({
       }}
     >
       {/* 🎯 PANTALLA PRINCIPAL CON TABS */}
+      <Stack.Screen
+  name="StudentResponses"
+  component={StudentResponsesScreen}
+  options={({ route }) => ({
+    title: `💬 Respuestas de ${route.params?.studentName || "Estudiante"}`,
+    headerBackTitleVisible: false,
+    headerStyle: {
+      backgroundColor: "#2E86AB",
+    },
+    headerTintColor: "#fff",
+    headerTitleStyle: {
+      fontWeight: "bold",
+    },
+  })}
+/>
+
       <Stack.Screen
         name="MainTabs"
         options={{

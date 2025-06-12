@@ -397,11 +397,11 @@ export const MissionScreen = ({
                     answered && option.isCorrect
                       ? styles.correctOptionText
                       : answered &&
-                        ((questionType === "MULTIPLE_CHOICE_SINGLE" && selectedOption === option.id) ||
-                          (questionType === "MULTIPLE_CHOICE_MULTIPLE" && selectedOptions.includes(option.id))) &&
-                        !option.isCorrect
-                      ? styles.incorrectOptionText
-                      : { color: "#000000" }, 
+                          ((questionType === "MULTIPLE_CHOICE_SINGLE" && selectedOption === option.id) ||
+                            (questionType === "MULTIPLE_CHOICE_MULTIPLE" && selectedOptions.includes(option.id))) &&
+                          !option.isCorrect
+                        ? styles.incorrectOptionText
+                        : { color: "#000000" },
                   ]}
                 >
                   {option.text}
@@ -428,7 +428,7 @@ export const MissionScreen = ({
     return true
   }
 
-  // 🔍 RENDERIZAR MODAL DEL AMPLIFICADOR - VERSIÓN AMIGABLE Y ENCANTADORA
+  // 🔍 RENDERIZAR MODAL DEL AMPLIFICADOR - VERSIÓN PROFESIONAL MEJORADA
   const renderAmplifierModal = () => {
     if (!amplifier || !amplifier.enabled) return null
 
@@ -441,58 +441,143 @@ export const MissionScreen = ({
         statusBarTranslucent={true}
       >
         <View style={styles.modalOverlay}>
-          <StatusBar backgroundColor="rgba(0,0,0,0.7)" barStyle="light-content" />
+          <StatusBar backgroundColor="rgba(0,0,0,0.8)" barStyle="light-content" />
           <SafeAreaView style={styles.modalContainer}>
-            <View style={styles.modalContentFriendly}>
-              {/* Decoración superior */}
-              <View style={styles.topDecoration}>
-                <Text style={styles.decorativeIcon}>📖</Text>
-                <Text style={styles.readingTitle}>¡Hora de Leer!</Text>
-                <Text style={styles.decorativeIcon}>✨</Text>
+            <View style={styles.modalContentProfessional}>
+              {/* Header profesional */}
+              <View style={styles.professionalHeader}>
+                <View style={styles.headerContent}>
+                  <View style={styles.headerIcon}>
+                    <Ionicons name="book-outline" size={24} color="#2563EB" />
+                  </View>
+                  <View style={styles.headerText}>
+                    <Text style={styles.professionalTitle}>Modo Lectura</Text>
+                    <Text style={styles.professionalSubtitle}>Pregunta {missionNumber}</Text>
+                  </View>
+                </View>
+
+                <TouchableOpacity
+                  style={styles.closeButtonProfessional}
+                  onPress={() => setAmplifierVisible(false)}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="close" size={24} color="#64748B" />
+                </TouchableOpacity>
               </View>
 
-              {/* Botón de cerrar amigable */}
-              <TouchableOpacity
-                style={styles.closeButtonFriendly}
-                onPress={() => setAmplifierVisible(false)}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.closeButtonText}>❌</Text>
-              </TouchableOpacity>
+              {/* Contenedor principal con scroll mejorado */}
+              <View style={styles.contentWrapper}>
+                <ScrollView
+                  style={styles.professionalScrollContainer}
+                  contentContainerStyle={styles.professionalScrollContent}
+                  showsVerticalScrollIndicator={true}
+                  persistentScrollbar={true}
+                  indicatorStyle="default"
+                  bounces={true}
+                  alwaysBounceVertical={false}
+                  scrollEventThrottle={16}
+                >
+                  {/* Indicador de scroll */}
+                  <View style={styles.scrollIndicator}>
+                    <Ionicons name="chevron-down" size={16} color="#94A3B8" />
+                    <Text style={styles.scrollIndicatorText}>Desliza para leer todo el contenido</Text>
+                  </View>
 
-              {/* Contenedor de la pregunta con diseño de libro */}
-              <ScrollView
-                style={styles.bookContainer}
-                contentContainerStyle={styles.bookContent}
-                showsVerticalScrollIndicator={false}
-              >
-                {/* Decoración de esquinas */}
-                <View style={styles.cornerDecorations}>
-                  <Text style={[styles.cornerIcon, { top: 10, left: 10 }]}>🌟</Text>
-                  <Text style={[styles.cornerIcon, { top: 10, right: 10 }]}>🌟</Text>
-                  <Text style={[styles.cornerIcon, { bottom: 10, left: 10 }]}>🌟</Text>
-                  <Text style={[styles.cornerIcon, { bottom: 10, right: 10 }]}>🌟</Text>
+                  {/* Contenido de la pregunta */}
+                  <View style={styles.questionContentCard}>
+                    <View style={styles.questionHeader}>
+                      <View style={styles.questionTypeIndicator}>
+                        <Ionicons name={getTypeIcon(questionType)} size={20} color="#2563EB" />
+                        <Text style={styles.questionTypeText}>{getTypeLabel(questionType)}</Text>
+                      </View>
+
+                      {difficulty && (
+                        <View
+                          style={[
+                            styles.difficultyBadgeProfessional,
+                            { backgroundColor: getDifficultyColor(difficulty) },
+                          ]}
+                        >
+                          <Text style={styles.difficultyTextProfessional}>{difficulty}</Text>
+                        </View>
+                      )}
+                    </View>
+
+                    {/* Pregunta principal */}
+                    <View style={styles.questionTextContainer}>
+                      <Text style={styles.questionTextProfessional}>{question}</Text>
+                    </View>
+
+                    {/* Opciones si las hay */}
+                    {!isOpenEndedQuestion && options.length > 0 && (
+                      <View style={styles.optionsPreview}>
+                        <Text style={styles.optionsPreviewTitle}>Opciones disponibles:</Text>
+                        <View style={styles.optionsPreviewList}>
+                          {options.map((option, index) => (
+                            <View key={option.id} style={styles.optionPreviewItem}>
+                              <View style={styles.optionPreviewBullet}>
+                                <Text style={styles.optionPreviewBulletText}>{option.id}</Text>
+                              </View>
+                              <Text style={styles.optionPreviewText}>{option.text}</Text>
+                            </View>
+                          ))}
+                        </View>
+                      </View>
+                    )}
+
+                    {/* Tags si los hay */}
+                    {tags && tags.length > 0 && (
+                      <View style={styles.tagsContainer}>
+                        <Text style={styles.tagsTitle}>Temas:</Text>
+                        <View style={styles.tagsList}>
+                          {tags.map((tag, index) => (
+                            <View key={index} style={styles.tagItem}>
+                              <Text style={styles.tagText}>{tag}</Text>
+                            </View>
+                          ))}
+                        </View>
+                      </View>
+                    )}
+
+                    {/* Información adicional */}
+                    <View style={styles.additionalInfo}>
+                      <View style={styles.infoItem}>
+                        <Ionicons name="time-outline" size={16} color="#64748B" />
+                        <Text style={styles.infoText}>Tómate el tiempo necesario para leer</Text>
+                      </View>
+
+                      {score && (
+                        <View style={styles.infoItem}>
+                          <Ionicons name="star-outline" size={16} color="#64748B" />
+                          <Text style={styles.infoText}>Puntuación: {score} puntos</Text>
+                        </View>
+                      )}
+                    </View>
+                  </View>
+
+                  {/* Espaciado inferior para mejor scroll */}
+                  <View style={styles.bottomSpacing} />
+                </ScrollView>
+
+                {/* Indicador de scroll inferior */}
+                <View style={styles.scrollHint}>
+                  <View style={styles.scrollHintLine} />
+                  <Text style={styles.scrollHintText}>Desliza hacia arriba para ver más contenido</Text>
+                  <View style={styles.scrollHintLine} />
                 </View>
+              </View>
 
-                {/* La pregunta principal */}
-                <View style={styles.questionBookPage}>
-                  <Text style={styles.questionFriendlyText}>{question}</Text>
-                </View>
-
-                {/* Decoración inferior */}
-                <View style={styles.bottomDecoration}>
-                  <Text style={styles.encouragementText}>💡 ¡Tómate tu tiempo para leer! 💡</Text>
-                </View>
-              </ScrollView>
-
-              {/* Botón de continuar amigable */}
-              <TouchableOpacity
-                style={styles.continueButtonFriendly}
-                onPress={() => setAmplifierVisible(false)}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.continueButtonFriendlyText}>🚀 ¡Entendido, vamos!</Text>
-              </TouchableOpacity>
+              {/* Footer profesional */}
+              <View style={styles.professionalFooter}>
+                <TouchableOpacity
+                  style={styles.continueButtonProfessional}
+                  onPress={() => setAmplifierVisible(false)}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="checkmark-circle-outline" size={20} color="white" />
+                  <Text style={styles.continueButtonProfessionalText}>Continuar con la pregunta</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </SafeAreaView>
         </View>
@@ -508,7 +593,7 @@ export const MissionScreen = ({
         {/* 🔍 BOTÓN FLOTANTE DEL AMPLIFICADOR */}
         {amplifier && amplifier.enabled && showAmplifierButton && (
           <TouchableOpacity style={styles.floatingButton} onPress={() => setAmplifierVisible(true)} activeOpacity={0.8}>
-            <Ionicons name="search" size={24} color="white" />
+            <Ionicons name="book-outline" size={24} color="white" />
           </TouchableOpacity>
         )}
 
@@ -573,7 +658,7 @@ export const MissionScreen = ({
           </TouchableWithoutFeedback>
         </KeyboardAvoidingView>
 
-        {/* 🔍 MODAL DEL AMPLIFICADOR */}
+        {/* 🔍 MODAL DEL AMPLIFICADOR PROFESIONAL */}
         {renderAmplifierModal()}
       </SafeAreaView>
     </ImageBackground>
@@ -686,29 +771,25 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginRight: 8,
     minWidth: 20,
-    color: "#000000", // ← NEGRO PURO
-
+    color: "#000000",
   },
   tabletOptionLabel: {
     fontSize: 18,
     minWidth: 25,
-    color: "#000000", // ← NEGRO PURO
-
+    color: "#000000",
   },
   optionText: {
     fontSize: 14,
     flex: 1,
     flexWrap: "wrap",
-    color: "#000000", // ← NEGRO PURO
-
+    color: "#000000",
   },
   tabletOptionText: {
     fontSize: 18,
-    color: "#000000", // ← NEGRO PURO
+    color: "#000000",
   },
   correctOptionText: {
     color: "white",
-    
   },
   incorrectOptionText: {
     color: "white",
@@ -849,7 +930,6 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
-
   },
 
   // 🔍 ESTILOS DEL AMPLIFICADOR
@@ -874,10 +954,10 @@ const styles = StyleSheet.create({
     zIndex: 1000,
   },
 
-  // Modal
+  // 📖 ESTILOS PROFESIONALES PARA EL MODAL
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    backgroundColor: "rgba(0, 0, 0, 0.85)",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -886,405 +966,309 @@ const styles = StyleSheet.create({
     width: "100%",
     paddingHorizontal: 16,
     paddingTop: 20,
+    paddingBottom: 20,
   },
-  modalContent: {
+  modalContentProfessional: {
     flex: 1,
-    backgroundColor: "white",
-    borderRadius: 16,
-    maxHeight: height * 0.9,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
     overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.25,
+    shadowRadius: 20,
+    elevation: 20,
   },
 
-  // Header
-  modalHeader: {
-    padding: 24,
-    borderBottomWidth: 1,
-    borderBottomColor: "#E5E7EB",
-  },
-  headerTop: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: 16,
-  },
-  modalTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#1F2937",
-    flex: 1,
-    marginRight: 16,
-  },
-  closeButton: {
-    padding: 4,
-  },
-  badgeContainer: {
-    flexDirection: "row",
-    gap: 8,
-    marginBottom: 16,
-  },
-  badge: {
-    backgroundColor: "#F3F4F6",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "#D1D5DB",
-  },
-  badgeText: {
-    fontSize: 14,
-    color: "#374151",
-    fontWeight: "500",
-  },
-  difficultyBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-  },
-  difficultyText: {
-    fontSize: 14,
-    color: "white",
-    fontWeight: "600",
-  },
-  modalDescription: {
-    fontSize: 18,
-    color: "#6B7280",
-    lineHeight: 26,
-  },
-
-  // Contenido scrolleable
-  scrollContent: {
-    flex: 1,
-    paddingHorizontal: 24,
-  },
-
-  // Tarjeta de información
-  questionInfoCard: {
-    backgroundColor: "#F8FAFC",
-    borderRadius: 12,
-    padding: 20,
-    marginVertical: 16,
-    borderLeftWidth: 4,
-    borderLeftColor: "#3B82F6",
-  },
-  questionInfoHeader: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 16,
-  },
-  questionInfoText: {
-    flex: 1,
-  },
-  questionTypeLabel: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#374151",
-    marginBottom: 8,
-  },
-  questionMetadata: {
-    gap: 8,
-  },
-  metadataItem: {
+  // Header profesional
+  professionalHeader: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    justifyContent: "space-between",
+    paddingHorizontal: 24,
+    paddingVertical: 20,
+    backgroundColor: "#F8FAFC",
+    borderBottomWidth: 1,
+    borderBottomColor: "#E2E8F0",
   },
-  metadataText: {
-    fontSize: 14,
-    color: "#6B7280",
-  },
-
-  // Tarjeta de pregunta
-  questionCard: {
-    backgroundColor: "#EFF6FF",
-    borderRadius: 12,
-    padding: 24,
-    marginBottom: 16,
-    borderWidth: 2,
-    borderColor: "#BFDBFE",
-  },
-  questionLabel: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#1F2937",
-    marginBottom: 12,
-  },
-
-  // Tarjeta de opciones
-  optionsCard: {
-    backgroundColor: "white",
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-  },
-  optionsLabel: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#1F2937",
-    marginBottom: 16,
-  },
-  optionsList: {
-    gap: 12,
-  },
-  optionItem: {
+  headerContent: {
     flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 12,
-    padding: 16,
-    backgroundColor: "#F9FAFB",
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
+    alignItems: "center",
+    flex: 1,
   },
-  optionId: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: "#DBEAFE",
+  headerIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "#EBF4FF",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 16,
+  },
+  headerText: {
+    flex: 1,
+  },
+  professionalTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#1E293B",
+    marginBottom: 2,
+  },
+  professionalSubtitle: {
+    fontSize: 14,
+    color: "#64748B",
+    fontWeight: "500",
+  },
+  closeButtonProfessional: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#F1F5F9",
     justifyContent: "center",
     alignItems: "center",
   },
-  optionIdText: {
+
+  // Contenedor principal
+  contentWrapper: {
+    flex: 1,
+    position: "relative",
+  },
+  professionalScrollContainer: {
+    flex: 1,
+  },
+  professionalScrollContent: {
+    paddingHorizontal: 24,
+    paddingTop: 20,
+    paddingBottom: 40,
+  },
+
+  // Indicador de scroll
+  scrollIndicator: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 12,
+    marginBottom: 20,
+    backgroundColor: "#F8FAFC",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+  },
+  scrollIndicatorText: {
+    fontSize: 12,
+    color: "#64748B",
+    marginLeft: 8,
+    fontWeight: "500",
+  },
+
+  // Tarjeta de contenido
+  questionContentCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 24,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+
+  // Header de la pregunta
+  questionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 20,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F1F5F9",
+  },
+  questionTypeIndicator: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#EBF4FF",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  questionTypeText: {
+    fontSize: 14,
+    color: "#2563EB",
+    fontWeight: "600",
+    marginLeft: 8,
+  },
+  difficultyBadgeProfessional: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  difficultyTextProfessional: {
+    fontSize: 12,
+    color: "white",
+    fontWeight: "700",
+    textTransform: "uppercase",
+  },
+
+  // Contenedor de la pregunta
+  questionTextContainer: {
+    marginBottom: 24,
+  },
+  questionTextProfessional: {
+    fontSize: 18,
+    lineHeight: 28,
+    color: "#1E293B",
+    fontWeight: "500",
+    textAlign: "left",
+  },
+
+  // Preview de opciones
+  optionsPreview: {
+    marginBottom: 24,
+  },
+  optionsPreviewTitle: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#1D4ED8",
+    color: "#374151",
+    marginBottom: 12,
   },
-  optionTextModal: {
-    fontSize: 16,
-    lineHeight: 24,
+  optionsPreviewList: {
+    gap: 12,
+  },
+  optionPreviewItem: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    backgroundColor: "#F8FAFC",
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+  },
+  optionPreviewBullet: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "#2563EB",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+    flexShrink: 0,
+  },
+  optionPreviewBulletText: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "white",
+  },
+  optionPreviewText: {
+    fontSize: 15,
+    lineHeight: 22,
     color: "#374151",
     flex: 1,
   },
 
-  // Tarjeta de instrucciones
-  instructionsCard: {
-    backgroundColor: "#FFFBEB",
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: "#FDE68A",
+  // Tags
+  tagsContainer: {
+    marginBottom: 24,
   },
-  instructionsHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginBottom: 12,
-  },
-  instructionsTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#92400E",
-  },
-  instructionsText: {
+  tagsTitle: {
     fontSize: 14,
-    lineHeight: 20,
-    color: "#B45309",
+    fontWeight: "600",
+    color: "#64748B",
+    marginBottom: 8,
+  },
+  tagsList: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  tagItem: {
+    backgroundColor: "#F1F5F9",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+  },
+  tagText: {
+    fontSize: 12,
+    color: "#475569",
+    fontWeight: "500",
   },
 
-  // Footer
-  modalFooter: {
-    padding: 24,
-    borderTopWidth: 1,
-    borderTopColor: "#E5E7EB",
+  // Información adicional
+  additionalInfo: {
+    gap: 12,
   },
-  continueButton: {
+  infoItem: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  infoText: {
+    fontSize: 14,
+    color: "#64748B",
+    marginLeft: 8,
+    fontWeight: "500",
+  },
+
+  // Espaciado inferior
+  bottomSpacing: {
+    height: 60,
+  },
+
+  // Indicador de scroll inferior
+  scrollHint: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 12,
+    backgroundColor: "rgba(248, 250, 252, 0.95)",
+    borderTopWidth: 1,
+    borderTopColor: "#E2E8F0",
+  },
+  scrollHintLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: "#CBD5E1",
+    marginHorizontal: 16,
+  },
+  scrollHintText: {
+    fontSize: 11,
+    color: "#64748B",
+    fontWeight: "500",
+    textAlign: "center",
+  },
+
+  // Footer profesional
+  professionalFooter: {
+    paddingHorizontal: 24,
+    paddingVertical: 20,
+    backgroundColor: "#F8FAFC",
+    borderTopWidth: 1,
+    borderTopColor: "#E2E8F0",
+  },
+  continueButtonProfessional: {
+    flexDirection: "row",
     backgroundColor: "#2563EB",
     paddingVertical: 16,
     paddingHorizontal: 24,
-    borderRadius: 8,
-    alignItems: "center",
-  },
-  continueButtonText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "white",
-  },
-
-  // 🔍 ESTILOS SIMPLIFICADOS PARA EL MODAL
-  modalContentSimple: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.9)",
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 60,
-  },
-  closeButtonSimple: {
-    position: "absolute",
-    top: 50,
-    right: 20,
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 1000,
-  },
-  questionOnlyContainer: {
-    flex: 1,
-    width: "100%",
-  },
-  questionOnlyContent: {
-    flexGrow: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 20,
-  },
-  questionOnlyText: {
-    fontSize: 28,
-    lineHeight: 40,
-    color: "#fff",
-    textAlign: "center",
-    fontWeight: "500",
-    letterSpacing: 0.5,
-    textShadowColor: "rgba(0, 0, 0, 0.5)",
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 3,
-  },
-
-  // 📖 ESTILOS AMIGABLES PARA EL MODAL
-  modalContentFriendly: {
-    flex: 1,
-    backgroundColor: "transparent",
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 40,
-  },
-  topDecoration: {
-    flexDirection: "row",
+    borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 20,
-    backgroundColor: "rgba(255, 255, 255, 0.95)",
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 25,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  decorativeIcon: {
-    fontSize: 24,
-    marginHorizontal: 8,
-  },
-  readingTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#2D3748",
-    marginHorizontal: 10,
-  },
-  closeButtonFriendly: {
-    position: "absolute",
-    top: 50,
-    right: 20,
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: "rgba(255, 255, 255, 0.9)",
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 1000,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  closeButtonText: {
-    fontSize: 20,
-  },
-  bookContainer: {
-    flex: 1,
-    width: "100%",
-    maxWidth: width * 0.9,
-  },
-  bookContent: {
-    flexGrow: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingVertical: 20,
-  },
-  cornerDecorations: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 1,
-    pointerEvents: "none",
-  },
-  cornerIcon: {
-    position: "absolute",
-    fontSize: 16,
-    color: "#FFD700",
-  },
-  questionBookPage: {
-    backgroundColor: "rgba(255, 255, 255, 0.98)",
-    borderRadius: 20,
-    padding: 30,
-    marginHorizontal: 10,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 8,
-    borderWidth: 3,
-    borderColor: "#E2E8F0",
-    position: "relative",
-    // Gradiente simulado con múltiples sombras
-    shadowColor: "#4299E1",
-  },
-  questionFriendlyText: {
-    fontSize: 24,
-    lineHeight: 36,
-    color: "#2D3748",
-    textAlign: "center",
-    fontWeight: "500",
-    letterSpacing: 0.5,
-    fontFamily: Platform.OS === "ios" ? "Georgia" : "serif",
-  },
-  bottomDecoration: {
-    marginTop: 20,
-    backgroundColor: "rgba(72, 187, 120, 0.9)",
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  encouragementText: {
-    fontSize: 16,
-    color: "white",
-    textAlign: "center",
-    fontWeight: "600",
-  },
-  continueButtonFriendly: {
-    backgroundColor: "#4299E1",
-    paddingVertical: 16,
-    paddingHorizontal: 30,
-    borderRadius: 25,
-    marginTop: 20,
-    shadowColor: "#000",
+    shadowColor: "#2563EB",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 8,
-    borderWidth: 2,
-    borderColor: "#63B3ED",
+    shadowRadius: 8,
+    elevation: 6,
   },
-  continueButtonFriendlyText: {
-    fontSize: 18,
-    fontWeight: "bold",
+  continueButtonProfessionalText: {
+    fontSize: 16,
+    fontWeight: "600",
     color: "white",
-    textAlign: "center",
+    marginLeft: 8,
   },
 })

@@ -19,6 +19,8 @@ import { useNavigation, useRoute } from "@react-navigation/native"
 import { Ionicons } from "@expo/vector-icons"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 
+import EnhancedStudentDetailsModal from "./StudentDetailsModal"
+
 // Tipos para los estudiantes
 interface Student {
   id: string
@@ -48,12 +50,13 @@ interface StudentsResponse {
 interface RouteParams {
   roomId: string
   roomName: string
+  maxScore?: number
 }
 
-const StudentListScreen: React.FC = () => {
+const UpdatedStudentListScreen: React.FC = () => {
   const navigation = useNavigation()
   const route = useRoute()
-  const { roomId, roomName } = route.params as RouteParams
+  const { roomId, roomName, maxScore } = route.params as RouteParams
 
   const [students, setStudents] = useState<Student[]>([])
   const [loading, setLoading] = useState(true)
@@ -63,9 +66,13 @@ const StudentListScreen: React.FC = () => {
   const [hasMoreData, setHasMoreData] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // 🔍 NUEVO: Estado para la búsqueda
+  // 🔍 Estado para la búsqueda
   const [searchText, setSearchText] = useState("")
   const [isSearchActive, setIsSearchActive] = useState(false)
+
+  // 🆕 Estado para el modal de detalles mejorado
+  const [detailsModalVisible, setDetailsModalVisible] = useState(false)
+  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null)
 
   // Función para obtener estudiantes del endpoint
   const fetchStudents = async (isRefresh = false, lastKey?: string) => {
@@ -134,7 +141,7 @@ const StudentListScreen: React.FC = () => {
     }
   }
 
-  // 🔍 NUEVO: Filtrar estudiantes por nombre usando useMemo para optimización
+  // 🔍 Filtrar estudiantes por nombre usando useMemo para optimización
   const filteredStudents = useMemo(() => {
     if (!searchText.trim()) {
       return students
@@ -148,7 +155,7 @@ const StudentListScreen: React.FC = () => {
     return filtered
   }, [students, searchText])
 
-  // 🔍 NUEVO: Estadísticas basadas en estudiantes filtrados
+  // 🔍 Estadísticas basadas en estudiantes filtrados
   const filteredStats = useMemo(() => {
     const totalStudents = filteredStudents.length
     const activeStudents = filteredStudents.filter((s) => s.status === "CREATED").length
@@ -184,7 +191,6 @@ const StudentListScreen: React.FC = () => {
 
   // Función para cargar más estudiantes
   const handleLoadMore = useCallback(async () => {
-    // 🔍 NUEVO: No cargar más si hay búsqueda activa
     if (!loadingMore && hasMoreData && lastEvaluatedKey && !searchText.trim()) {
       setLoadingMore(true)
       await fetchStudents(false, lastEvaluatedKey)
@@ -192,13 +198,13 @@ const StudentListScreen: React.FC = () => {
     }
   }, [loadingMore, hasMoreData, lastEvaluatedKey, searchText])
 
-  // 🔍 NUEVO: Manejar cambios en la búsqueda
+  // 🔍 Manejar cambios en la búsqueda
   const handleSearchChange = (text: string) => {
     setSearchText(text)
     setIsSearchActive(text.trim().length > 0)
   }
 
-  // 🔍 NUEVO: Limpiar búsqueda
+  // 🔍 Limpiar búsqueda
   const clearSearch = () => {
     setSearchText("")
     setIsSearchActive(false)
@@ -223,8 +229,12 @@ const StudentListScreen: React.FC = () => {
         return "#4CAF50"
       case "ACTIVE":
         return "#2196F3"
-      case "INACTIVE":
+      case "COMPLETED":
+        return "#9C27B0"
+      case "IN_PROGRESS":
         return "#FF9800"
+      case "INACTIVE":
+        return "#9E9E9E"
       case "SUSPENDED":
         return "#F44336"
       default:
@@ -239,6 +249,10 @@ const StudentListScreen: React.FC = () => {
         return "Creado"
       case "ACTIVE":
         return "Activo"
+      case "COMPLETED":
+        return "Completado"
+      case "IN_PROGRESS":
+        return "En Progreso"
       case "INACTIVE":
         return "Inactivo"
       case "SUSPENDED":
@@ -248,23 +262,51 @@ const StudentListScreen: React.FC = () => {
     }
   }
 
-  // 🔍 NUEVO: Renderizar estudiante con resaltado de búsqueda
-  const renderStudent = ({ item, index }: { item: Student; index: number }) => {
-    // Resaltar texto de búsqueda en el nombre
-    const highlightSearchText = (text: string, search: string) => {
-      if (!search.trim()) return text
+  // 🆕 Función para mostrar detalles del estudiante
+  const showStudentDetails = (student: Student) => {
+    setSelectedStudent(student)
+    setDetailsModalVisible(true)
+  }
 
-      const parts = text.split(new RegExp(`(${search})`, "gi"))
-      return parts.map((part, i) => (part.toLowerCase() === search.toLowerCase() ? `**${part}**` : part)).join("")
+  // 🆕 Función para navegar a las respuestas del estudiante
+  const navigateToStudentResponses = () => {
+    if (selectedStudent) {
+      setDetailsModalVisible(false)
+      navigation.navigate("StudentResponses", {
+        roomId,
+        studentId: selectedStudent.id,
+        studentName: selectedStudent.username,
+      })
+    }
+  }
+
+  // 🔍 Renderizar estudiante con resaltado de búsqueda
+  const renderStudent = ({ item, index }: { item: Student; index: number }) => {
+    // 🆕 Obtener color de fondo según el estado
+    const getCardBackgroundStyle = (status: string) => {
+      const baseColor = getStatusColor(status)
+      return {
+        borderLeftWidth: 4,
+        borderLeftColor: baseColor,
+        backgroundColor: "#FFFFFF",
+      }
+    }
+
+    // 🆕 Función para formatear el score con el total de la sala
+    const formatScore = (score: number, type: "student" | "villain") => {
+      if (maxScore && maxScore > 0) {
+        return `${score}/${maxScore}`
+      }
+      return score.toString()
     }
 
     return (
-      <View style={styles.studentCard}>
+      <View style={[styles.studentCard, getCardBackgroundStyle(item.status)]}>
         <View style={styles.studentHeader}>
           <View style={styles.studentInfo}>
             <View style={styles.studentNameRow}>
               <Text style={styles.studentName}>{item.username}</Text>
-              {/* 🔍 NUEVO: Indicador de posición en búsqueda */}
+              {/* 🔍 Indicador de posición en búsqueda */}
               {isSearchActive && (
                 <View style={styles.searchPositionBadge}>
                   <Text style={styles.searchPositionText}>#{index + 1}</Text>
@@ -272,7 +314,7 @@ const StudentListScreen: React.FC = () => {
               )}
             </View>
             <Text style={styles.studentId}>ID: {item.id.slice(0, 8)}...</Text>
-            {/* 🔍 NUEVO: Indicador de coincidencia de búsqueda */}
+            {/* 🔍 Indicador de coincidencia de búsqueda */}
             {isSearchActive && (
               <View style={styles.searchMatchIndicator}>
                 <Ionicons name="search" size={12} color="#4CAF50" />
@@ -289,33 +331,18 @@ const StudentListScreen: React.FC = () => {
           <View style={styles.scoreItem}>
             <Ionicons name="trophy" size={16} color="#4CAF50" />
             <Text style={styles.scoreLabel}>Estudiante:</Text>
-            <Text style={styles.scoreValue}>{item.score_student}</Text>
+            <Text style={styles.scoreValue}>{formatScore(item.score_student, "student")}</Text>
           </View>
           <View style={styles.scoreItem}>
             <Ionicons name="skull" size={16} color="#F44336" />
             <Text style={styles.scoreLabel}>Villano:</Text>
-            <Text style={styles.scoreValue}>{item.score_villain}</Text>
+            <Text style={styles.scoreValue}>{formatScore(item.score_villain, "villain")}</Text>
           </View>
         </View>
 
         <View style={styles.studentFooter}>
           <Text style={styles.dateText}>Creado: {formatDate(item.created_at)}</Text>
-          <TouchableOpacity
-            style={styles.detailsButton}
-            onPress={() => {
-              Alert.alert(
-                "Detalles del Estudiante",
-                `Nombre: ${item.username}\n` +
-                  `ID: ${item.id}\n` +
-                  `Estado: ${getStatusText(item.status)}\n` +
-                  `Puntuación Estudiante: ${item.score_student}\n` +
-                  `Puntuación Villano: ${item.score_villain}\n` +
-                  `Creado: ${formatDate(item.created_at)}\n` +
-                  `Actualizado: ${formatDate(item.updated_at)}`,
-                [{ text: "Cerrar" }],
-              )
-            }}
-          >
+          <TouchableOpacity style={styles.detailsButton} onPress={() => showStudentDetails(item)}>
             <Text style={styles.detailsButtonText}>Ver detalles</Text>
           </TouchableOpacity>
         </View>
@@ -325,7 +352,6 @@ const StudentListScreen: React.FC = () => {
 
   // Renderizar footer de la lista
   const renderFooter = () => {
-    // 🔍 NUEVO: No mostrar "cargar más" si hay búsqueda activa
     if (isSearchActive) {
       return (
         <View style={styles.searchFooter}>
@@ -347,7 +373,7 @@ const StudentListScreen: React.FC = () => {
     )
   }
 
-  // 🔍 NUEVO: Renderizar estado vacío para búsqueda
+  // 🔍 Renderizar estado vacío para búsqueda
   const renderSearchEmptyState = () => (
     <View style={styles.emptyState}>
       <Ionicons name="search-outline" size={64} color="#CCCCCC" />
@@ -392,9 +418,20 @@ const StudentListScreen: React.FC = () => {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#F8F9FA" />
 
-      
+      <View style={styles.header}>
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+          <Ionicons name="arrow-back" size={24} color="#333" />
+        </TouchableOpacity>
+        <View style={styles.headerContent}>
+          <Text style={styles.headerTitle}>Estudiantes</Text>
+          <Text style={styles.headerSubtitle}>{roomName}</Text>
+        </View>
+        <TouchableOpacity style={styles.refreshButton} onPress={handleRefresh}>
+          <Ionicons name="refresh" size={24} color="#4361EE" />
+        </TouchableOpacity>
+      </View>
 
-      {/* 🔍 NUEVA: Barra de búsqueda */}
+      {/* 🔍 Barra de búsqueda */}
       <View style={styles.searchContainer}>
         <View style={styles.searchInputContainer}>
           <Ionicons name="search" size={20} color="#999" />
@@ -413,7 +450,7 @@ const StudentListScreen: React.FC = () => {
           )}
         </View>
 
-        {/* 🔍 NUEVO: Indicador de búsqueda activa */}
+        {/* 🔍 Indicador de búsqueda activa */}
         {isSearchActive && (
           <View style={styles.searchIndicator}>
             <Ionicons name="funnel" size={14} color="#4361EE" />
@@ -438,7 +475,7 @@ const StudentListScreen: React.FC = () => {
           <Text style={styles.statNumber}>{filteredStats.average}</Text>
           <Text style={styles.statLabel}>Promedio</Text>
         </View>
-        {/* 🔍 NUEVO: Estadística de búsqueda */}
+        {/* 🔍 Estadística de búsqueda */}
         {isSearchActive && (
           <View style={styles.statItem}>
             <Ionicons name="search" size={20} color="#4CAF50" />
@@ -468,17 +505,31 @@ const StudentListScreen: React.FC = () => {
         onEndReachedThreshold={0.1}
         ListFooterComponent={renderFooter}
         ListEmptyComponent={isSearchActive ? renderSearchEmptyState : renderEmptyState}
-        // 🔍 NUEVO: Optimizaciones para búsqueda
         removeClippedSubviews={true}
         maxToRenderPerBatch={15}
         updateCellsBatchingPeriod={50}
         initialNumToRender={15}
         windowSize={10}
       />
+
+      {/* 🆕 Modal de detalles mejorado del estudiante */}
+      <EnhancedStudentDetailsModal
+        visible={detailsModalVisible}
+        onClose={() => setDetailsModalVisible(false)}
+        onViewResponses={navigateToStudentResponses}
+        student={selectedStudent}
+        roomId={roomId}
+        roomName={roomName}
+        maxScore={maxScore}
+        formatDate={formatDate}
+        getStatusColor={getStatusColor}
+        getStatusText={getStatusText}
+      />
     </SafeAreaView>
   )
 }
 
+// Estilos (mantienen los mismos del archivo original)
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -517,8 +568,6 @@ const styles = StyleSheet.create({
   placeholder: {
     width: 40,
   },
-
-  // 🔍 NUEVOS: Estilos de búsqueda
   searchContainer: {
     paddingHorizontal: 20,
     paddingVertical: 16,
@@ -559,7 +608,6 @@ const styles = StyleSheet.create({
     marginLeft: 6,
     fontWeight: "500",
   },
-
   statsContainer: {
     flexDirection: "row",
     backgroundColor: "#FFFFFF",
@@ -611,8 +659,6 @@ const styles = StyleSheet.create({
   studentInfo: {
     flex: 1,
   },
-
-  // 🔍 NUEVOS: Estilos para el nombre del estudiante con búsqueda
   studentNameRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -648,7 +694,6 @@ const styles = StyleSheet.create({
     marginLeft: 4,
     fontWeight: "500",
   },
-
   studentId: {
     fontSize: 12,
     color: "#999",
@@ -706,8 +751,6 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     color: "#FFFFFF",
   },
-
-  // 🔍 NUEVO: Footer de búsqueda
   searchFooter: {
     flexDirection: "row",
     alignItems: "center",
@@ -725,7 +768,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 16,
   },
-
   footerLoader: {
     flexDirection: "row",
     justifyContent: "center",
@@ -755,8 +797,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 20,
   },
-
-  // 🔍 NUEVO: Botón para limpiar búsqueda
   clearSearchButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -774,7 +814,6 @@ const styles = StyleSheet.create({
     color: "#4361EE",
     marginLeft: 6,
   },
-
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
@@ -787,5 +826,5 @@ const styles = StyleSheet.create({
   },
 })
 
-export { StudentListScreen }
-export default StudentListScreen
+export { UpdatedStudentListScreen }
+export default UpdatedStudentListScreen

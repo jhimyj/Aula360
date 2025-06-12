@@ -106,12 +106,13 @@ const RoomSelectorForStudents: React.FC = () => {
 
   // 🎯 MANEJAR SELECCIÓN DE SALA
   const handleSelectRoom = (room: Room) => {
-    console.log("🎯 Sala seleccionada:", room.name)
-    navigation.navigate("StudentList", {
-      roomId: room.id,
-      roomName: room.name,
-    })
-  }
+  console.log("🎯 Sala seleccionada:", room.name)
+  navigation.navigate("StudentList", {
+    roomId: room.id,
+    roomName: room.name,
+    maxScore: room.max_score, // Agregamos el score máximo
+  })
+}
 
   // 🔄 MANEJAR REFRESH
   const handleRefresh = async () => {
