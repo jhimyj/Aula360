@@ -50,12 +50,12 @@ const VillainDetails: React.FC<CharacterDetailsDialogProps> = ({
     Shadowman:
       "Manipulador de las sombras que opera desde las tinieblas. Nadie conoce su verdadera identidad ni sus motivaciones, pero su red de espionaje se extiende por todo el mundo.",
   };
-  
   const videos: Record<string, any> = {
-    Corporatus: { uri: "https://titels.s3.us-east-2.amazonaws.com/Corporatus-intro.mp4" },
-    Toxicus: { uri: "https://titels.s3.us-east-2.amazonaws.com/Toxicus-intro.mp4" },
-    Shadowman: { uri: "https://titels.s3.us-east-2.amazonaws.com/Shadowman-intro.mp4" },
-  };
+  Corporatus: { uri: "https://d1xh8jk9umgr2r.cloudfront.net/Corporatus-intro.mp4" },
+  Toxicus:    { uri: "https://d1xh8jk9umgr2r.cloudfront.net/Toxicus-intro.mp4" },
+  Shadowman:  { uri: "https://d1xh8jk9umgr2r.cloudfront.net/Shadowman-intro.mp4" },
+};
+
 
   const description =
     descriptions[character.name] ||

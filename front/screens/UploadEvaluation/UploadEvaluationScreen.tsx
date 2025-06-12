@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react"
+import { Video } from "expo-av"
 import {
   View,
   Text,
@@ -34,6 +35,7 @@ import axios from "axios"
 
 const { height: screenHeight } = Dimensions.get("window")
 
+
 // Tipos para las recomendaciones de IA
 interface AIQuestion {
   type: QuestionType
@@ -54,6 +56,47 @@ interface AIRecommendationResponse {
   request_id: string
 }
 
+// 🎥 Componente Modal de Video para IA
+const AIVideoModal = ({ visible, onClose }: { visible: boolean; onClose: () => void }) => {
+  return (
+    <Modal
+      visible={visible}
+      transparent={true}
+      animationType="fade"
+      onRequestClose={onClose}
+    >
+      <View style={styles.videoModalOverlay}>
+        <View style={styles.videoModalContainer}>
+          {/* Video Container */}
+          <View style={styles.videoContainer}>
+            <Video
+              source={{ uri: "https://d1xh8jk9umgr2r.cloudfront.net/IA3.mp4" }}
+              style={styles.video}
+              shouldPlay
+              isLooping
+              isMuted
+              resizeMode="contain"
+            />
+          </View>
+          
+          {/* Loading Content */}
+          <View style={styles.videoLoadingContent}>
+            <Text style={styles.videoLoadingTitle}>🤖 Generando con IA</Text>
+            <Text style={styles.videoLoadingSubtitle}>
+              Analizando tu solicitud y creando preguntas personalizadas...
+            </Text>
+            
+            {/* Loading Indicator */}
+            <View style={styles.videoLoadingIndicator}>
+              <ActivityIndicator size="small" color="#4361EE" />
+              <Text style={styles.videoLoadingText}>Procesando...</Text>
+            </View>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  )
+}
 export default function UploadEvaluationScreenEnhanced() {
   const navigation = useNavigation()
   const route = useRoute()
@@ -141,12 +184,31 @@ export default function UploadEvaluationScreenEnhanced() {
       console.log("📝 Prompt:", userPrompt)
       console.log("🔢 Cantidad solicitada:", questionCount)
       console.log("🔄 ¿Generando más?:", isGeneratingMore)
+      const focos = [
+        "haz que las preguntas impliquen análisis y reflexión",
+        "enfócate en habilidades comunicativas",
+        "varía la redacción con estilo más creativo",
+        "explora otros ángulos del tema propuesto",
+        "haz preguntas abiertas que generen conversación"
+      ]
+
+      const aleatorio = focos[Math.floor(Math.random() * focos.length)]
+
+      const variationPrompt = `
+      ${userPrompt.trim()}.
+
+      Es muy importante que las preguntas estén redactadas con lenguaje sencillo y claro, sin usar palabras complicadas ni tecnicismos. Recuerda que están dirigidas a estudiantes de primer año de secundaria, así que deben ser fáciles de entender.
+
+      Evita repetir ideas anteriores. ${aleatorio}.
+      #ID:${Date.now() % 100000}
+      `.trim()
 
       const response = await axios.post<AIRecommendationResponse>(
         "https://fmrdkboi63.execute-api.us-east-1.amazonaws.com/dev/questions/room/recommendation_ia",
         {
           room_id: roomId,
-          user_prompt: userPrompt,
+          user_prompt: variationPrompt,
+
         },
         {
           headers: {
@@ -1056,6 +1118,7 @@ export default function UploadEvaluationScreenEnhanced() {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
     >
+      <AIVideoModal visible={isGeneratingAI} onClose={() => {}} />
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={handleBack}>
@@ -1891,6 +1954,69 @@ const styles = StyleSheet.create({
     fontFamily: "Poppins_600SemiBold",
     color: "#666",
   },
+  // 🎥 Estilos para el modal de video
+videoModalOverlay: {
+  flex: 1,
+  backgroundColor: "rgba(0, 0, 0, 0.8)",
+  justifyContent: "center",
+  alignItems: "center",
+  padding: 20,
+},
+videoModalContainer: {
+  backgroundColor: "#FFFFFF",
+  borderRadius: 20,
+  padding: 20,
+  width: "90%",
+  maxWidth: 400,
+  alignItems: "center",
+  shadowColor: "#000",
+  shadowOffset: { width: 0, height: 4 },
+  shadowOpacity: 0.3,
+  shadowRadius: 8,
+  elevation: 10,
+},
+videoContainer: {
+  width: "100%",
+  aspectRatio: 16/9,
+  borderRadius: 12,
+  overflow: "hidden",
+  marginBottom: 20,
+  backgroundColor: "#000",
+},
+video: {
+  width: "100%",
+  height: "100%",
+},
+videoLoadingContent: {
+  alignItems: "center",
+  width: "100%",
+},
+videoLoadingTitle: {
+  fontSize: 18,
+  fontFamily: "Poppins_600SemiBold",
+  color: "#333",
+  marginBottom: 8,
+  textAlign: "center",
+},
+videoLoadingSubtitle: {
+  fontSize: 14,
+  fontFamily: "Poppins_400Regular",
+  color: "#666",
+  textAlign: "center",
+  lineHeight: 20,
+  marginBottom: 16,
+},
+videoLoadingIndicator: {
+  flexDirection: "row",
+  alignItems: "center",
+  justifyContent: "center",
+},
+videoLoadingText: {
+  fontSize: 14,
+  fontFamily: "Poppins_500Medium",
+  color: "#4361EE",
+  marginLeft: 8,
+},
   confirmDeleteButton: {
     flex: 1,
     backgroundColor: "#FF4444",

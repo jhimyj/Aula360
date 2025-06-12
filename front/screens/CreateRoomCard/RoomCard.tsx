@@ -65,7 +65,7 @@ export default function RoomCard({ room, onViewMore, onEdit, onDelete, onViewQue
       throw error
     }
   }
-  
+
   const fetchRoomQuestions = async (roomId) => {
     try {
       setLoadingQuestions(true)
@@ -102,6 +102,39 @@ export default function RoomCard({ room, onViewMore, onEdit, onDelete, onViewQue
       setQuestions([])
     } finally {
       setLoadingQuestions(false)
+    }
+  }
+
+  // Nueva función para eliminar la sala
+  const handleDeleteRoom = async (roomId) => {
+    try {
+      const token = await getAuthToken()
+
+      const response = await fetch(
+        `https://iz6hr4i7m9.execute-api.us-east-1.amazonaws.com/dev/rooms/${roomId}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        },
+      )
+
+      if (response.status === 204) {
+        // Éxito - 204 No Content
+        Alert.alert("✅ Eliminada", "La sala ha sido eliminada exitosamente")
+        
+        // Llamar al callback onDelete si existe para actualizar la lista en el componente padre
+        if (onDelete) {
+          onDelete(room)
+        }
+      } else if (!response.ok) {
+        throw new Error(`Error al eliminar la sala: ${response.status}`)
+      }
+    } catch (error) {
+      console.error("Error al eliminar la sala:", error)
+      Alert.alert("Error", `No se pudo eliminar la sala: ${error.message}`)
     }
   }
 
@@ -289,7 +322,7 @@ export default function RoomCard({ room, onViewMore, onEdit, onDelete, onViewQue
             {
               text: "Eliminar",
               style: "destructive",
-              onPress: () => onDelete && onDelete(room),
+              onPress: () => handleDeleteRoom(room.id),
             },
           ],
         )

@@ -110,7 +110,7 @@ const MissionInfo = ({ onStartMission, onClose }: MissionInfoProps) => {
             description:
               "Qhapaq debe proteger las tierras sagradas de su pueblo, enfrentando poderosas fuerzas que amenazan destruir su herencia y el equilibrio de la naturaleza.",
             image: require("../../assets/Personajes/Amaru1.png"),
-            video: { uri: "https://titels.s3.us-east-2.amazonaws.com/Qhapac-mision.mp4" },
+            video: { uri: "https://d1xh8jk9umgr2r.cloudfront.net/Qhapac-mision.mp4" },
             difficulty: "medium",
             rewards: { xp: 500, items: ["Amuleto de protección", "Poción de sabiduría ancestral"] },
             objectives: ["Defender el bosque sagrado", "Reunir a los ancianos", "Realizar el ritual"],
@@ -129,7 +129,7 @@ const MissionInfo = ({ onStartMission, onClose }: MissionInfoProps) => {
             description:
               "Amaru debe enfrentarse a una amenaza que ha contaminado los ríos sagrados, luchando por restaurar la pureza del agua y proteger la vida y el equilibrio de su comunidad.",
             image: require("../../assets/Personajes/Amaru1.png"),
-            video: { uri: "https://titels.s3.us-east-2.amazonaws.com/Amaru-mision.mp4" },
+            video: { uri: "https://d1xh8jk9umgr2r.cloudfront.net/Amaru-mision.mp4" },
             difficulty: "hard",
             rewards: { xp: 750, items: ["Guantes de fuerza", "Escudo de la naturaleza"] },
             objectives: ["Localizar la fuente", "Derrotar secuaces", "Instalar filtros"],

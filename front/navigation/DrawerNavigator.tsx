@@ -15,7 +15,7 @@ import ProfileScreen from "../screens/Profile/ProfileScreen"
 
 import Mision from "../screens/mision/mission-screen"
 import MissionGameScreen from "../screens/mission-game-screen/mission-game-screen"
-import compot from "../../front/screens/QuizScreen/ExampleUsage"
+import compot from "../screens/QuizScreen/ExampleUsage"
 import ResultsScreen from "../screens/ComponentesQuiz/results-screen"
 import AllRooms from "../screens/AllRooms/AllRooms"
 import UploadEvaluationScreen from "../screens/UploadEvaluation/UploadEvaluationScreen"

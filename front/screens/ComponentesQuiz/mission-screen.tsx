@@ -394,12 +394,14 @@ export const MissionScreen = ({
                   style={[
                     styles.optionText,
                     isTablet && styles.tabletOptionText,
-                    answered && option.isCorrect && styles.correctOptionText,
-                    answered &&
-                      ((questionType === "MULTIPLE_CHOICE_SINGLE" && selectedOption === option.id) ||
-                        (questionType === "MULTIPLE_CHOICE_MULTIPLE" && selectedOptions.includes(option.id))) &&
-                      !option.isCorrect &&
-                      styles.incorrectOptionText,
+                    answered && option.isCorrect
+                      ? styles.correctOptionText
+                      : answered &&
+                        ((questionType === "MULTIPLE_CHOICE_SINGLE" && selectedOption === option.id) ||
+                          (questionType === "MULTIPLE_CHOICE_MULTIPLE" && selectedOptions.includes(option.id))) &&
+                        !option.isCorrect
+                      ? styles.incorrectOptionText
+                      : { color: "#000000" }, 
                   ]}
                 >
                   {option.text}
@@ -684,21 +686,29 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginRight: 8,
     minWidth: 20,
+    color: "#000000", // ← NEGRO PURO
+
   },
   tabletOptionLabel: {
     fontSize: 18,
     minWidth: 25,
+    color: "#000000", // ← NEGRO PURO
+
   },
   optionText: {
     fontSize: 14,
     flex: 1,
     flexWrap: "wrap",
+    color: "#000000", // ← NEGRO PURO
+
   },
   tabletOptionText: {
     fontSize: 18,
+    color: "#000000", // ← NEGRO PURO
   },
   correctOptionText: {
     color: "white",
+    
   },
   incorrectOptionText: {
     color: "white",
@@ -839,6 +849,7 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
+
   },
 
   // 🔍 ESTILOS DEL AMPLIFICADOR

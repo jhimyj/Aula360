@@ -63,11 +63,10 @@ const MissionGameScreen = ({ navigation }) => {
           if (savedName) {
             // Usar un objeto para mapear nombres a recursos
             const videoMapping = {
-              Qhapaq: { uri: "https://titels.s3.us-east-2.amazonaws.com/Qhapac-entrada-mision.mp4" },
-              Amaru: { uri: "https://titels.s3.us-east-2.amazonaws.com/Amaru-entrada-mision.mp4" },
-              Killa: { uri: "https://titels.s3.us-east-2.amazonaws.com/Killa-entrada-mision.mp4" }
+              Qhapaq: { uri: "https://d1xh8jk9umgr2r.cloudfront.net/Qhapac-entrada-mision.mp4" },
+              Amaru:  { uri: "https://d1xh8jk9umgr2r.cloudfront.net/Amaru-entrada-mision.mp4" },
+              Killa:  { uri: "https://d1xh8jk9umgr2r.cloudfront.net/Killa-entrada-mision.mp4" }
             };
-            
             // Establecer el video correspondiente o el default
             setVideoSource(videoMapping[savedName] || require("../../assets/videos/Tunel.mp4"));
           } else {

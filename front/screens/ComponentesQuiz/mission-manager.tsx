@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react"
 import { View, StyleSheet, Text, Animated, Dimensions } from "react-native"
+import { Video } from "expo-av"
 import { MissionScreen } from "./mission-screen" // 🔍 IMPORTAR LA VERSIÓN ACTUALIZADA
 import { FeedbackScreen } from "./feedback-screen"
 import { TransitionScreen } from "./transition-screen"
@@ -94,19 +95,11 @@ type QuestionResult = {
   isCorrect: boolean // basado en si el score > 0
 }
 
-// 🤖 Componente de pantalla de carga mejorada con IA
+// 🎥 Componente de pantalla con video de evaluación de IA
 const AIEvaluationScreen = () => {
   // Animaciones
-  const pulseAnim = useRef(new Animated.Value(1)).current
-  const rotateAnim = useRef(new Animated.Value(0)).current
-  const scaleAnim = useRef(new Animated.Value(0.8)).current
   const fadeAnim = useRef(new Animated.Value(0)).current
   const slideAnim = useRef(new Animated.Value(50)).current
-
-  // Animación de partículas
-  const particle1 = useRef(new Animated.Value(0)).current
-  const particle2 = useRef(new Animated.Value(0)).current
-  const particle3 = useRef(new Animated.Value(0)).current
 
   useEffect(() => {
     // Animación de entrada
@@ -121,181 +114,13 @@ const AIEvaluationScreen = () => {
         duration: 800,
         useNativeDriver: true,
       }),
-      Animated.timing(scaleAnim, {
-        toValue: 1,
-        duration: 800,
-        useNativeDriver: true,
-      }),
     ]).start()
-
-    // Animación de pulso continua
-    const pulseAnimation = Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulseAnim, {
-          toValue: 1.2,
-          duration: 1000,
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulseAnim, {
-          toValue: 1,
-          duration: 1000,
-          useNativeDriver: true,
-        }),
-      ]),
-    )
-
-    // Animación de rotación continua
-    const rotateAnimation = Animated.loop(
-      Animated.timing(rotateAnim, {
-        toValue: 1,
-        duration: 3000,
-        useNativeDriver: true,
-      }),
-    )
-
-    // Animaciones de partículas
-    const particleAnimation1 = Animated.loop(
-      Animated.sequence([
-        Animated.timing(particle1, {
-          toValue: 1,
-          duration: 2000,
-          useNativeDriver: true,
-        }),
-        Animated.timing(particle1, {
-          toValue: 0,
-          duration: 2000,
-          useNativeDriver: true,
-        }),
-      ]),
-    )
-
-    const particleAnimation2 = Animated.loop(
-      Animated.sequence([
-        Animated.timing(particle2, {
-          toValue: 1,
-          duration: 2500,
-          useNativeDriver: true,
-        }),
-        Animated.timing(particle2, {
-          toValue: 0,
-          duration: 2500,
-          useNativeDriver: true,
-        }),
-      ]),
-    )
-
-    const particleAnimation3 = Animated.loop(
-      Animated.sequence([
-        Animated.timing(particle3, {
-          toValue: 1,
-          duration: 1800,
-          useNativeDriver: true,
-        }),
-        Animated.timing(particle3, {
-          toValue: 0,
-          duration: 1800,
-          useNativeDriver: true,
-        }),
-      ]),
-    )
-
-    // Iniciar animaciones
-    pulseAnimation.start()
-    rotateAnimation.start()
-
-    // Delay para las partículas
-    setTimeout(() => particleAnimation1.start(), 500)
-    setTimeout(() => particleAnimation2.start(), 1000)
-    setTimeout(() => particleAnimation3.start(), 1500)
-
-    return () => {
-      pulseAnimation.stop()
-      rotateAnimation.stop()
-      particleAnimation1.stop()
-      particleAnimation2.stop()
-      particleAnimation3.stop()
-    }
   }, [])
-
-  const spin = rotateAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ["0deg", "360deg"],
-  })
-
-  const particle1Y = particle1.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, -100],
-  })
-
-  const particle2Y = particle2.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, -120],
-  })
-
-  const particle3Y = particle3.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, -80],
-  })
-
-  const particle1Opacity = particle1.interpolate({
-    inputRange: [0, 0.5, 1],
-    outputRange: [0, 1, 0],
-  })
-
-  const particle2Opacity = particle2.interpolate({
-    inputRange: [0, 0.5, 1],
-    outputRange: [0, 1, 0],
-  })
-
-  const particle3Opacity = particle3.interpolate({
-    inputRange: [0, 0.5, 1],
-    outputRange: [0, 1, 0],
-  })
 
   return (
     <View style={styles.aiLoadingContainer}>
       {/* Fondo con gradiente simulado */}
       <View style={styles.gradientBackground} />
-
-      {/* Partículas flotantes */}
-      <Animated.View
-        style={[
-          styles.particle,
-          styles.particle1,
-          {
-            opacity: particle1Opacity,
-            transform: [{ translateY: particle1Y }],
-          },
-        ]}
-      >
-        <Feather name="cpu" size={20} color="#4CAF50" />
-      </Animated.View>
-
-      <Animated.View
-        style={[
-          styles.particle,
-          styles.particle2,
-          {
-            opacity: particle2Opacity,
-            transform: [{ translateY: particle2Y }],
-          },
-        ]}
-      >
-        <Feather name="zap" size={16} color="#2196F3" />
-      </Animated.View>
-
-      <Animated.View
-        style={[
-          styles.particle,
-          styles.particle3,
-          {
-            opacity: particle3Opacity,
-            transform: [{ translateY: particle3Y }],
-          },
-        ]}
-      >
-        <Feather name="activity" size={18} color="#FF9800" />
-      </Animated.View>
 
       {/* Contenedor principal animado */}
       <Animated.View
@@ -303,23 +128,20 @@ const AIEvaluationScreen = () => {
           styles.aiMainContainer,
           {
             opacity: fadeAnim,
-            transform: [{ translateY: slideAnim }, { scale: scaleAnim }],
+            transform: [{ translateY: slideAnim }],
           },
         ]}
       >
-        {/* Robot/IA Icon con animaciones */}
-        <View style={styles.robotContainer}>
-          {/* Círculos de fondo animados */}
-          <Animated.View style={[styles.robotCircle, styles.robotCircle1, { transform: [{ scale: pulseAnim }] }]} />
-          <Animated.View style={[styles.robotCircle, styles.robotCircle2, { transform: [{ rotate: spin }] }]} />
-          <Animated.View
-            style={[styles.robotCircle, styles.robotCircle3, { transform: [{ scale: pulseAnim }, { rotate: spin }] }]}
+        {/* Video de IA */}
+        <View style={styles.videoContainer}>
+          <Video
+            source={{ uri: "https://d1xh8jk9umgr2r.cloudfront.net/IA2.mp4" }}
+            style={styles.video}
+            shouldPlay
+            isLooping
+            isMuted
+            resizeMode="contain"
           />
-
-          {/* Robot principal */}
-          <Animated.View style={[styles.robotIcon, { transform: [{ scale: pulseAnim }] }]}>
-            <Feather name="cpu" size={40} color="#fff" />
-          </Animated.View>
         </View>
 
         {/* Texto principal */}
@@ -337,21 +159,6 @@ const AIEvaluationScreen = () => {
         >
           <Text style={styles.aiSubtext}>Analizando tu respuesta con inteligencia artificial...</Text>
         </Animated.View>
-
-        {/* Indicador de progreso personalizado */}
-        <View style={styles.progressContainer}>
-          <View style={styles.progressBar}>
-            <Animated.View style={[styles.progressFill, { transform: [{ scaleX: pulseAnim }] }]} />
-          </View>
-          <Text style={styles.progressText}>Procesando datos</Text>
-        </View>
-
-        {/* Puntos de carga animados */}
-        <View style={styles.dotsContainer}>
-          <Animated.View style={[styles.dot, { transform: [{ scale: pulseAnim }] }]} />
-          <Animated.View style={[styles.dot, { transform: [{ scale: pulseAnim }] }]} />
-          <Animated.View style={[styles.dot, { transform: [{ scale: pulseAnim }] }]} />
-        </View>
 
         {/* Información adicional */}
         <Animated.View style={[styles.infoContainer, { opacity: fadeAnim }]}>
@@ -750,7 +557,7 @@ export const MissionManager = ({ missions, onComplete }: MissionManagerProps) =>
 
   switch (missionState) {
     case "LOADING":
-      console.log("🔄 Renderizando pantalla de carga mejorada")
+      console.log("🔄 Renderizando pantalla de carga con video")
       return <AIEvaluationScreen />
 
     case "QUESTION":
@@ -868,7 +675,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  // 🤖 Estilos para la pantalla de evaluación de IA mejorada
+  // 🎥 Estilos para la pantalla de evaluación de IA con video
   aiLoadingContainer: {
     flex: 1,
     justifyContent: "center",
@@ -891,50 +698,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
     zIndex: 10,
   },
-  robotContainer: {
-    position: "relative",
-    width: 120,
-    height: 120,
-    alignItems: "center",
-    justifyContent: "center",
+  videoContainer: {
+    width: screenWidth * 0.8,
+    height: screenWidth * 0.6,
+    borderRadius: 20,
+    overflow: "hidden",
     marginBottom: 30,
-  },
-  robotCircle: {
-    position: "absolute",
-    borderRadius: 100,
-    borderWidth: 2,
-  },
-  robotCircle1: {
-    width: 120,
-    height: 120,
-    borderColor: "rgba(76, 175, 80, 0.3)",
-    backgroundColor: "rgba(76, 175, 80, 0.1)",
-  },
-  robotCircle2: {
-    width: 90,
-    height: 90,
-    borderColor: "rgba(33, 150, 243, 0.4)",
-    backgroundColor: "rgba(33, 150, 243, 0.1)",
-    borderStyle: "dashed",
-  },
-  robotCircle3: {
-    width: 60,
-    height: 60,
-    borderColor: "rgba(255, 152, 0, 0.5)",
-    backgroundColor: "rgba(255, 152, 0, 0.1)",
-  },
-  robotIcon: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: "#4CAF50",
-    alignItems: "center",
-    justifyContent: "center",
     shadowColor: "#4CAF50",
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.8,
     shadowRadius: 20,
     elevation: 10,
+  },
+  video: {
+    width: "100%",
+    height: "100%",
   },
   aiMainText: {
     fontSize: 28,
@@ -953,42 +731,6 @@ const styles = StyleSheet.create({
     color: "#B0BEC5",
     textAlign: "center",
     lineHeight: 24,
-  },
-  progressContainer: {
-    width: screenWidth * 0.7,
-    alignItems: "center",
-    marginBottom: 25,
-  },
-  progressBar: {
-    width: "100%",
-    height: 6,
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-    borderRadius: 3,
-    overflow: "hidden",
-    marginBottom: 10,
-  },
-  progressFill: {
-    height: "100%",
-    backgroundColor: "#4CAF50",
-    borderRadius: 3,
-    width: "70%",
-  },
-  progressText: {
-    fontSize: 12,
-    color: "#78909C",
-    textAlign: "center",
-  },
-  dotsContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 30,
-  },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: "#4CAF50",
-    marginHorizontal: 4,
   },
   infoContainer: {
     alignItems: "center",
@@ -1009,22 +751,5 @@ const styles = StyleSheet.create({
     color: "#E0E0E0",
     marginLeft: 10,
     fontWeight: "500",
-  },
-  // Partículas flotantes
-  particle: {
-    position: "absolute",
-    zIndex: 5,
-  },
-  particle1: {
-    top: "30%",
-    left: "20%",
-  },
-  particle2: {
-    top: "40%",
-    right: "25%",
-  },
-  particle3: {
-    top: "60%",
-    left: "15%",
   },
 })

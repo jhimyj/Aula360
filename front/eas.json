@@ -7,11 +7,12 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
-      "channel": "dev-misiones"
+      "channel": "dev"
     },
     "preview": {
       "distribution": "internal",
-      "channel": "liv",
+      "developmentClient": true,  
+      "channel": "vivo2",
       "android": {
         "buildType": "apk",
         "gradleCommand": ":app:assembleRelease"

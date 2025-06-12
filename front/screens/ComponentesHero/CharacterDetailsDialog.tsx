@@ -51,17 +51,15 @@ const CharacterDetailsDialog: React.FC<CharacterDetailsDialogProps> = ({ charact
   // Get the appropriate video source based on character name
   const getVideoSource = () => {
   if (character.name === "Qhapaq") {
-    return { uri: "https://titels.s3.us-east-2.amazonaws.com/Mago-intro.mp4" }
+    return { uri: "https://d1xh8jk9umgr2r.cloudfront.net/Mago-intro.mp4" }
   } else if (character.name === "Amaru") {
-    return { uri: "https://titels.s3.us-east-2.amazonaws.com/Amaru-intro.mp4" }
+    return { uri: "https://d1xh8jk9umgr2r.cloudfront.net/Amaru-intro.mp4" }
   } else if (character.name === "Killa") {
-    return { uri: "https://titels.s3.us-east-2.amazonaws.com/Killa-intro.mp4" }
+    return { uri: "https://d1xh8jk9umgr2r.cloudfront.net/Killa-intro.mp4" }
   } else {
-    return { uri: "https://titels.s3.us-east-2.amazonaws.com/Killa-intro.mp4" }
+    return { uri: "https://d1xh8jk9umgr2r.cloudfront.net/Killa-intro.mp4" }
   }
-  
 }
-
 
   return (
     <Modal visible={visible} transparent={true} animationType="fade" onRequestClose={onClose}>

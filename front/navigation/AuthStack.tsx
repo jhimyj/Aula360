@@ -6,7 +6,7 @@ import VillainSelectionScreen from "../screens/VillainSelectionScreen/VillainSel
 import MissionGameScreen from "../screens/mission-game-screen/mission-game-screen"
 import Mision from "../screens/mision/mission-screen"
 import BattleScreen from "../screens/Versus/BattleScreen"
-import compot from "../../front/screens/QuizScreen/ExampleUsage"
+import compot from "../screens/QuizScreen/ExampleUsage"
 import ResultsScreen from "../screens/ComponentesQuiz/results-screen" // 🎯 IMPORT AGREGADO
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import StudentDashboardScreen from "../screens/Students/StudentDashboardScreen"
