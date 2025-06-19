@@ -24,6 +24,7 @@ import * as Sharing from "expo-sharing"
 import QuestionsModal from "../../components/Evaluation/QuestionsModal"
 import { useNavigation } from "@react-navigation/native"
 import QRModal from "../CreateRoomCard/QRModal"
+import { StatisticsModal } from "../../componentes/Statistics/StatisticsModal"
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window")
 
@@ -34,6 +35,7 @@ export default function RoomCard({ room, onViewMore, onEdit, onDelete, onViewQue
   const [menuPosition, setMenuPosition] = useState({ top: 0, right: 0 })
   const [questionsModalVisible, setQuestionsModalVisible] = useState(false)
   const [qrModalVisible, setQrModalVisible] = useState(false)
+  const [statisticsModalVisible, setStatisticsModalVisible] = useState(false)
   const [questions, setQuestions] = useState([])
   const [loadingQuestions, setLoadingQuestions] = useState(false)
   const [questionsError, setQuestionsError] = useState(null)
@@ -110,21 +112,18 @@ export default function RoomCard({ room, onViewMore, onEdit, onDelete, onViewQue
     try {
       const token = await getAuthToken()
 
-      const response = await fetch(
-        `https://iz6hr4i7m9.execute-api.us-east-1.amazonaws.com/dev/rooms/${roomId}`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
+      const response = await fetch(`https://iz6hr4i7m9.execute-api.us-east-1.amazonaws.com/dev/rooms/${roomId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
-      )
+      })
 
       if (response.status === 204) {
         // Éxito - 204 No Content
         Alert.alert("✅ Eliminada", "La sala ha sido eliminada exitosamente")
-        
+
         // Llamar al callback onDelete si existe para actualizar la lista en el componente padre
         if (onDelete) {
           onDelete(room)
@@ -304,6 +303,9 @@ export default function RoomCard({ room, onViewMore, onEdit, onDelete, onViewQue
         setQuestionsModalVisible(true)
         await fetchRoomQuestions(room.id)
         break
+      case "statistics":
+        setStatisticsModalVisible(true)
+        break
       case "upload":
         navigation.navigate("UploadEvaluation", {
           roomId: room.id,
@@ -469,18 +471,12 @@ export default function RoomCard({ room, onViewMore, onEdit, onDelete, onViewQue
                 <Text style={styles.popoverItemText}>Ver ID</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity
-                style={styles.popoverItem}
-                onPress={() => handleMenuOption("delete")}
-              >
-                <Feather name="trash-2" size={18} color="#E63946" style={{ marginRight: 8 }} />
-                <Text style={[styles.popoverItemText, { color: "#E63946" }]}>
-                  Eliminar
-                </Text>
+              <TouchableOpacity style={styles.popoverItem} onPress={() => handleMenuOption("statistics")}>
+                <Feather name="bar-chart-2" size={18} color="#4361EE" />
+                <Text style={styles.popoverItemText}>Ver estadísticas</Text>
               </TouchableOpacity>
 
               <View style={styles.popoverDivider} />
-
 
               <TouchableOpacity style={styles.popoverItem} onPress={() => handleMenuOption("generateQR")}>
                 <Feather name="maximize" size={18} color="#4361EE" />
@@ -499,6 +495,13 @@ export default function RoomCard({ room, onViewMore, onEdit, onDelete, onViewQue
               <TouchableOpacity style={styles.popoverItem} onPress={() => handleMenuOption("upload")}>
                 <Feather name="upload" size={18} color="#4361EE" />
                 <Text style={styles.popoverItemText}>Crear evaluación</Text>
+              </TouchableOpacity>
+
+              <View style={styles.popoverDivider} />
+
+              <TouchableOpacity style={styles.popoverItem} onPress={() => handleMenuOption("delete")}>
+                <Feather name="trash-2" size={18} color="#E63946" style={{ marginRight: 8 }} />
+                <Text style={[styles.popoverItemText, { color: "#E63946" }]}>Eliminar</Text>
               </TouchableOpacity>
             </ScrollView>
           </View>
@@ -527,6 +530,9 @@ export default function RoomCard({ room, onViewMore, onEdit, onDelete, onViewQue
         loading={loadingQuestions}
         error={questionsError}
       />
+
+      {/* Modal estadísticas */}
+      <StatisticsModal visible={statisticsModalVisible} onClose={() => setStatisticsModalVisible(false)} room={room} />
     </View>
   )
 }

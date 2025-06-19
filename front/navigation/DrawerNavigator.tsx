@@ -112,6 +112,7 @@ function TabNavigator({ userRole }: { userRole: string }) {
       )}
 
       {/* 👤 PERFIL - DISPONIBLE PARA TODOS */}
+      
       <Tab.Screen
         name="Profile"
         component={ProfileScreen}

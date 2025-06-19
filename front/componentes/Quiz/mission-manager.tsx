@@ -5,7 +5,7 @@ import { View, StyleSheet, Text, ActivityIndicator } from "react-native"
 import { MissionScreen } from "./mission-screen"
 import { FeedbackScreen } from "./feedback-screen"
 import { TransitionScreen } from "./transition-screen"
-import { CharacterFeedback } from "./character-feedback"
+import { CharacterFeedback } from "../../components/"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 
 // Tipo para imágenes (puede ser require local o URL)

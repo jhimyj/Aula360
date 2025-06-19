@@ -32,12 +32,15 @@ type MissionType = {
   }[]
   // Contenido para la pantalla de retroalimentación
   feedback: {
-    correctImage: ImageSource
-    incorrectImage: ImageSource
+    correctVideo?: string
+    incorrectVideo?: string
+    correctImage?: ImageSource
+    incorrectImage?: ImageSource
     correctBackground: ImageSource
     incorrectBackground: ImageSource
     correctDescription: string
     incorrectDescription: string
+    useVideo?: boolean
   }
   // Contenido para la pantalla de transición
   transition?: {
@@ -93,6 +96,22 @@ type QuestionResult = {
   feedback: string
   userAnswer: string | string[]
   isCorrect: boolean // basado en si el score > 0
+}
+
+// URLs de videos para cada personaje
+const characterResultVideos: Record<string, { win: string; lose: string }> = {
+  Qhapaq: {
+    win: "https://d1xh8jk9umgr2r.cloudfront.net/QhapacWin.mp4",
+    lose: "https://d1xh8jk9umgr2r.cloudfront.net/QhapacLose.mp4",
+  },
+  Amaru: {
+    win: "https://d1xh8jk9umgr2r.cloudfront.net/AmaruWin.mp4",
+    lose: "https://d1xh8jk9umgr2r.cloudfront.net/AmaruLose.mp4",
+  },
+  Killa: {
+    win: "https://d1xh8jk9umgr2r.cloudfront.net/KillaWin.mp4",
+    lose: "https://d1xh8jk9umgr2r.cloudfront.net/KillaLose.mp4",
+  },
 }
 
 // 🎥 Componente de pantalla con video de evaluación de IA
@@ -190,6 +209,7 @@ export const MissionManager = ({ missions, onComplete }: MissionManagerProps) =>
   const [aiFeedback, setAiFeedback] = useState<string>("")
   const [aiScore, setAiScore] = useState<number>(0)
   const [isLoadingFeedback, setIsLoadingFeedback] = useState(false)
+  const [selectedCharacter, setSelectedCharacter] = useState<string>("Qhapaq")
 
   // Nuevos estados para tracking
   const [aiScores, setAiScores] = useState<number[]>([])
@@ -198,6 +218,23 @@ export const MissionManager = ({ missions, onComplete }: MissionManagerProps) =>
   const [correctAnswers, setCorrectAnswers] = useState<number>(0)
   const [incorrectAnswers, setIncorrectAnswers] = useState<number>(0)
   const questionStartTimeRef = useRef<number>(Date.now())
+
+  // Cargar el personaje seleccionado al inicio
+  useEffect(() => {
+    const loadSelectedCharacter = async () => {
+      try {
+        const characterName = await AsyncStorage.getItem("selectedCharacterName")
+        if (characterName) {
+          setSelectedCharacter(characterName)
+          console.log("🎭 Personaje seleccionado cargado:", characterName)
+        }
+      } catch (error) {
+        console.error("Error al cargar el personaje seleccionado:", error)
+      }
+    }
+
+    loadSelectedCharacter()
+  }, [])
 
   useEffect(() => {
     console.log("🎯 MISSION MANAGER - Estado actual:")
@@ -555,6 +592,9 @@ export const MissionManager = ({ missions, onComplete }: MissionManagerProps) =>
     return null
   }
 
+  // Obtener los videos para el personaje seleccionado
+  const characterVideos = characterResultVideos[selectedCharacter] || characterResultVideos.Qhapaq
+
   switch (missionState) {
     case "LOADING":
       console.log("🔄 Renderizando pantalla de carga con video")
@@ -606,6 +646,9 @@ export const MissionManager = ({ missions, onComplete }: MissionManagerProps) =>
           ) : (
             <FeedbackScreen
               isCorrect={lastAnswerCorrect}
+              // Pasar videos o imágenes según corresponda
+              correctVideo={characterVideos.win}
+              incorrectVideo={characterVideos.lose}
               correctImage={currentMission.feedback.correctImage}
               incorrectImage={currentMission.feedback.incorrectImage}
               correctBackground={currentMission.feedback.correctBackground}
@@ -626,6 +669,9 @@ export const MissionManager = ({ missions, onComplete }: MissionManagerProps) =>
               isOpenEnded={currentMission.questionType === "OPEN_ENDED"}
               aiScore={aiScore} // Pasar score de IA
               onContinue={handleFeedbackContinue}
+              // Indicar que se deben usar videos en lugar de imágenes
+              useVideo={true}
+              score={currentMission.score || 0}
             />
           )}
         </View>

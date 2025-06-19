@@ -12,7 +12,7 @@
     "preview": {
       "distribution": "internal",
       "developmentClient": true,  
-      "channel": "vivo2",
+      "channel": "inlive",
       "android": {
         "buildType": "apk",
         "gradleCommand": ":app:assembleRelease"

@@ -1,20 +1,8 @@
 "use client"
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Image,
-  Animated,
-  Dimensions,
-  ScrollView,
-  BackHandler,
-  Alert,
-} from "react-native"
-import { useState, useEffect, useCallback } from "react"
+import { View, Text, StyleSheet, TouchableOpacity, Image, Animated, Dimensions, ScrollView } from "react-native"
+import { useState, useEffect } from "react"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import { removeSavedCharacterImage } from "../../screens/ComponentesHero/saveCharacterImage"
-import { useFocusEffect } from "@react-navigation/native"
 
 type CharacterName = "Qhapaq" | "Amaru" | "Killa"
 type VillainName = "Corporatus" | "Toxicus" | "Shadowman"
@@ -132,56 +120,6 @@ const ResultsScreen = ({ route, navigation }) => {
     ]).start()
   }, [])
 
-  // 🏠 INTERCEPTAR BOTÓN FÍSICO DE BACK PARA MOSTRAR CONFIRMACIÓN
-  useFocusEffect(
-    useCallback(() => {
-      console.log("🎯 ResultsScreen ENFOCADO - Configurando interceptor de botón back")
-
-      const onBackPress = () => {
-        console.log("🔙 BOTÓN FÍSICO DE BACK PRESIONADO en ResultsScreen")
-
-        // Mostrar alerta de confirmación
-        Alert.alert(
-          "¿Regresar a Selección de Héroes?",
-          "¿Quieres volver a la selección de héroes y salir de los resultados?",
-          [
-            {
-              text: "Cancelar",
-              onPress: () => {
-                console.log("❌ Usuario canceló regresar a selección de héroes")
-              },
-              style: "cancel",
-            },
-            {
-              text: "Sí, regresar",
-              onPress: () => {
-                console.log("✅ Usuario confirmó regresar a selección de héroes - Navegando a StudentDashboard")
-                // Limpiar imagen guardada del personaje
-                removeSavedCharacterImage()
-                // Navegar al Dashboard de estudiantes
-                navigation.navigate("StudentDashboard")
-              },
-              style: "default",
-            },
-          ],
-          { cancelable: false },
-        )
-
-        // Retornar true previene la navegación automática hacia atrás
-        return true
-      }
-
-      // Agregar el listener del botón de back
-      const backHandler = BackHandler.addEventListener("hardwareBackPress", onBackPress)
-
-      // Función de limpieza cuando se pierde el foco
-      return () => {
-        console.log("🎯 ResultsScreen DESENFOCADO - Removiendo interceptor de botón back")
-        backHandler.remove()
-      }
-    }, [navigation]),
-  )
-
   // Calcular estadísticas mejoradas
   const calculateStats = () => {
     // Si tenemos scores de IA, usarlos para cálculos más precisos
@@ -195,19 +133,9 @@ const ResultsScreen = ({ route, navigation }) => {
       const totalResponseTime = finalResponseTimes.reduce((sum, time) => sum + time, 0)
       const averageResponseTime = totalResponseTime / finalResponseTimes.length
 
-      // Calcular respuestas correctas e incorrectas basadas en scores de IA
-      // Score > 0 = Correcta, Score = 0 = Incorrecta
-      const correctAnswers = finalAiScores.filter((score) => score > 0).length
-      const incorrectAnswers = finalAiScores.filter((score) => score === 0).length
-
-      console.log("📊 CÁLCULO DE ESTADÍSTICAS:")
-      console.log("- Scores de IA:", finalAiScores)
-      console.log("- Respuestas correctas (score > 0):", correctAnswers)
-      console.log("- Respuestas incorrectas (score = 0):", incorrectAnswers)
-
       // Calcular porcentaje de respuestas correctas
-      const totalQuestions = correctAnswers + incorrectAnswers
-      const correctPercentage = totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0
+      const totalQuestions = finalCorrectAnswers + finalIncorrectAnswers
+      const correctPercentage = totalQuestions > 0 ? Math.round((finalCorrectAnswers / totalQuestions) * 100) : 0
 
       return {
         totalScore: totalAIScore,
@@ -215,8 +143,8 @@ const ResultsScreen = ({ route, navigation }) => {
         percentage: percentage,
         correctPercentage: correctPercentage,
         questionsAnswered: finalAiScores.length,
-        correctAnswers: correctAnswers,
-        incorrectAnswers: incorrectAnswers,
+        correctAnswers: finalCorrectAnswers,
+        incorrectAnswers: finalIncorrectAnswers,
         isAIScored: true,
         totalResponseTime: totalResponseTime,
         averageResponseTime: Math.round(averageResponseTime / 1000), // convertir a segundos
@@ -286,9 +214,42 @@ const ResultsScreen = ({ route, navigation }) => {
     return "🎯"
   }
 
-  const handleLogout = () => {
+  // Función corregida para navegar al dashboard
+  const handleGoToDashboard = () => {
     removeSavedCharacterImage()
-    navigation.navigate("StudentDashboard")
+
+    try {
+      // Método 1: Usar reset para volver al estado inicial de navegación
+      // Este método es el más robusto para navegar entre navegadores anidados
+      navigation.reset({
+        index: 0,
+        routes: [{ name: "MainTabs" }],
+      })
+
+      console.log("✅ Navegación exitosa al dashboard de estudiantes")
+    } catch (error) {
+      console.error("❌ Error al navegar al dashboard:", error)
+
+      // Método 2 (alternativo): Intentar navegar con rutas anidadas
+      try {
+        navigation.navigate("MainTabs", { screen: "StudentDashboard" })
+        console.log("✅ Navegación alternativa exitosa")
+      } catch (fallbackError) {
+        console.error("❌ Error en navegación alternativa:", fallbackError)
+
+        // Método 3 (último recurso): Intentar a través del navegador padre
+        try {
+          const parent = navigation.getParent()
+          if (parent) {
+            parent.navigate("MainTabs")
+            console.log("✅ Navegación a través del padre exitosa")
+          }
+        } catch (parentError) {
+          console.error("❌ Error en todos los métodos de navegación:", parentError)
+          alert("No se pudo navegar al dashboard. Por favor, inténtalo de nuevo.")
+        }
+      }
+    }
   }
 
   const handleRetry = () => {
@@ -452,7 +413,7 @@ const ResultsScreen = ({ route, navigation }) => {
                     <Text style={styles.questionResultTitle}>Pregunta {index + 1}</Text>
                     <View style={styles.questionResultScoreContainer}>
                       <Text style={[styles.questionResultScore, { color: result.isCorrect ? "#4CAF50" : "#F44336" }]}>
-                        {result.isCorrect ? "✓ Correcta (Score > 0)" : "✗ Incorrecta (Score = 0)"}
+                        {result.isCorrect ? "✓ Correcta" : "✗ Incorrecta"}
                       </Text>
                       <Text style={styles.questionResultAiScore}>Score: {result.aiScore}</Text>
                     </View>
@@ -486,8 +447,8 @@ const ResultsScreen = ({ route, navigation }) => {
               <Text style={styles.buttonText}>🔄 Intentar de Nuevo</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={[styles.button, styles.homeButton]} onPress={handleLogout}>
-              <Text style={styles.buttonText}>🏠 Volver al Inicio</Text>
+            <TouchableOpacity style={[styles.button, styles.homeButton]} onPress={handleGoToDashboard}>
+              <Text style={styles.buttonText}>🏠 Ir al Dashboard</Text>
             </TouchableOpacity>
           </View>
         </Animated.View>
@@ -541,6 +502,8 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
+    borderWidth: 1,
+    borderColor: "rgba(0,0,0,0.05)",
   },
   mainScoreContainer: {
     alignItems: "center",
@@ -794,6 +757,8 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
+    flexDirection: "row",
+    justifyContent: "center",
   },
   detailsButton: {
     backgroundColor: "#9C27B0",
@@ -808,6 +773,7 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 16,
     fontWeight: "bold",
+    marginLeft: 8,
   },
 })
 

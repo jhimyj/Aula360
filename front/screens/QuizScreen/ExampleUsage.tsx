@@ -45,6 +45,22 @@ const characterMusic: Record<CharacterName, any> = {
   Killa: require("../../assets/Musica/Qhapac.mp3"),
 }
 
+// Videos para resultados de cada personaje
+const characterResultVideos: Record<CharacterName, { win: string; lose: string }> = {
+  Qhapaq: {
+    win: "https://d1xh8jk9umgr2r.cloudfront.net/QhapacWin.mp4",
+    lose: "https://d1xh8jk9umgr2r.cloudfront.net/QhapacLose.mp4",
+  },
+  Amaru: {
+    win: "https://d1xh8jk9umgr2r.cloudfront.net/AmaruWin.mp4",
+    lose: "https://d1xh8jk9umgr2r.cloudfront.net/AmaruLose.mp4",
+  },
+  Killa: {
+    win: "https://d1xh8jk9umgr2r.cloudfront.net/KillaWin.mp4",
+    lose: "https://d1xh8jk9umgr2r.cloudfront.net/KillaLose.mp4",
+  },
+}
+
 // Imágenes del villano para cada misión
 const villainCharacterImages: Record<VillainName, any[]> = {
   Corporatus: [
@@ -84,17 +100,12 @@ const villainIncorrectImages: Record<VillainName, any[]> = {
 }
 
 // Fondos y correctImages por personaje
-const characterAssets: Record<CharacterName, { backgroundImages: any[]; correctImages: any[] }> = {
+const characterAssets: Record<CharacterName, { backgroundImages: any[] }> = {
   Qhapaq: {
     backgroundImages: [
       require("../../assets/fondoQuiz/FondoQuiz-Qhapaq.png"),
       require("../../assets/fondoQuiz/FondoQuiz-Qhapaq.png"),
       require("../../assets/fondoQuiz/FondoQuiz-Qhapaq.png"),
-    ],
-    correctImages: [
-      require("../../assets/images/chaman.png"),
-      require("../../assets/images/chaman.png"),
-      require("../../assets/images/chaman.png"),
     ],
   },
   Amaru: {
@@ -103,22 +114,12 @@ const characterAssets: Record<CharacterName, { backgroundImages: any[]; correctI
       require("../../assets/fondoQuiz/FondoQuiz-Amaru.png"),
       require("../../assets/fondoQuiz/FondoQuiz-Amaru.png"),
     ],
-    correctImages: [
-      require("../../assets/Personajes/Amaru1.png"),
-      require("../../assets/Personajes/Amaru1.png"),
-      require("../../assets/Personajes/Amaru1.png"),
-    ],
   },
   Killa: {
     backgroundImages: [
       require("../../assets/fondoQuiz/FondoQuiz-Killa.png"),
       require("../../assets/fondoQuiz/FondoQuiz-Killa.png"),
       require("../../assets/fondoQuiz/FondoQuiz-Killa.png"),
-    ],
-    correctImages: [
-      require("../../assets/Personajes/Guerrera.png"),
-      require("../../assets/Personajes/Guerrera.png"),
-      require("../../assets/Personajes/Guerrera.png"),
     ],
   },
 }
@@ -221,9 +222,11 @@ const fetchQuestionsFromAPI = async (roomId: string): Promise<ApiQuestion[]> => 
 // Función para construir misiones a partir de las preguntas del API
 const buildMissionsFromAPI = async (characterName: CharacterName, villainName: VillainName) => {
   const assets = characterAssets[characterName]
-  const charImgs = characterAssets[characterName].correctImages
   const vilImgs = villainCharacterImages[villainName]
   const incorrectImgs = villainIncorrectImages[villainName]
+
+  // Obtener los videos para el personaje seleccionado
+  const characterVideos = characterResultVideos[characterName]
 
   try {
     const roomId = await AsyncStorage.getItem("roomId")
@@ -326,21 +329,25 @@ const buildMissionsFromAPI = async (characterName: CharacterName, villainName: V
       const getFeedback = () => {
         if (apiQuestion.type === "MULTIPLE_CHOICE_SINGLE") {
           return {
-            correctImage: getImageByIndex(assets.correctImages, index),
-            incorrectImage: getImageByIndex(incorrectImgs, index),
+            // Reemplazamos las imágenes por videos
+            correctVideo: characterVideos.win,
+            incorrectVideo: characterVideos.lose,
             correctBackground: getImageByIndex(assets.backgroundImages, index),
             incorrectBackground: getImageByIndex(assets.backgroundImages, index),
-            correctDescription: "¡Excelente! Has respondido correctamente.",
+            correctDescription: `¡Excelente! Has respondido correctamente. Puntaje: ${apiQuestion.score}`,
             incorrectDescription: "No te preocupes, sigue intentando. ¡Puedes hacerlo mejor!",
+            // Indicamos que ahora usamos videos en lugar de imágenes
+            useVideo: true,
           }
         } else {
           return {
-            correctImage: getImageByIndex(assets.correctImages, index),
-            incorrectImage: getImageByIndex(assets.correctImages, index),
+            correctVideo: characterVideos.win,
+            incorrectVideo: characterVideos.lose,
             correctBackground: getImageByIndex(assets.backgroundImages, index),
             incorrectBackground: getImageByIndex(assets.backgroundImages, index),
-            correctDescription: "¡Gracias por tu respuesta! Continuemos con la siguiente pregunta.",
+            correctDescription: `¡Gracias por tu respuesta! Puntaje: ${apiQuestion.score}. Continuemos con la siguiente pregunta.`,
             incorrectDescription: "¡Gracias por tu respuesta! Continuemos con la siguiente pregunta.",
+            useVideo: true,
           }
         }
       }
@@ -350,7 +357,6 @@ const buildMissionsFromAPI = async (characterName: CharacterName, villainName: V
         missionNumber: index + 1,
         backgroundImage: getImageByIndex(assets.backgroundImages, index),
         villainImage: getImageByIndex(vilImgs, index),
-        characterImage: getImageByIndex(charImgs, index),
         question: apiQuestion.text,
         questionType: apiQuestion.type,
         options: options,

@@ -1,5 +1,5 @@
 "use client"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import {
   View,
   Text,
@@ -11,31 +11,38 @@ import {
   Animated,
   ScrollView,
   SafeAreaView,
-  Platform,
 } from "react-native"
+import { Video, ResizeMode, type AVPlaybackStatus } from "expo-av"
+import { Feather } from "@expo/vector-icons"
 
 // Tipo para imágenes (puede ser require local o URL)
 type ImageSource = number | { uri: string }
 
 type FeedbackScreenProps = {
   isCorrect: boolean
-  correctImage: ImageSource
-  incorrectImage: ImageSource
+  correctVideo?: string
+  incorrectVideo?: string
+  correctImage?: ImageSource
+  incorrectImage?: ImageSource
   correctBackground: ImageSource
   incorrectBackground: ImageSource
   correctDescription: string
   incorrectDescription: string
   userAnswer?: string
   isOpenEnded?: boolean
-  aiScore?: number // Nuevo: score del endpoint de IA
+  aiScore?: number // Score del endpoint de IA
   onContinue: () => void
+  useVideo?: boolean // Indica si se debe usar video en lugar de imagen
+  score?: number // Puntuación de la pregunta
 }
 
 const { width, height } = Dimensions.get("window")
-const isTablet = width >= 768;
+const isTablet = width >= 768
 
 export const FeedbackScreen = ({
   isCorrect,
+  correctVideo,
+  incorrectVideo,
   correctImage,
   incorrectImage,
   correctBackground,
@@ -46,23 +53,28 @@ export const FeedbackScreen = ({
   isOpenEnded = false,
   aiScore,
   onContinue,
+  useVideo = false,
+  score = 0,
 }: FeedbackScreenProps) => {
   const [fadeAnim] = useState(new Animated.Value(0))
   const [scaleAnim] = useState(new Animated.Value(0.8))
-  const [dimensions, setDimensions] = useState(Dimensions.get('window'))
+  const [dimensions, setDimensions] = useState(Dimensions.get("window"))
+  const [videoLoaded, setVideoLoaded] = useState(false)
+  const [videoSize, setVideoSize] = useState({ width: 0, height: 0 })
+  const videoRef = useRef(null)
 
   // Actualizar dimensiones cuando cambia la orientación
   useEffect(() => {
-    const subscription = Dimensions.addEventListener('change', ({ window }) => {
-      setDimensions(window);
-    });
-    
+    const subscription = Dimensions.addEventListener("change", ({ window }) => {
+      setDimensions(window)
+    })
+
     return () => {
       if (subscription?.remove) {
-        subscription.remove();
+        subscription.remove()
       }
-    };
-  }, []);
+    }
+  }, [])
 
   useEffect(() => {
     // Animación de entrada
@@ -79,12 +91,17 @@ export const FeedbackScreen = ({
         useNativeDriver: true,
       }),
     ]).start()
+
+    // Reproducir el video automáticamente cuando se muestra
+    if (videoRef.current && useVideo) {
+      videoRef.current.playAsync()
+    }
   }, [])
 
   // Verificar que todas las propiedades necesarias estén definidas
   if (
-    !correctImage ||
-    !incorrectImage ||
+    (useVideo && !((isCorrect && correctVideo) || (!isCorrect && incorrectVideo))) ||
+    (!useVideo && !((isCorrect && correctImage) || (!isCorrect && incorrectImage))) ||
     !correctBackground ||
     !incorrectBackground ||
     !correctDescription ||
@@ -98,6 +115,7 @@ export const FeedbackScreen = ({
 
   // Seleccionar contenido basado en si la respuesta es correcta o incorrecta
   const backgroundImage = isCorrect ? correctBackground : incorrectBackground
+  const videoSource = isCorrect ? correctVideo : incorrectVideo
   const image = isCorrect ? correctImage : incorrectImage
   const description = isCorrect ? correctDescription : incorrectDescription
 
@@ -113,10 +131,101 @@ export const FeedbackScreen = ({
   const titleColor = isOpenEnded ? "#4CAF50" : isCorrect ? "#4CAF50" : "#F44336"
   const buttonColor = isOpenEnded ? "#4CAF50" : isCorrect ? "#4CAF50" : "#F44336"
 
+  // Función para manejar el estado del video
+  const handleVideoStatusUpdate = (status: AVPlaybackStatus) => {
+    if (status.isLoaded) {
+      // Si el video acaba de cargarse, marcarlo como cargado
+      if (!videoLoaded) {
+        setVideoLoaded(true)
+      }
+    }
+  }
+
+  // Función para manejar la carga del video y obtener sus dimensiones
+  const handleVideoLoad = (status: AVPlaybackStatus) => {
+    if (status.isLoaded && videoRef.current) {
+      // Obtener las dimensiones naturales del video
+      videoRef.current.getStatusAsync().then((videoStatus) => {
+        if (videoStatus.isLoaded && videoStatus.naturalSize) {
+          const { width: videoWidth, height: videoHeight } = videoStatus.naturalSize
+          setVideoSize({ width: videoWidth, height: videoHeight })
+        }
+      })
+    }
+  }
+
+  // Calcular las dimensiones del contenedor de video basadas en las proporciones del video
+  const getVideoContainerStyle = () => {
+    // Dimensiones predeterminadas
+    let containerWidth = width * 0.7
+    let containerHeight = height * 0.3
+
+    if (isTablet) {
+      containerWidth = width * 0.6
+      containerHeight = height * 0.35
+    }
+
+    // Si conocemos las dimensiones del video, ajustar el contenedor
+    if (videoLoaded && videoSize.width > 0 && videoSize.height > 0) {
+      const videoRatio = videoSize.width / videoSize.height
+
+      // Mantener el ancho y ajustar la altura según la proporción
+      containerHeight = containerWidth / videoRatio
+
+      // Asegurarse de que la altura no sea excesiva
+      const maxHeight = height * (isTablet ? 0.5 : 0.4)
+      if (containerHeight > maxHeight) {
+        containerHeight = maxHeight
+        containerWidth = containerHeight * videoRatio
+      }
+    }
+
+    return {
+      width: containerWidth,
+      height: containerHeight,
+    }
+  }
+
+  // Renderizar video o imagen según corresponda
+  const renderMedia = () => {
+    if (useVideo && videoSource) {
+      const videoContainerStyle = getVideoContainerStyle()
+
+      return (
+        <View
+          style={[
+            styles.mediaContainer,
+            isTablet && styles.tabletMediaContainer,
+            videoContainerStyle,
+            { backgroundColor: "transparent" }, // Fondo transparente
+          ]}
+        >
+          <Video
+            ref={videoRef}
+            source={{ uri: videoSource }}
+            style={styles.video}
+            resizeMode={ResizeMode.CONTAIN}
+            shouldPlay={true}
+            isLooping={false}
+            onPlaybackStatusUpdate={handleVideoStatusUpdate}
+            onLoad={handleVideoLoad}
+          />
+        </View>
+      )
+    } else if (image) {
+      return (
+        <View style={[styles.mediaContainer, isTablet && styles.tabletMediaContainer]}>
+          <Image source={image} style={styles.image} resizeMode="contain" />
+        </View>
+      )
+    }
+    return null
+  }
+
   return (
     <ImageBackground source={backgroundImage} style={styles.background} resizeMode="cover">
       <SafeAreaView style={styles.safeArea}>
-        <ScrollView 
+        <ScrollView
           contentContainerStyle={styles.scrollContainer}
           showsVerticalScrollIndicator={true}
           persistentScrollbar={true}
@@ -124,41 +233,23 @@ export const FeedbackScreen = ({
           bounces={true}
         >
           <Animated.View style={[styles.container, { opacity: fadeAnim, transform: [{ scale: scaleAnim }] }]}>
-            <Text style={[
-              styles.title, 
-              { color: titleColor },
-              isTablet && styles.tabletTitle
-            ]}>
-              {title}
-            </Text>
+            <Text style={[styles.title, { color: titleColor }, isTablet && styles.tabletTitle]}>{title}</Text>
 
             {/* Mostrar score de IA si está disponible */}
-            {aiScore !== undefined && (
-              <View style={[
-                styles.scoreContainer,
-                isTablet && styles.tabletScoreContainer
-              ]}>
-                <Text style={[
-                  styles.scoreText,
-                  isTablet && styles.tabletScoreText
-                ]}>
-                  Puntuación: {aiScore}
-                </Text>
+            {aiScore !== undefined && aiScore > 0 && (
+              <View style={[styles.scoreContainer, isTablet && styles.tabletScoreContainer]}>
+                <Text style={[styles.scoreText, isTablet && styles.tabletScoreText]}>Puntuación IA: {aiScore}</Text>
               </View>
             )}
 
-            <View style={[
-              styles.imageContainer,
-              isTablet && styles.tabletImageContainer
-            ]}>
-              <Image source={image} style={styles.image} resizeMode="contain" />
-            </View>
+            {/* Mostrar puntuación de la pregunta si es correcta */}
+            
 
-            <View style={[
-              styles.descriptionContainer,
-              isTablet && styles.tabletDescriptionContainer
-            ]}>
-              <ScrollView 
+            {/* Renderizar video o imagen */}
+            {renderMedia()}
+
+            <View style={[styles.descriptionContainer, isTablet && styles.tabletDescriptionContainer]}>
+              <ScrollView
                 style={styles.descriptionScrollView}
                 contentContainerStyle={styles.descriptionScrollContent}
                 showsVerticalScrollIndicator={true}
@@ -166,23 +257,15 @@ export const FeedbackScreen = ({
                 indicatorStyle="black"
                 nestedScrollEnabled={true}
               >
-                <Text style={[
-                  styles.description,
-                  isTablet && styles.tabletDescription
-                ]}>
-                  {description}
-                </Text>
+                <Text style={[styles.description, isTablet && styles.tabletDescription]}>{description}</Text>
 
                 {/* Mostrar la respuesta del usuario si es una pregunta abierta */}
                 {isOpenEnded && userAnswer && (
                   <View style={styles.userAnswerContainer}>
-                    <Text style={[
-                      styles.userAnswerLabel,
-                      isTablet && styles.tabletUserAnswerLabel
-                    ]}>
+                    <Text style={[styles.userAnswerLabel, isTablet && styles.tabletUserAnswerLabel]}>
                       Tu respuesta:
                     </Text>
-                    <ScrollView 
+                    <ScrollView
                       style={styles.userAnswerScrollView}
                       contentContainerStyle={styles.userAnswerScrollContent}
                       showsVerticalScrollIndicator={true}
@@ -190,32 +273,18 @@ export const FeedbackScreen = ({
                       indicatorStyle="black"
                       nestedScrollEnabled={true}
                     >
-                      <Text style={[
-                        styles.userAnswerText,
-                        isTablet && styles.tabletUserAnswerText
-                      ]}>
-                        {userAnswer}
-                      </Text>
+                      <Text style={[styles.userAnswerText, isTablet && styles.tabletUserAnswerText]}>{userAnswer}</Text>
                     </ScrollView>
                   </View>
                 )}
               </ScrollView>
             </View>
 
-            <TouchableOpacity 
-              style={[
-                styles.continueButton, 
-                { backgroundColor: buttonColor },
-                isTablet && styles.tabletContinueButton
-              ]} 
+            <TouchableOpacity
+              style={[styles.continueButton, { backgroundColor: buttonColor }, isTablet && styles.tabletContinueButton]}
               onPress={onContinue}
             >
-              <Text style={[
-                styles.continueButtonText,
-                isTablet && styles.tabletContinueButtonText
-              ]}>
-                Continuar
-              </Text>
+              <Text style={[styles.continueButtonText, isTablet && styles.tabletContinueButtonText]}>Continuar</Text>
             </TouchableOpacity>
           </Animated.View>
         </ScrollView>
@@ -276,27 +345,53 @@ const styles = StyleSheet.create({
   tabletScoreText: {
     fontSize: 22,
   },
-  imageContainer: {
+  questionScoreContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(255, 255, 255, 0.9)",
+    borderRadius: 10,
+    padding: 10,
+    marginBottom: 15,
+  },
+  tabletQuestionScoreContainer: {
+    padding: 15,
+    borderRadius: 15,
+    marginBottom: 20,
+  },
+  questionScoreText: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#4CAF50",
+    marginLeft: 8,
+  },
+  tabletQuestionScoreText: {
+    fontSize: 22,
+  },
+  mediaContainer: {
     width: width * 0.7,
     height: height * 0.3,
     marginBottom: 20,
     borderRadius: 15,
     overflow: "hidden",
-    backgroundColor: "rgba(255, 255, 255, 0.8)",
-    padding: 10,
+    backgroundColor: "transparent", // Cambiado a transparente
+    padding: 0,
     elevation: 5,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
+    position: "relative",
   },
-  tabletImageContainer: {
+  tabletMediaContainer: {
     width: width * 0.6,
     height: height * 0.35,
     borderRadius: 20,
-    padding: 15,
   },
   image: {
+    width: "100%",
+    height: "100%",
+  },
+  video: {
     width: "100%",
     height: "100%",
   },
@@ -320,7 +415,7 @@ const styles = StyleSheet.create({
     maxHeight: height * 0.45,
   },
   descriptionScrollView: {
-    width: '100%',
+    width: "100%",
   },
   descriptionScrollContent: {
     paddingBottom: 10,
@@ -340,7 +435,7 @@ const styles = StyleSheet.create({
     paddingTop: 15,
     borderTopWidth: 1,
     borderTopColor: "#DDD",
-    width: '100%',
+    width: "100%",
   },
   userAnswerLabel: {
     fontSize: 14,
