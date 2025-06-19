@@ -12,16 +12,14 @@ import StudentDashboardScreen from "../screens/Students/StudentDashboardScreen"
 import VillainSelectionScreen from "../screens/VillainSelectionScreen/VillainSelectionScreen"
 import BattleScreen from "../screens/Versus/BattleScreen"
 import ProfileScreen from "../screens/Profile/ProfileScreen"
-
 import Mision from "../screens/mision/mission-screen"
 import MissionGameScreen from "../screens/mission-game-screen/mission-game-screen"
 import compot from "../screens/QuizScreen/ExampleUsage"
 import ResultsScreen from "../screens/ComponentesQuiz/results-screen"
 import AllRooms from "../screens/AllRooms/AllRooms"
 import UploadEvaluationScreen from "../screens/UploadEvaluation/UploadEvaluationScreen"
-import { useNavigation, CommonActions } from "@react-navigation/native"
-import StudentResponsesScreen  from "../componentes/Students/StudentResponsesScreen"
-// 🔥 NUEVAS IMPORTACIONES PARA ESTUDIANTES
+import { useNavigation } from "@react-navigation/native"
+import StudentResponsesScreen from "../componentes/Students/StudentResponsesScreen"
 import RoomSelectorForStudents from "../componentes/Students/RoomSelectorForStudents"
 import StudentListScreen from "../componentes/Students/StudentListScreen"
 
@@ -39,7 +37,7 @@ export type DrawerNavigatorParamList = {
   MissionGameScreen: undefined
   Quiz: undefined
   Results: undefined
-  // 🔥 NUEVAS RUTAS PARA ESTUDIANTES CON PAGINACIÓN
+  StudentResponses: { studentName?: string; studentId?: string }
   RoomSelectorForStudents: {
     pageSize?: number
     enablePagination?: boolean
@@ -54,8 +52,14 @@ export type DrawerNavigatorParamList = {
 const Tab = createMaterialTopTabNavigator()
 const Stack = createStackNavigator<DrawerNavigatorParamList>()
 
-// 🎯 NAVEGADOR DE TABS PRINCIPALES (SOLO PANTALLAS PRINCIPALES)
-function TabNavigator({ userRole }: { userRole: string }) {
+// 🎯 NAVEGADOR DE TABS PRINCIPALES - CON setIsAuthenticated PASADO CORRECTAMENTE
+function TabNavigator({
+  userRole,
+  setIsAuthenticated,
+}: {
+  userRole: string
+  setIsAuthenticated: (val: boolean) => void // 🔥 AHORA ES REQUERIDO
+}) {
   const isTeacher = () => userRole === "TEACHER"
   const isStudent = () => userRole === "STUDENT"
 
@@ -100,7 +104,6 @@ function TabNavigator({ userRole }: { userRole: string }) {
       )}
 
       {/* 🏫 DASHBOARD SOLO PARA PROFESORES */}
-
       {isTeacher() && (
         <Tab.Screen
           name="Inicio"
@@ -111,15 +114,18 @@ function TabNavigator({ userRole }: { userRole: string }) {
         />
       )}
 
-      {/* 👤 PERFIL - DISPONIBLE PARA TODOS */}
-      
+      {/* 👤 PERFIL - CON setIsAuthenticated PASADO CORRECTAMENTE */}
       <Tab.Screen
         name="Profile"
-        component={ProfileScreen}
         options={{
           title: "👤 Perfil",
         }}
-      />
+      >
+        {(props) => {
+          console.log("🔥 ProfileScreen en Tab - setIsAuthenticated disponible:", !!setIsAuthenticated)
+          return <ProfileScreen {...props} setIsAuthenticated={setIsAuthenticated} />
+        }}
+      </Tab.Screen>
     </Tab.Navigator>
   )
 }
@@ -129,17 +135,17 @@ function MainNavigator({
   userRole,
   userInfo,
   onLogout,
+  setIsAuthenticated,
 }: {
   userRole: string
   userInfo: any
   onLogout: () => void
+  setIsAuthenticated: (val: boolean) => void
 }) {
   const isStudent = () => userRole === "STUDENT"
   const isTeacher = () => userRole === "TEACHER"
 
   return (
-
-     
     <Stack.Navigator
       initialRouteName="MainTabs"
       screenOptions={{
@@ -158,23 +164,24 @@ function MainNavigator({
         ),
       }}
     >
-      {/* 🎯 PANTALLA PRINCIPAL CON TABS */}
+      {/* 💬 PANTALLA DE RESPUESTAS DE ESTUDIANTES */}
       <Stack.Screen
-  name="StudentResponses"
-  component={StudentResponsesScreen}
-  options={({ route }) => ({
-    title: `💬 Respuestas de ${route.params?.studentName || "Estudiante"}`,
-    headerBackTitleVisible: false,
-    headerStyle: {
-      backgroundColor: "#2E86AB",
-    },
-    headerTintColor: "#fff",
-    headerTitleStyle: {
-      fontWeight: "bold",
-    },
-  })}
-/>
+        name="StudentResponses"
+        component={StudentResponsesScreen}
+        options={({ route }) => ({
+          title: `💬 Respuestas de ${route.params?.studentName || "Estudiante"}`,
+          headerBackTitleVisible: false,
+          headerStyle: {
+            backgroundColor: "#2E86AB",
+          },
+          headerTintColor: "#fff",
+          headerTitleStyle: {
+            fontWeight: "bold",
+          },
+        })}
+      />
 
+      {/* 🎯 PANTALLA PRINCIPAL CON TABS - PASANDO setIsAuthenticated */}
       <Stack.Screen
         name="MainTabs"
         options={{
@@ -186,24 +193,23 @@ function MainNavigator({
           ),
         }}
       >
-        {() => <TabNavigator userRole={userRole} />}
+        {() => {
+          console.log("🔥 TabNavigator - setIsAuthenticated disponible:", !!setIsAuthenticated)
+          return <TabNavigator userRole={userRole} setIsAuthenticated={setIsAuthenticated} />
+        }}
       </Stack.Screen>
 
       {/* 🎮 PANTALLAS DE JUEGO PARA ESTUDIANTES */}
       {isStudent() && (
         <>
-          {/* 🔧 PANTALLA DE SELECCIÓN DE VILLANOS - SIN BOTÓN DE REGRESO */}
           <Stack.Screen
             name="VillainSelection"
             component={VillainSelectionScreen}
             options={{
               title: "👹 Selección de Villanos",
               headerBackTitleVisible: false,
-              // 🚫 OCULTAR COMPLETAMENTE EL BOTÓN DE REGRESO
               headerLeft: () => null,
-              // 🚫 DESHABILITAR GESTOS DE NAVEGACIÓN HACIA ATRÁS
               gestureEnabled: false,
-              // 🔧 HEADER PERSONALIZADO SOLO CON LOGOUT
               headerRight: () => (
                 <TouchableOpacity onPress={onLogout} style={{ marginRight: 15, padding: 5 }}>
                   <Ionicons name="log-out-outline" size={24} color="#fff" />
@@ -217,7 +223,6 @@ function MainNavigator({
             options={{
               title: "⚔️ Batalla",
               headerBackTitleVisible: false,
-              // 🚫 Deshabilitar navegación hacia atrás
               headerLeft: () => null,
               gestureEnabled: false,
             }}
@@ -228,7 +233,6 @@ function MainNavigator({
             options={{
               title: "🗺️ Misiones",
               headerBackTitleVisible: false,
-              // 🚫 OCULTAR BOTÓN DE REGRESO TAMBIÉN EN MISIONES
               headerLeft: () => null,
               gestureEnabled: false,
               headerRight: () => (
@@ -244,7 +248,6 @@ function MainNavigator({
             options={{
               title: "🎮 Juego de Misión",
               headerBackTitleVisible: false,
-              // 🚫 OCULTAR BOTÓN DE REGRESO TAMBIÉN EN JUEGO DE MISIÓN
               headerLeft: () => null,
               gestureEnabled: false,
               headerRight: () => (
@@ -260,7 +263,6 @@ function MainNavigator({
             options={{
               title: "❓ Quiz",
               headerBackTitleVisible: false,
-              // 🚫 Deshabilitar navegación hacia atrás
               headerLeft: () => null,
               gestureEnabled: false,
             }}
@@ -271,7 +273,6 @@ function MainNavigator({
             options={{
               title: "🏆 Resultados",
               headerBackTitleVisible: false,
-              // 🚫 Deshabilitar navegación hacia atrás
               headerLeft: () => null,
               gestureEnabled: false,
             }}
@@ -307,27 +308,24 @@ function MainNavigator({
               headerBackTitleVisible: false,
             }}
           />
-          {/* 🔥 PANTALLA MEJORADA PARA SELECCIONAR SALAS CON PAGINACIÓN */}
           <Stack.Screen
             name="RoomSelectorForStudents"
             component={RoomSelectorForStudents}
             initialParams={{
-              pageSize: 10, // 📄 Tamaño de página por defecto
-              enablePagination: true, // ✅ Habilitar paginación
-              refreshOnFocus: true, // 🔄 Refrescar al enfocar
+              pageSize: 10,
+              enablePagination: true,
+              refreshOnFocus: true,
             }}
             options={({ route }) => ({
               title: "👥 Seleccionar Sala",
               headerBackTitleVisible: false,
               headerStyle: {
-                backgroundColor: "#4361EE", // Color diferente para distinguir
+                backgroundColor: "#4361EE",
               },
-              // 🔄 Botón de refrescar en el header
               headerRight: ({ tintColor }) => (
                 <View style={{ flexDirection: "row", marginRight: 15 }}>
                   <TouchableOpacity
                     onPress={() => {
-                      // Trigger refresh - esto se puede manejar con navigation events
                       console.log("🔄 Refrescando salas desde header...")
                     }}
                     style={{ marginRight: 10, padding: 5 }}
@@ -348,9 +346,8 @@ function MainNavigator({
               title: `👨‍🎓 ${route.params?.roomName || "Lista de Estudiantes"}`,
               headerBackTitleVisible: false,
               headerStyle: {
-                backgroundColor: "#4361EE", // Color diferente para distinguir
+                backgroundColor: "#4361EE",
               },
-              // 📊 Mostrar información de la sala en el header
               headerTitleStyle: {
                 fontWeight: "bold",
                 fontSize: 16,
@@ -360,15 +357,19 @@ function MainNavigator({
         </>
       )}
 
-      {/* 🌐 PANTALLAS COMPARTIDAS (ACCESIBLES PARA AMBOS ROLES) */}
+      {/* 🌐 PANTALLA DE PERFIL EN STACK - CON setIsAuthenticated GARANTIZADO */}
       <Stack.Screen
         name="Profile"
-        component={ProfileScreen}
         options={{
           title: "👤 Mi Perfil",
           headerBackTitleVisible: false,
         }}
-      />
+      >
+        {(props) => {
+          console.log("🔥 ProfileScreen en Stack - setIsAuthenticated disponible:", !!setIsAuthenticated)
+          return <ProfileScreen {...props} setIsAuthenticated={setIsAuthenticated} />
+        }}
+      </Stack.Screen>
     </Stack.Navigator>
   )
 }
@@ -378,7 +379,6 @@ const clearUserRole = async () => {
   try {
     console.log("🧹 Limpiando datos del usuario...")
 
-    // Lista de todas las claves que queremos limpiar
     const keysToRemove = [
       "userRole",
       "userInfo",
@@ -390,7 +390,11 @@ const clearUserRole = async () => {
       "selectedVillainName",
       "roomId",
       "quizResults",
-      // Agregar más claves según sea necesario
+      "studentData",
+      "teacherData",
+      "adminData",
+      "room_code",
+      "roomId",
     ]
 
     await AsyncStorage.multiRemove(keysToRemove)
@@ -403,7 +407,6 @@ const clearUserRole = async () => {
 // Crear un componente wrapper que maneje el logout Y LOS ROLES
 function DrawerNavigatorContent({ setIsAuthenticated }: { setIsAuthenticated: (val: boolean) => void }) {
   const navigation = useNavigation()
-  // 🎯 ESTADOS PARA MANEJAR EL ROL
   const [userRole, setUserRole] = useState<string | null>(null)
   const [userInfo, setUserInfo] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -413,7 +416,6 @@ function DrawerNavigatorContent({ setIsAuthenticated }: { setIsAuthenticated: (v
     try {
       setIsLoading(true)
 
-      // Obtener el rol y la información del usuario
       const role = await AsyncStorage.getItem("userRole")
       const authMethod = await AsyncStorage.getItem("authMethod")
       const userInfoString = await AsyncStorage.getItem("userInfo")
@@ -447,11 +449,11 @@ function DrawerNavigatorContent({ setIsAuthenticated }: { setIsAuthenticated: (v
     }
   }
 
-  // 🔄 CARGAR ROL AL MONTAR EL COMPONENTE
   useEffect(() => {
     loadUserRole()
   }, [])
 
+  // 🚪 FUNCIÓN DE LOGOUT QUE USA setIsAuthenticated
   const handleLogout = async () => {
     Alert.alert("Cerrar Sesión", "¿Estás seguro de que quieres cerrar sesión?", [
       {
@@ -463,30 +465,18 @@ function DrawerNavigatorContent({ setIsAuthenticated }: { setIsAuthenticated: (v
         style: "destructive",
         onPress: async () => {
           try {
-            console.log("🚪 Iniciando proceso de logout...")
+            console.log("🚪 Iniciando proceso de logout desde DrawerNavigator...")
 
-            // 🧹 LIMPIAR TODA LA INFORMACIÓN DEL USUARIO
             await clearUserRole()
-
-            // 🔄 RESETEAR ESTADOS LOCALES
             setUserRole(null)
             setUserInfo(null)
 
-            // 🚀 NAVEGAR AL LOGIN Y RESETEAR STACK
-            navigation.dispatch(
-              CommonActions.reset({
-                index: 0,
-                routes: [{ name: "Login" }], // Asegúrate que 'Login' sea el nombre correcto de tu pantalla
-              }),
-            )
-
-            // 🔐 CAMBIAR ESTADO DE AUTENTICACIÓN
+            console.log("🔄 Desautenticando usuario para volver al AuthStack...")
             setIsAuthenticated(false)
 
-            console.log("✅ Logout completado - Usuario redirigido al login")
+            console.log("✅ Logout completado - Usuario debería volver al AuthStack")
           } catch (error) {
             console.error("❌ Error al cerrar sesión:", error)
-            // En caso de error, al menos cambiar el estado de autenticación
             setIsAuthenticated(false)
           }
         },
@@ -494,7 +484,6 @@ function DrawerNavigatorContent({ setIsAuthenticated }: { setIsAuthenticated: (v
     ])
   }
 
-  // 🔄 MOSTRAR LOADING MIENTRAS SE CARGA EL ROL
   if (isLoading) {
     return (
       <View
@@ -523,7 +512,7 @@ function DrawerNavigatorContent({ setIsAuthenticated }: { setIsAuthenticated: (v
             color: "#999",
           }}
         >
-          Configurando paginación...
+          Configurando navegación...
         </Text>
       </View>
     )
@@ -568,9 +557,16 @@ function DrawerNavigatorContent({ setIsAuthenticated }: { setIsAuthenticated: (v
 
   console.log("🎯 Renderizando MainNavigator para rol:", userRole)
   console.log("👤 Info del usuario:", userInfo?.username)
-  console.log("📄 Paginación habilitada para RoomSelectorForStudents")
+  console.log("🔥 setIsAuthenticated disponible en DrawerNavigator:", !!setIsAuthenticated)
 
-  return <MainNavigator userRole={userRole} userInfo={userInfo} onLogout={handleLogout} />
+  return (
+    <MainNavigator
+      userRole={userRole}
+      userInfo={userInfo}
+      onLogout={handleLogout}
+      setIsAuthenticated={setIsAuthenticated}
+    />
+  )
 }
 
 export default DrawerNavigatorContent

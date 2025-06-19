@@ -52,6 +52,14 @@ export default function ProfileScreen({ setIsAuthenticated }: Props) {
     Poppins_700Bold,
   })
 
+  // 🔥 VERIFICAR DISPONIBILIDAD DE setIsAuthenticated AL MONTAR
+  useEffect(() => {
+    console.log("🔥 ProfileScreen montado - setIsAuthenticated disponible:", !!setIsAuthenticated)
+    if (!setIsAuthenticated) {
+      console.error("❌ CRÍTICO: setIsAuthenticated no está disponible en ProfileScreen!")
+    }
+  }, [setIsAuthenticated])
+
   // 🎯 FUNCIÓN PARA DETERMINAR EL ENDPOINT CORRECTO
   const getProfileEndpoint = (role: string | null) => {
     if (role === "STUDENT") {
@@ -118,12 +126,85 @@ export default function ProfileScreen({ setIsAuthenticated }: Props) {
     }
   }
 
-  // 🚪 FUNCIÓN PARA MANEJAR LOGOUT
+  // 🚪 FUNCIÓN MEJORADA PARA MANEJAR LOGOUT CON VERIFICACIÓN
   const handleLogout = async () => {
     try {
-      console.log("🚪 Iniciando proceso de logout...")
+      console.log("🚪 Iniciando proceso de logout desde ProfileScreen...")
+      console.log("🔥 setIsAuthenticated disponible:", !!setIsAuthenticated)
 
-      // Lista de todas las claves relacionadas con autenticación
+      // 🔥 VERIFICACIÓN CRÍTICA
+      if (!setIsAuthenticated) {
+        console.error("❌ CRÍTICO: setIsAuthenticated no está disponible!")
+        Alert.alert(
+          "❌ Error Crítico",
+          "No se puede cerrar sesión correctamente. La función de autenticación no está disponible.",
+          [{ text: "OK" }],
+        )
+        return
+      }
+
+      Alert.alert("Cerrar Sesión", "¿Estás seguro de que quieres cerrar sesión?", [
+        {
+          text: "Cancelar",
+          style: "cancel",
+        },
+        {
+          text: "Cerrar Sesión",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              console.log("🧹 Limpiando datos de usuario...")
+
+              // Lista de todas las claves relacionadas con autenticación
+              const authKeys = [
+                "studentToken",
+                "studentData",
+                "authMethod",
+                "userRole",
+                "userInfo",
+                "room_code",
+                "roomId",
+                "teacherToken",
+                "teacherData",
+                "adminToken",
+                "adminData",
+                "userToken",
+                "isAuthenticated",
+              ]
+
+              // Eliminar todas las claves de autenticación
+              await AsyncStorage.multiRemove(authKeys)
+              console.log("✅ Datos de sesión limpiados correctamente")
+
+              console.log("🔄 Ejecutando setIsAuthenticated(false) - App.js cambiará al AuthStack")
+              setIsAuthenticated(false)
+              console.log("✅ setIsAuthenticated(false) ejecutado correctamente")
+
+              Alert.alert("✅ Sesión Cerrada", "Has cerrado sesión correctamente.", [{ text: "OK" }])
+            } catch (error) {
+              console.error("❌ Error al cerrar sesión:", error)
+              console.log("🔄 Fallback: Ejecutando setIsAuthenticated(false)")
+              setIsAuthenticated(false)
+              Alert.alert("⚠️ Error", "Hubo un problema al cerrar sesión, pero se ha desautenticado.")
+            }
+          },
+        },
+      ])
+    } catch (error) {
+      console.error("❌ Error en handleLogout:", error)
+      if (setIsAuthenticated) {
+        console.log("🔄 Fallback final: setIsAuthenticated(false)")
+        setIsAuthenticated(false)
+      }
+    }
+  }
+
+  // 🔥 FUNCIÓN MEJORADA PARA MANEJAR SESIÓN EXPIRADA CON VERIFICACIÓN
+  const handleSessionExpired = async () => {
+    try {
+      console.log("⏰ Sesión expirada detectada - limpiando datos...")
+      console.log("🔥 setIsAuthenticated disponible en sesión expirada:", !!setIsAuthenticated)
+
       const authKeys = [
         "studentToken",
         "studentData",
@@ -140,20 +221,65 @@ export default function ProfileScreen({ setIsAuthenticated }: Props) {
         "isAuthenticated",
       ]
 
-      // Eliminar todas las claves de autenticación
       await AsyncStorage.multiRemove(authKeys)
+      console.log("🧹 Datos de sesión limpiados")
 
-      console.log("✅ Sesión cerrada correctamente")
-
-      // Si tenemos la función para cambiar estado de autenticación, la usamos
-      if (setIsAuthenticated) {
-        setIsAuthenticated(false)
+      // 🔥 VERIFICACIÓN CRÍTICA ANTES DE USAR setIsAuthenticated
+      if (!setIsAuthenticated) {
+        console.error("❌ CRÍTICO: setIsAuthenticated no está disponible en sesión expirada!")
+        Alert.alert(
+          "⏰ Sesión Expirada",
+          "Tu sesión ha expirado. La aplicación se reiniciará.",
+          [
+            {
+              text: "OK",
+              onPress: () => {
+                console.log("🔄 Último recurso: Intentando recargar la aplicación...")
+              },
+            },
+          ],
+          { cancelable: false },
+        )
+        return
       }
 
-      Alert.alert("Sesión Cerrada", "Has cerrado sesión correctamente.", [{ text: "OK" }])
+      Alert.alert(
+        "⏰ Sesión Expirada",
+        "Tu sesión ha expirado por seguridad. Por favor, inicia sesión nuevamente para continuar.",
+        [
+          {
+            text: "Ir al Login",
+            onPress: () => {
+              console.log("🔄 Redirigiendo al AuthStack por sesión expirada...")
+              console.log("🔄 Ejecutando setIsAuthenticated(false) - App.js cambiará al AuthStack")
+              setIsAuthenticated(false)
+              console.log("✅ setIsAuthenticated(false) ejecutado por sesión expirada")
+            },
+          },
+        ],
+        { cancelable: false },
+      )
     } catch (error) {
-      console.error("❌ Error al cerrar sesión:", error)
-      Alert.alert("Error", "No se pudo cerrar la sesión correctamente.")
+      console.error("❌ Error al limpiar sesión expirada:", error)
+
+      Alert.alert(
+        "⚠️ Error de Sesión",
+        "Hubo un problema con tu sesión. Por favor, inicia sesión nuevamente.",
+        [
+          {
+            text: "Ir al Login",
+            onPress: () => {
+              console.log("🔄 Fallback por error en limpieza de sesión expirada...")
+              if (setIsAuthenticated) {
+                setIsAuthenticated(false)
+              } else {
+                console.error("❌ setIsAuthenticated no disponible en fallback!")
+              }
+            },
+          },
+        ],
+        { cancelable: false },
+      )
     }
   }
 
@@ -220,20 +346,19 @@ export default function ProfileScreen({ setIsAuthenticated }: Props) {
           errorMessage = responseText || `Error ${response.status}`
         }
 
-        // Manejar específicamente errores de autenticación
+        // 🔥 MANEJAR ESPECÍFICAMENTE ERRORES DE AUTENTICACIÓN Y REDIRIGIR
         if (
           response.status === 401 ||
           response.status === 403 ||
           errorMessage.includes("no encontrado") ||
           errorMessage.includes("expirado") ||
-          errorMessage.includes("invalid")
+          errorMessage.includes("invalid") ||
+          errorMessage.includes("unauthorized") ||
+          errorMessage.includes("forbidden")
         ) {
           console.error("❌ Token expirado o inválido - Status:", response.status)
-
-          // Limpiar tokens
-          await AsyncStorage.multiRemove(["studentToken", "userToken", "teacherToken", "adminToken"])
-
-          throw new Error("Sesión expirada. Inicia sesión nuevamente.")
+          await handleSessionExpired()
+          throw new Error("Sesión expirada. Redirigiendo al login...")
         }
 
         throw new Error(errorMessage)
@@ -292,10 +417,14 @@ export default function ProfileScreen({ setIsAuthenticated }: Props) {
     } catch (error: any) {
       console.error("❌ Error completo en fetchUserProfile:", error)
 
-      // Si es error de sesión expirada, manejar específicamente
-      if (error.message.includes("expirada") || error.message.includes("inicia sesión")) {
-        // Intentar limpiar tokens
-        await AsyncStorage.multiRemove(["studentToken", "userToken", "teacherToken", "adminToken"])
+      // 🔥 SI ES ERROR DE SESIÓN EXPIRADA, YA SE MANEJÓ LA REDIRECCIÓN
+      if (error.message.includes("expirada") || error.message.includes("Redirigiendo al login")) {
+        return
+      }
+
+      // Si es error de token, manejar sesión expirada
+      if (error.message.includes("token") || error.message.includes("autenticación")) {
+        await handleSessionExpired()
       }
 
       throw error
@@ -309,18 +438,26 @@ export default function ProfileScreen({ setIsAuthenticated }: Props) {
       setError(null)
 
       const userProfile = await fetchUserProfile()
+
+      // 🔥 SI userProfile ES UNDEFINED (SESIÓN EXPIRADA), NO CONTINUAR
+      if (!userProfile) {
+        return
+      }
+
       setProfile(userProfile)
     } catch (error: any) {
       console.error("❌ Error al cargar perfil:", error)
+
+      // 🔥 SI EL ERROR INDICA REDIRECCIÓN, NO MOSTRAR ERROR
+      if (error.message.includes("Redirigiendo al login")) {
+        return
+      }
+
       setError(error.message)
 
+      // 🔥 MANEJAR ERRORES DE SESIÓN CON ALERTA
       if (error.message.includes("Sesión expirada") || error.message.includes("token")) {
-        Alert.alert("Sesión Expirada", "Tu sesión ha expirado. Por favor, inicia sesión nuevamente.", [
-          {
-            text: "Cerrar Sesión",
-            onPress: () => handleLogout(),
-          },
-        ])
+        return
       }
     } finally {
       setLoading(false)
@@ -417,6 +554,9 @@ export default function ProfileScreen({ setIsAuthenticated }: Props) {
         {userRole && (
           <Text style={styles.debugText}>Endpoint: {userRole === "STUDENT" ? "students/me" : "user/me"}</Text>
         )}
+        <Text style={styles.debugText}>
+          setIsAuthenticated: {setIsAuthenticated ? "✅ Disponible" : "❌ No disponible"}
+        </Text>
       </View>
     )
   }
@@ -432,11 +572,18 @@ export default function ProfileScreen({ setIsAuthenticated }: Props) {
             Rol: {userRole} | Endpoint: {userRole === "STUDENT" ? "students/me" : "user/me"}
           </Text>
         )}
+        <Text style={styles.debugText}>
+          setIsAuthenticated: {setIsAuthenticated ? "✅ Disponible" : "❌ No disponible"}
+        </Text>
         <View style={styles.errorButtonsContainer}>
           <TouchableOpacity style={styles.retryButton} onPress={loadProfile}>
             <Text style={styles.retryButtonText}>Reintentar</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+          <TouchableOpacity
+            style={[styles.logoutButton, !setIsAuthenticated && { backgroundColor: "#999", opacity: 0.5 }]}
+            onPress={handleLogout}
+            disabled={!setIsAuthenticated}
+          >
             <Text style={styles.logoutButtonText}>Cerrar Sesión</Text>
           </TouchableOpacity>
         </View>
@@ -453,7 +600,11 @@ export default function ProfileScreen({ setIsAuthenticated }: Props) {
           <TouchableOpacity style={styles.retryButton} onPress={loadProfile}>
             <Text style={styles.retryButtonText}>Reintentar</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+          <TouchableOpacity
+            style={[styles.logoutButton, !setIsAuthenticated && { backgroundColor: "#999", opacity: 0.5 }]}
+            onPress={handleLogout}
+            disabled={!setIsAuthenticated}
+          >
             <Text style={styles.logoutButtonText}>Cerrar Sesión</Text>
           </TouchableOpacity>
         </View>
@@ -485,8 +636,11 @@ export default function ProfileScreen({ setIsAuthenticated }: Props) {
             <Ionicons name={getRoleIcon(profile.role)} size={16} color={getRoleColor(profile.role)} />
             <Text style={[styles.userRole, { color: getRoleColor(profile.role) }]}>{getRoleText(profile.role)}</Text>
           </View>
-          {/* 🔍 INDICADOR DE ENDPOINT USADO */}
           <Text style={styles.endpointIndicator}>API: {profile.role === "STUDENT" ? "students/me" : "user/me"}</Text>
+          {/* 🔥 INDICADOR DE ESTADO DE setIsAuthenticated */}
+          <Text style={[styles.endpointIndicator, { color: setIsAuthenticated ? "#2ED573" : "#FF4757" }]}>
+            Auth: {setIsAuthenticated ? "✅ Disponible" : "❌ No disponible"}
+          </Text>
         </View>
       </View>
 
@@ -586,9 +740,15 @@ export default function ProfileScreen({ setIsAuthenticated }: Props) {
           <Text style={styles.refreshButtonText}>Actualizar Perfil</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.logoutButtonFull} onPress={handleLogout}>
+        <TouchableOpacity
+          style={[styles.logoutButtonFull, !setIsAuthenticated && { backgroundColor: "#999", opacity: 0.5 }]}
+          onPress={handleLogout}
+          disabled={!setIsAuthenticated}
+        >
           <Ionicons name="log-out" size={20} color="#fff" />
-          <Text style={styles.logoutButtonText}>Cerrar Sesión</Text>
+          <Text style={styles.logoutButtonText}>
+            {setIsAuthenticated ? "Cerrar Sesión" : "Cerrar Sesión (No disponible)"}
+          </Text>
         </TouchableOpacity>
       </View>
     </ScrollView>

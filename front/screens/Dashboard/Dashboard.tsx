@@ -60,6 +60,15 @@ const useResponsiveDimensions = () => {
     hp: (percentage: number) => (height * percentage) / 100,
     fontSize: (size: number) => Math.round(size * (width / 375)),
     spacing: (size: number) => Math.round(size * (width / 375)),
+
+    // 🎯 FUNCIÓN ESPECIAL PARA EMPTY STATE - MÁS INTELIGENTE
+    emptyStateFontSize: (baseSize: number) => {
+      if (width >= 1024) return Math.round(baseSize * 1.1) // Tablets grandes
+      if (width >= 768) return Math.round(baseSize * 1.0) // Tablets medianos
+      if (width >= 414) return Math.round(baseSize * 0.95) // Teléfonos grandes
+      if (width >= 375) return Math.round(baseSize * 0.9) // Teléfonos medianos
+      return Math.round(baseSize * 0.85) // Teléfonos pequeños
+    },
   }
 }
 
@@ -364,7 +373,7 @@ export default function Dashboard() {
 
 // Función para crear estilos responsivos
 const createResponsiveStyles = (dimensions) => {
-  const { width, height, isTablet, isSmallScreen, fontSize, spacing, wp, hp } = dimensions
+  const { width, height, isTablet, isSmallScreen, fontSize, spacing, wp, hp, emptyStateFontSize } = dimensions
 
   return StyleSheet.create({
     container: {
@@ -438,21 +447,22 @@ const createResponsiveStyles = (dimensions) => {
       shadowRadius: 4,
       elevation: 3,
     },
+    // 🎯 SISTEMA RESPONSIVO INTELIGENTE SOLO PARA EMPTY STATE
     emptyStateTitle: {
-      fontSize: fontSize(isTablet ? 24 : 20),
+      fontSize: emptyStateFontSize(20), // Base 20px, se escala inteligentemente
       fontFamily: "Poppins_600SemiBold",
       color: "#333",
       marginBottom: spacing(12),
       textAlign: "center",
     },
     emptyStateText: {
-      fontSize: fontSize(isTablet ? 16 : 14),
+      fontSize: emptyStateFontSize(18), // Base 14px, se escala inteligentemente
       fontFamily: "Poppins_400Regular",
       color: "#666",
       textAlign: "center",
-      lineHeight: fontSize(isTablet ? 24 : 20),
+      lineHeight: emptyStateFontSize(26), // Line height proporcional
       marginBottom: spacing(20),
-      paddingHorizontal: spacing(isSmallScreen ? 5 : 10),
+      paddingHorizontal: spacing(isSmallScreen ? 20 : 20),
     },
     createFirstRoomButton: {
       backgroundColor: "#4361EE",
@@ -463,7 +473,7 @@ const createResponsiveStyles = (dimensions) => {
       alignItems: "center",
     },
     createFirstRoomButtonText: {
-      fontSize: fontSize(isTablet ? 16 : 14),
+      fontSize: emptyStateFontSize(14), // Base 14px, se escala inteligentemente
       fontFamily: "Poppins_600SemiBold",
       color: "#FFFFFF",
       textAlign: "center",
