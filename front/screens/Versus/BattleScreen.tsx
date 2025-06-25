@@ -1,15 +1,15 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { useFocusEffect, useNavigation } from '@react-navigation/native';
-import { View, Image, StyleSheet, Dimensions, ImageBackground, Animated, StatusBar, Platform, Text } from "react-native"
-import { LinearGradient } from "expo-linear-gradient"
+import { useState, useRef, useEffect } from "react"
+import { View, StyleSheet, Dimensions, StatusBar, Text, ActivityIndicator } from "react-native"
+import { Video, ResizeMode, type AVPlaybackStatus } from "expo-av"
 import AsyncStorage from "@react-native-async-storage/async-storage"
+import { useNavigation } from "@react-navigation/native"
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack"
 
 const { width, height } = Dimensions.get("window")
 
-// 🎯 TIPOS DE NAVEGACIÓN PARA INCLUIR QUIZ
+// 🎯 TIPOS DE NAVEGACIÓN
 type RootStackParamList = {
   Login: undefined
   Register: undefined
@@ -23,469 +23,464 @@ type RootStackParamList = {
 
 type NavigationProps = NativeStackNavigationProp<RootStackParamList>
 
-const BattleScreen = () => {
-  // 🎯 HOOK DE NAVEGACIÓN
+// 🎬 CONFIGURACIÓN DE VIDEOS
+const VIDEO_URLS = {
+  heroes: {
+    Amaru: "https://d1xh8jk9umgr2r.cloudfront.net/Amaru_intro.mp4",
+    Killa: "https://d1xh8jk9umgr2r.cloudfront.net/Killa_intro.mp4",
+    Qhapac: "https://d1xh8jk9umgr2r.cloudfront.net/Qhapac_intro.mp4",
+  },
+  vs: "https://d1xh8jk9umgr2r.cloudfront.net/vs.mp4",
+  villains: {
+    Corporatus: "https://d1xh8jk9umgr2r.cloudfront.net/Corporatus_intro.mp4",
+    Shadowman: "https://d1xh8jk9umgr2r.cloudfront.net/Fantasma_intro.mp4",
+    Toxicus: "https://d1xh8jk9umgr2r.cloudfront.net/Toxicus_intro.mp4",
+  },
+}
+
+// 🎮 FASES DE LA BATALLA
+enum BattlePhase {
+  LOADING = "loading",
+  HERO_VIDEO = "hero",
+  VS_VIDEO = "vs",
+  VILLAIN_VIDEO = "villain",
+  COMPLETED = "completed",
+}
+
+const BattleVideoScreen = () => {
   const navigation = useNavigation<NavigationProps>()
 
-  // Estado para almacenar el nombre del personaje y villano seleccionados
-  const [characterName, setCharacterName] = useState<string | null>(null)
-  const [villainName, setVillainName] = useState<string | null>(null)
+  // 📱 ESTADOS PRINCIPALES
+  const [currentPhase, setCurrentPhase] = useState<BattlePhase>(BattlePhase.LOADING)
+  const [characterName, setCharacterName] = useState<string>("Qhapac")
+  const [villainName, setVillainName] = useState<string>("Corporatus")
+  const [isLoading, setIsLoading] = useState(true)
+  const [loadingProgress, setLoadingProgress] = useState(0)
+  const [isInitialized, setIsInitialized] = useState(false)
+  
+  // 🔥 ESTADOS SIMPLIFICADOS PARA CONTROL DE VIDEOS
+  const [videoCompletionFlags, setVideoCompletionFlags] = useState({
+    hero: false,
+    vs: false,
+    villain: false
+  })
 
-  // Animaciones para la entrada de personajes y efectos
-  const [heroAnim] = useState(new Animated.Value(-width))
-  const [enemyAnim] = useState(new Animated.Value(width))
-  const [vsScale] = useState(new Animated.Value(0))
-  const [vsRotate] = useState(new Animated.Value(0))
-  const [glowOpacity] = useState(new Animated.Value(0.4))
+  // 📹 REFERENCIAS DE VIDEO
+  const heroVideoRef = useRef<Video>(null)
+  const vsVideoRef = useRef<Video>(null)
+  const villainVideoRef = useRef<Video>(null)
 
-  // Animaciones para el anuncio "Battle Royale"
-  const [battleRoyaleScale] = useState(new Animated.Value(0))
-  const [battleRoyaleOpacity] = useState(new Animated.Value(1))
-  const [showBattleRoyale, setShowBattleRoyale] = useState(true)
+  // 🎯 CARGAR DATOS DE PERSONAJES (SOLO UNA VEZ)
+  useEffect(() => {
+    if (isInitialized) return
 
-  // Cargar el nombre del personaje y villano seleccionados desde AsyncStorage
-  useFocusEffect(() => {
-    const loadSelectedCharacterAndVillain = async () => {
+    const loadCharacterData = async () => {
       try {
-        // Cargar nombre del personaje
-        const savedCharacterName = await AsyncStorage.getItem("selectedCharacterName")
+        console.log("🔄 Cargando datos de personajes...")
+        setIsInitialized(true)
 
-        if (savedCharacterName) {
+        // Cargar héroe
+        const savedCharacterName = await AsyncStorage.getItem("selectedCharacterName")
+        if (savedCharacterName && VIDEO_URLS.heroes[savedCharacterName as keyof typeof VIDEO_URLS.heroes]) {
           setCharacterName(savedCharacterName)
-          console.log("Nombre del personaje cargado en BattleScreen:", savedCharacterName)
+          console.log("✅ Héroe cargado:", savedCharacterName)
         } else {
-          console.log("No hay nombre de personaje guardado en AsyncStorage")
-          // Si no hay personaje guardado, usamos uno por defecto
-          setCharacterName("Qhapaq")
+          console.log("⚠️ Usando héroe por defecto: Qhapac")
+          setCharacterName("Qhapac")
         }
 
-        // Cargar nombre del villano - primero intentamos con la clave específica
+        // Cargar villano
         const savedVillainName = await AsyncStorage.getItem("selectedVillainName")
+        console.log("NAME Villano : ", savedVillainName)
+        let finalVillainName = "Corporatus"
 
         if (savedVillainName) {
-          setVillainName(savedVillainName.name)
-          console.log("Nombre del villano cargado en BattleScreen:", savedVillainName.name)          
+          try {
+            const villainData = JSON.parse(savedVillainName)
+            if (villainData.name && VIDEO_URLS.villains[villainData.name as keyof typeof VIDEO_URLS.villains]) {
+              finalVillainName = villainData.name
+            }
+          } catch {
+            if (VIDEO_URLS.villains[savedVillainName as keyof typeof VIDEO_URLS.villains]) {
+              finalVillainName = savedVillainName
+            }
+          }
         } else {
-          // Si no existe, intentamos obtenerlo del objeto completo
           const savedVillain = await AsyncStorage.getItem("selectedVillain")
           if (savedVillain) {
-            const villainData = JSON.parse(savedVillain)
-            setVillainName(villainData.name)
-            console.log("Nombre del villano extraído del objeto:", villainData.name)
-          } else {
-            console.log("No hay nombre de villano guardado en AsyncStorage")
-            // Si no hay villano guardado, usamos uno por defecto
-            setVillainName("Corporatus")
+            try {
+              const villainData = JSON.parse(savedVillain)
+              if (villainData.name && VIDEO_URLS.villains[villainData.name as keyof typeof VIDEO_URLS.villains]) {
+                finalVillainName = villainData.name
+              }
+            } catch (error) {
+              console.log("Error parsing villain data:", error)
+            }
           }
         }
+
+        setVillainName(finalVillainName)
+        console.log("✅ Villano cargado:", finalVillainName)
+
+        // Iniciar precarga de videos
+        await preloadVideos(savedCharacterName || "Qhapac", finalVillainName)
       } catch (error) {
-        console.error("Error al cargar datos:", error)
+        console.error("❌ Error cargando datos:", error)
+        setCharacterName("Qhapac")
+        setVillainName("Corporatus")
+        await preloadVideos("Qhapac", "Corporatus")
       }
     }
 
-    loadSelectedCharacterAndVillain()
-  })
+    loadCharacterData()
+  }, [isInitialized])
 
-  // 🎯 FUNCIÓN PARA NAVEGAR AL QUIZ DESPUÉS DE LA ANIMACIÓN
+  // 🎬 PRECARGA OPTIMIZADA DE VIDEOS
+  const preloadVideos = async (heroName: string, villainName: string) => {
+    try {
+      console.log("🎬 Iniciando precarga de videos...")
+      setLoadingProgress(10)
+
+      const heroUrl = VIDEO_URLS.heroes[heroName as keyof typeof VIDEO_URLS.heroes]
+      const vsUrl = VIDEO_URLS.vs
+      const villainUrl = VIDEO_URLS.villains[villainName as keyof typeof VIDEO_URLS.villains]
+
+      console.log("📹 URLs a precargar:", { heroUrl, vsUrl, villainUrl })
+
+      // Precargar video del héroe
+      if (heroVideoRef.current && heroUrl) {
+        try {
+          await heroVideoRef.current.loadAsync({ uri: heroUrl }, { shouldPlay: false }, false)
+          setLoadingProgress(40)
+          console.log("✅ Video héroe precargado")
+        } catch (error) {
+          console.log("⚠️ Error precargando héroe:", error)
+        }
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 200))
+
+      // Precargar video VS
+      if (vsVideoRef.current && vsUrl) {
+        try {
+          await vsVideoRef.current.loadAsync({ uri: vsUrl }, { shouldPlay: false }, false)
+          setLoadingProgress(70)
+          console.log("✅ Video VS precargado")
+        } catch (error) {
+          console.log("⚠️ Error precargando VS:", error)
+        }
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 200))
+
+      // Precargar video del villano
+      if (villainVideoRef.current && villainUrl) {
+        try {
+          await villainVideoRef.current.loadAsync({ uri: villainUrl }, { shouldPlay: false }, false)
+          setLoadingProgress(100)
+          console.log("✅ Video villano precargado")
+        } catch (error) {
+          console.log("⚠️ Error precargando villano:", error)
+        }
+      }
+
+      setTimeout(() => {
+        setIsLoading(false)
+        setCurrentPhase(BattlePhase.HERO_VIDEO)
+        startHeroVideo()
+      }, 1000)
+    } catch (error) {
+      console.error("❌ Error en precarga:", error)
+      setIsLoading(false)
+      setCurrentPhase(BattlePhase.HERO_VIDEO)
+      startHeroVideo()
+    }
+  }
+
+  // 🔄 RESETEAR FLAGS DE COMPLETACIÓN
+  const resetVideoFlags = () => {
+    setVideoCompletionFlags({
+      hero: false,
+      vs: false,
+      villain: false
+    })
+  }
+
+  // 🎬 INICIAR VIDEO DEL HÉROE - SIMPLIFICADO
+  const startHeroVideo = async () => {
+    try {
+      console.log("🦸‍♂️ Iniciando video del héroe...")
+      
+      // Resetear flags
+      resetVideoFlags()
+      
+      if (heroVideoRef.current) {
+        // Asegurar posición inicial
+        await heroVideoRef.current.setPositionAsync(0)
+        
+        // Reproducir después de un breve delay
+        setTimeout(async () => {
+          try {
+            await heroVideoRef.current?.playAsync()
+            console.log("✅ Video del héroe iniciado correctamente")
+          } catch (error) {
+            console.error("❌ Error al reproducir video héroe:", error)
+            setTimeout(() => startVsVideo(), 1000)
+          }
+        }, 300)
+      }
+    } catch (error) {
+      console.error("❌ Error reproduciendo video héroe:", error)
+      setTimeout(() => startVsVideo(), 1000)
+    }
+  }
+
+  // ⚔️ INICIAR VIDEO VS
+  const startVsVideo = async () => {
+    try {
+      console.log("⚔️ Iniciando video VS...")
+      setCurrentPhase(BattlePhase.VS_VIDEO)
+      if (vsVideoRef.current) {
+        await vsVideoRef.current.setPositionAsync(0)
+        setTimeout(async () => {
+          await vsVideoRef.current?.playAsync()
+        }, 300)
+      }
+    } catch (error) {
+      console.error("❌ Error reproduciendo video VS:", error)
+      setTimeout(() => startVillainVideo(), 1000)
+    }
+  }
+
+  // 🦹‍♂️ INICIAR VIDEO DEL VILLANO
+  const startVillainVideo = async () => {
+    try {
+      console.log("🦹‍♂️ Iniciando video del villano...")
+      setCurrentPhase(BattlePhase.VILLAIN_VIDEO)
+      if (villainVideoRef.current) {
+        await villainVideoRef.current.setPositionAsync(0)
+        setTimeout(async () => {
+          await villainVideoRef.current?.playAsync()
+        }, 300)
+      }
+    } catch (error) {
+      console.error("❌ Error reproduciendo video villano:", error)
+      setTimeout(() => navigateToQuiz(), 1000)
+    }
+  }
+
+  // 🎯 NAVEGAR AL QUIZ
   const navigateToQuiz = async () => {
     try {
       console.log("🎮 Batalla completada - Navegando a Quiz...")
-      
-      // 🎯 GUARDAR DATOS DE LA BATALLA PARA EL QUIZ
+
       await AsyncStorage.multiSet([
         ["battleCompleted", "true"],
         ["quizMode", "post_battle"],
         ["battleResult", "completed"],
         ["gamePhase", "quiz"],
-        ["gameState", "in_quiz"]
+        ["gameState", "in_quiz"],
       ])
 
-      console.log("✅ Datos de batalla guardados")
-      console.log("🚀 Navegando a Quiz...")
-
-      // 🎯 NAVEGAR AL QUIZ
+      setCurrentPhase(BattlePhase.COMPLETED)
       navigation.navigate("Quiz")
-      
-      console.log("✅ Navegación a Quiz ejecutada")
-
     } catch (error) {
-      console.error("❌ Error al navegar al quiz:", error)
-      // Fallback: intentar navegar de todas formas
+      console.error("❌ Error navegando al quiz:", error)
       navigation.navigate("Quiz")
     }
   }
 
-  useEffect(() => {
-    // Animar el anuncio "Battle Royale" primero
-    Animated.sequence([
-      // Entrada con zoom del texto Battle Royale
-      Animated.timing(battleRoyaleScale, {
-        toValue: 1,
-        duration: 800,
-        useNativeDriver: true,
-      }),
-      // Mantener el texto visible por un momento
-      Animated.delay(1000),
-      // Desvanecer el texto
-      Animated.timing(battleRoyaleOpacity, {
-        toValue: 0,
-        duration: 500,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      // Ocultar el componente Battle Royale después de la animación
-      setShowBattleRoyale(false)
+  // 📹 MANEJAR ESTADO DE REPRODUCCIÓN - SIMPLIFICADO Y CORREGIDO
+  const handlePlaybackStatusUpdate = (status: AVPlaybackStatus, videoType: "hero" | "vs" | "villain") => {
+    if (!status.isLoaded) return
 
-      // Iniciar las animaciones de los personajes y el VS
-      Animated.parallel([
-        Animated.timing(heroAnim, {
-          toValue: 0,
-          duration: 1000,
-          useNativeDriver: true,
-        }),
-        Animated.timing(enemyAnim, {
-          toValue: 0,
-          duration: 1000,
-          useNativeDriver: true,
-        }),
-        Animated.sequence([
-          Animated.delay(800),
-          Animated.spring(vsScale, {
-            toValue: 1,
-            friction: 3,
-            tension: 120,
-            useNativeDriver: true,
-          }),
-        ]),
-      ]).start(() => {
-        // 🎯 DESPUÉS DE COMPLETAR TODAS LAS ANIMACIONES, NAVEGAR AL QUIZ
+    // 🔥 SOLO USAR didJustFinish PARA DETERMINAR FINALIZACIÓN
+    if (status.didJustFinish && !videoCompletionFlags[videoType]) {
+      console.log(`✅ Video ${videoType} terminado completamente por didJustFinish`)
+      
+      // Marcar como completado para evitar múltiples ejecuciones
+      setVideoCompletionFlags(prev => ({
+        ...prev,
+        [videoType]: true
+      }))
+
+      // Proceder al siguiente video con un pequeño delay
+      setTimeout(() => {
+        switch (videoType) {
+          case "hero":
+            startVsVideo()
+            break
+          case "vs":
+            startVillainVideo()
+            break
+          case "villain":
+            navigateToQuiz()
+            break
+        }
+      }, 500)
+    }
+
+    // Manejar errores
+    if (status.error) {
+      console.error(`❌ Error en video ${videoType}:`, status.error)
+      if (!videoCompletionFlags[videoType]) {
+        setVideoCompletionFlags(prev => ({
+          ...prev,
+          [videoType]: true
+        }))
+        
         setTimeout(() => {
-          navigateToQuiz()
-        }, 2000) // Esperar 2 segundos adicionales para que el usuario vea la batalla
-      })
-    })
-
-    // Animación continua para el efecto de rotación del VS
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(vsRotate, {
-          toValue: 1,
-          duration: 2000,
-          useNativeDriver: true,
-        }),
-        Animated.timing(vsRotate, {
-          toValue: 0,
-          duration: 2000,
-          useNativeDriver: true,
-        }),
-      ]),
-    ).start()
-
-    // Animación de brillo pulsante
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(glowOpacity, {
-          toValue: 0.8,
-          duration: 1500,
-          useNativeDriver: true,
-        }),
-        Animated.timing(glowOpacity, {
-          toValue: 0.4,
-          duration: 1500,
-          useNativeDriver: true,
-        }),
-      ]),
-    ).start()
-  }, [])
-
-  // Interpolación para la rotación del VS
-  const vsRotateInterpolate = vsRotate.interpolate({
-    inputRange: [0, 1],
-    outputRange: ["-5deg", "5deg"],
-  })
-
-  // Función para cargar dinámicamente la imagen del héroe basada en el nombre
-  const getHeroImage = () => {
-    // Construimos el nombre de la imagen basado en el nombre del personaje y el contexto (batalla)
-    if (characterName) {
-      // Como no podemos usar rutas dinámicas en require(), usamos un switch
-      switch (characterName) {
-        case "Qhapaq":
-          return require("../../assets/Personajes/Qhapaq-battle.png")
-        case "Amaru":
-          return require("../../assets/Personajes/Amaru-battle.png")
-        case "Killa":
-          return require("../../assets/Personajes/Killa-battle.png")
-        default:
-          return require("../../assets/Personajes/Killa-battle.png")
+          switch (videoType) {
+            case "hero":
+              startVsVideo()
+              break
+            case "vs":
+              startVillainVideo()
+              break
+            case "villain":
+              navigateToQuiz()
+              break
+          }
+        }, 1000)
       }
     }
-    // Imagen por defecto si no hay personaje seleccionado
-    return require("../../assets/images/villiancharacter1.png")
   }
 
-  const getVillainImage = () => {
-    if (villainName) {
-      console.log("Cargando imagen para villano:", villainName)
-      // Como no podemos usar rutas dinámicas en require(), usamos un switch
-      switch (villainName) {
-        case "Corporatus":
-          return require("../../assets/villanosBattle/Corporatus.png")
-        case "Toxicus":
-          return require("../../assets/villanosBattle/El Demonio de la Avidez.png")
-        case "Shadowman":
-          return require("../../assets/villanosBattle/Shadowman.png")
-        default:
-          console.log("Usando imagen por defecto para villano desconocido:", villainName)
-          return require("../../assets/villanosBattle/Corporatus.png")
-      }
-    }
-    // Imagen por defecto si no hay villano seleccionado
-    return require("../../assets/villanosBattle/Corporatus.png")
+  // 🎨 RENDERIZAR PANTALLA DE CARGA
+  if (isLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <StatusBar hidden />
+        <Text style={styles.loadingTitle}>Preparando Batalla</Text>
+        <Text style={styles.loadingSubtitle}>
+          {characterName} vs {villainName}
+        </Text>
+        <ActivityIndicator size="large" color="#FF6B35" style={styles.loadingSpinner} />
+        <View style={styles.progressContainer}>
+          <View style={[styles.progressBar, { width: `${loadingProgress}%` }]} />
+        </View>
+        <Text style={styles.loadingPercentage}>{loadingProgress}%</Text>
+      </View>
+    )
   }
 
   return (
-    <View style={styles.mainContainer}>
+    <View style={styles.container}>
       <StatusBar hidden />
-      <ImageBackground source={require("../../assets/images/backgroundBattle.png")} style={styles.container}>
-        {/* Anuncio de "Battle Royale" */}
-        {showBattleRoyale && (
-          <Animated.View
-            style={[
-              styles.battleRoyaleContainer,
-              {
-                opacity: battleRoyaleOpacity,
-                transform: [{ scale: battleRoyaleScale }],
-              },
-            ]}
-          >
-            <LinearGradient
-              colors={["rgba(255, 0, 0, 0.8)", "rgba(255, 165, 0, 0.9)"]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.battleRoyaleGradient}
-            >
-              <Text style={styles.battleRoyaleText}>BATTLE ROYALE</Text>
-              {characterName && villainName && (
-                <Text style={styles.characterNameText}>
-                  {characterName} VS {villainName}
-                </Text>
-              )}
-            </LinearGradient>
 
-            {/* Efectos adicionales para el anuncio */}
-            <Animated.View style={styles.battleRoyaleGlow} />
-          </Animated.View>
-        )}
+      {/* 🦸‍♂️ VIDEO DEL HÉROE */}
+      <Video
+        ref={heroVideoRef}
+        style={currentPhase === BattlePhase.HERO_VIDEO ? styles.activeVideo : styles.hiddenVideo}
+        source={{ uri: VIDEO_URLS.heroes[characterName as keyof typeof VIDEO_URLS.heroes] }}
+        resizeMode={ResizeMode.COVER}
+        shouldPlay={currentPhase === BattlePhase.HERO_VIDEO}
+        isLooping={false}
+        onPlaybackStatusUpdate={(status) => handlePlaybackStatusUpdate(status, "hero")}
+        useNativeControls={false}
+        progressUpdateIntervalMillis={500} // Menos frecuente para mejor estabilidad
+        positionMillis={0}
+      />
 
-        {/* Contenedor superior para el héroe */}
-        <View style={styles.topContainer}>
-          <Animated.View style={[styles.characterContainer, { transform: [{ translateX: heroAnim }] }]}>
-            <LinearGradient
-              colors={["rgba(255, 140, 0, 0.8)", "rgba(255, 69, 0, 0.7)"]}
-              style={styles.heroImageContainer}
-            >
-              <Animated.View style={[styles.glowEffect, { opacity: glowOpacity }]} />
-              <Image source={getHeroImage()} style={styles.heroImage} resizeMode="contain" />
-            </LinearGradient>
-          </Animated.View>
-        </View>
+      {/* ⚔️ VIDEO VS */}
+      <Video
+        ref={vsVideoRef}
+        style={currentPhase === BattlePhase.VS_VIDEO ? styles.activeVideo : styles.hiddenVideo}
+        source={{ uri: VIDEO_URLS.vs }}
+        resizeMode={ResizeMode.COVER}
+        shouldPlay={currentPhase === BattlePhase.VS_VIDEO}
+        isLooping={false}
+        onPlaybackStatusUpdate={(status) => handlePlaybackStatusUpdate(status, "vs")}
+        useNativeControls={false}
+        progressUpdateIntervalMillis={500}
+      />
 
-        {/* Contenedor central para el VS */}
-        <View style={styles.middleContainer}>
-          <Animated.View
-            style={[
-              styles.vsContainer,
-              {
-                transform: [{ scale: vsScale }, { rotate: vsRotateInterpolate }],
-              },
-            ]}
-          >
-            <Image source={require("../../assets/images/Vsplay.png")} style={styles.vsImage} resizeMode="contain" />
-          </Animated.View>
-        </View>
-
-        {/* Contenedor inferior para el enemigo */}
-        <View style={styles.bottomContainer}>
-          <Animated.View style={[styles.characterContainer, { transform: [{ translateX: enemyAnim }] }]}>
-            <LinearGradient
-              colors={["rgba(255, 140, 0, 0.8)", "rgba(255, 69, 0, 0.7)"]}
-              style={styles.enemyImageContainer}
-            >
-              <Animated.View style={[styles.glowEffect, { opacity: glowOpacity }]} />
-              <Image source={getVillainImage()} style={styles.enemyImage} resizeMode="contain" />
-            </LinearGradient>
-          </Animated.View>
-        </View>
-
-        {/* Overlay para dar profundidad */}
-        <LinearGradient colors={["rgba(0,0,0,0.4)", "transparent", "rgba(0,0,0,0.4)"]} style={styles.overlay} />
-      </ImageBackground>
+      {/* 🦹‍♂️ VIDEO DEL VILLANO */}
+      <Video
+        ref={villainVideoRef}
+        style={currentPhase === BattlePhase.VILLAIN_VIDEO ? styles.activeVideo : styles.hiddenVideo}
+        source={{ uri: VIDEO_URLS.villains[villainName as keyof typeof VIDEO_URLS.villains] }}
+        resizeMode={ResizeMode.COVER}
+        shouldPlay={currentPhase === BattlePhase.VILLAIN_VIDEO}
+        isLooping={false}
+        onPlaybackStatusUpdate={(status) => handlePlaybackStatusUpdate(status, "villain")}
+        useNativeControls={false}
+        progressUpdateIntervalMillis={500}
+      />
     </View>
   )
 }
 
 const styles = StyleSheet.create({
-  mainContainer: {
-    flex: 1,
-    backgroundColor: "#000",
-  },
   container: {
     flex: 1,
-    width: "100%",
-    height: "100%",
+    backgroundColor: "#000",
+    width: width,
+    height: height,
   },
-  overlay: {
+  activeVideo: {
     position: "absolute",
     top: 0,
     left: 0,
-    right: 0,
-    bottom: 0,
+    width: width,
+    height: height,
     zIndex: 1,
   },
-  topContainer: {
-    flex: 2,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingTop: Platform.OS === "ios" ? 50 : 30,
-    zIndex: 2,
-  },
-  middleContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 3,
-  },
-  bottomContainer: {
-    flex: 2,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingBottom: Platform.OS === "ios" ? 50 : 30,
-    zIndex: 2,
-  },
-  characterContainer: {
-    width: "100%",
-    height: "100%",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  heroImageContainer: {
-    width: width * 0.85,
-    height: height * 0.32,
-    borderRadius: 180,
-    overflow: "hidden",
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 3,
-    borderColor: "rgba(255, 215, 0, 0.7)",
-    elevation: 10,
-    shadowColor: "#FF8C00",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
-    shadowRadius: 15,
-  },
-  enemyImageContainer: {
-    width: width * 0.85,
-    height: height * 0.32,
-    borderRadius: 180,
-    overflow: "hidden",
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 3,
-    borderColor: "rgba(255, 215, 0, 0.7)",
-    elevation: 10,
-    shadowColor: "#FF8C00",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
-    shadowRadius: 15,
-  },
-  glowEffect: {
-    position: "absolute",
-    top: -20,
-    left: -20,
-    right: -20,
-    bottom: -20,
-    backgroundColor: "#FF8C00",
-    borderRadius: 200,
-    zIndex: -1,
-  },
-  heroImage: {
-    width: "90%",
-    height: "90%",
-  },
-  enemyImage: {
-    width: "90%",
-    height: "90%",
-  },
-  vsContainer: {
-    width: 150,
-    height: 150,
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#FF4500",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
-    shadowRadius: 20,
-    elevation: 15,
-  },
-  vsImage: {
-    width: "100%",
-    height: "100%",
-  },
-  // Estilos para el anuncio de Battle Royale
-  battleRoyaleContainer: {
+  hiddenVideo: {
     position: "absolute",
     top: 0,
     left: 0,
-    right: 0,
-    bottom: 0,
+    width: width,
+    height: height,
+    opacity: 0,
+    zIndex: 0,
+  },
+  loadingContainer: {
+    flex: 1,
+    backgroundColor: "#1a1a1a",
     justifyContent: "center",
     alignItems: "center",
-    zIndex: 10,
-    backgroundColor: "rgba(0,0,0,0.7)",
+    paddingHorizontal: 40,
   },
-  battleRoyaleGradient: {
-    paddingHorizontal: 30,
-    paddingVertical: 20,
-    borderRadius: 15,
-    borderWidth: 3,
-    borderColor: "#FFD700",
-    shadowColor: "#FF4500",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 1,
-    shadowRadius: 20,
-    elevation: 20,
-  },
-  battleRoyaleText: {
-    fontSize: 42,
+  loadingTitle: {
+    fontSize: 32,
     fontWeight: "bold",
-    color: "#FFFFFF",
+    color: "#FF6B35",
     textAlign: "center",
+    marginBottom: 10,
     textShadowColor: "rgba(0,0,0,0.8)",
     textShadowOffset: { width: 2, height: 2 },
-    textShadowRadius: 3,
-    letterSpacing: 2,
+    textShadowRadius: 4,
   },
-  characterNameText: {
-    fontSize: 24,
-    fontWeight: "bold",
+  loadingSubtitle: {
+    fontSize: 20,
     color: "#FFD700",
     textAlign: "center",
-    marginTop: 10,
-    textShadowColor: "rgba(0,0,0,0.8)",
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
+    marginBottom: 40,
+    fontWeight: "600",
   },
-  battleRoyaleGlow: {
-    position: "absolute",
-    width: width * 1.5,
-    height: width * 1.5,
-    borderRadius: width * 0.75,
-    backgroundColor: "transparent",
-    borderWidth: 10,
-    borderColor: "rgba(255, 69, 0, 0.3)",
-    zIndex: -1,
+  loadingSpinner: {
+    marginBottom: 30,
+    transform: [{ scale: 1.5 }],
+  },
+  progressContainer: {
+    width: "80%",
+    height: 8,
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    borderRadius: 4,
+    marginBottom: 20,
+    overflow: "hidden",
+  },
+  progressBar: {
+    height: "100%",
+    backgroundColor: "#FF6B35",
+    borderRadius: 4,
+  },
+  loadingPercentage: {
+    fontSize: 18,
+    color: "#FFFFFF",
+    fontWeight: "bold",
   },
 })
 
-export default BattleScreen
+export default BattleVideoScreen

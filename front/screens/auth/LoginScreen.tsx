@@ -103,10 +103,10 @@ export default function LoginScreen({ navigation, setIsAuthenticated }: Props) {
 
           <View style={styles.formContainer}>
             <Image source={require('../../assets/images/logo_login.png')} style={styles.image} />
-            <Text style={styles.title}>Iniciar Sesión</Text>
+            <Text style={styles.title}>Inicia Sesión</Text>
 
             <TextInput
-              placeholder="Nombre de Usuario"
+              placeholder="Nombre de usuario"
               placeholderTextColor="#999"          
               style={styles.input}
               value={username}

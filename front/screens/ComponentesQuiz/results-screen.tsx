@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Image, Animated, Dimensions, 
 import { useState, useEffect } from "react"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import { removeSavedCharacterImage } from "../../screens/ComponentesHero/saveCharacterImage"
+import { Video } from "expo-av"
 
 type CharacterName = "Qhapaq" | "Amaru" | "Killa"
 type VillainName = "Corporatus" | "Toxicus" | "Shadowman"
@@ -29,6 +30,13 @@ const characterBackgrounds: Record<CharacterName, any> = {
   Qhapaq: require("../../assets/fondoQuiz/FondoQuiz-Qhapaq.png"),
   Amaru: require("../../assets/fondoQuiz/FondoQuiz-Amaru.png"),
   Killa: require("../../assets/fondoQuiz/FondoQuiz-Killa.png"),
+}
+
+// Videos de celebración por personaje
+const characterVideos: Record<CharacterName, string> = {
+  Qhapaq: "https://d1xh8jk9umgr2r.cloudfront.net/Qhapac_final.mp4",
+  Amaru: "https://d1xh8jk9umgr2r.cloudfront.net/Amaru_final.mp4",
+  Killa: "https://d1xh8jk9umgr2r.cloudfront.net/killa_final.mp4",
 }
 
 const { width, height } = Dimensions.get("window")
@@ -60,6 +68,10 @@ const ResultsScreen = ({ route, navigation }) => {
   const [showDetails, setShowDetails] = useState(false)
   const [storedResults, setStoredResults] = useState<any>(null)
 
+  // Estados para el video
+  const [showVideo, setShowVideo] = useState(true)
+  const [videoRef, setVideoRef] = useState(null)
+
   // Cargar información del personaje y resultados guardados
   useEffect(() => {
     const loadData = async () => {
@@ -86,17 +98,11 @@ const ResultsScreen = ({ route, navigation }) => {
     loadData()
   }, [])
 
-  // Usar resultados almacenados si están disponibles y no hay parámetros
-  const finalAiScores = aiScores.length > 0 ? aiScores : storedResults?.aiScores || []
-  const finalResponseTimes = responseTimes.length > 0 ? responseTimes : storedResults?.responseTimes || []
-  const finalQuestionResults = questionResults.length > 0 ? questionResults : storedResults?.questionResults || []
-  const finalScore = score || storedResults?.score || 0
-  const finalTotalMissions = totalMissions || storedResults?.totalMissions || 0
-  const finalCorrectAnswers = correctAnswers || storedResults?.correctAnswers || 0
-  const finalIncorrectAnswers = incorrectAnswers || storedResults?.incorrectAnswers || 0
-
-  // Animaciones de entrada
-  useEffect(() => {
+  // Manejar cuando el video termina
+  const handleVideoEnd = () => {
+    console.log("Video terminado, mostrando resultados")
+    setShowVideo(false)
+    // Iniciar animaciones de entrada para los resultados
     Animated.sequence([
       Animated.parallel([
         Animated.timing(fadeAnim, {
@@ -118,7 +124,24 @@ const ResultsScreen = ({ route, navigation }) => {
         useNativeDriver: true,
       }),
     ]).start()
-  }, [])
+  }
+
+  // Manejar errores del video
+  const handleVideoError = (error) => {
+    console.error("Error reproduciendo video:", error)
+    // Si hay error, mostrar directamente los resultados
+    setShowVideo(false)
+    handleVideoEnd()
+  }
+
+  // Usar resultados almacenados si están disponibles y no hay parámetros
+  const finalAiScores = aiScores.length > 0 ? aiScores : storedResults?.aiScores || []
+  const finalResponseTimes = responseTimes.length > 0 ? responseTimes : storedResults?.responseTimes || []
+  const finalQuestionResults = questionResults.length > 0 ? questionResults : storedResults?.questionResults || []
+  const finalScore = score || storedResults?.score || 0
+  const finalTotalMissions = totalMissions || storedResults?.totalMissions || 0
+  const finalCorrectAnswers = correctAnswers || storedResults?.correctAnswers || 0
+  const finalIncorrectAnswers = incorrectAnswers || storedResults?.incorrectAnswers || 0
 
   // Calcular estadísticas mejoradas
   const calculateStats = () => {
@@ -269,6 +292,29 @@ const ResultsScreen = ({ route, navigation }) => {
       const seconds = Math.round(timeInSeconds % 60)
       return `${minutes}m ${seconds}s`
     }
+  }
+
+  // Si debe mostrar el video, renderizar solo el video
+  if (showVideo) {
+    return (
+      <View style={styles.videoContainer}>
+        <Video
+          ref={(ref) => setVideoRef(ref)}
+          source={{ uri: characterVideos[characterName] }}
+          style={styles.video}
+          shouldPlay={true}
+          isLooping={false}
+          resizeMode="cover"
+          onPlaybackStatusUpdate={(status) => {
+            if (status.didJustFinish) {
+              handleVideoEnd()
+            }
+          }}
+          onError={handleVideoError}
+          useNativeControls={false} // Sin controles
+        />
+      </View>
+    )
   }
 
   return (
@@ -774,6 +820,17 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
     marginLeft: 8,
+  },
+  // Estilos para el video
+  videoContainer: {
+    flex: 1,
+    backgroundColor: "#000",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  video: {
+    width: width,
+    height: height,
   },
 })
 

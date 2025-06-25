@@ -2,6 +2,7 @@
 import { View, Text, StyleSheet, TouchableOpacity, Image, Animated, Dimensions, ScrollView } from "react-native"
 import { useState, useEffect } from "react"
 import AsyncStorage from "@react-native-async-storage/async-storage"
+import { Video } from "expo-av"
 import { removeSavedCharacterImage } from "../../screens/ComponentesHero/saveCharacterImage"
 
 type CharacterName = "Qhapaq" | "Amaru" | "Killa"
@@ -17,9 +18,15 @@ type QuestionResult = {
   isCorrect: boolean // basado en si el score > 0
 }
 
+// Videos de celebración por personaje
+const characterVideos: Record<CharacterName, string> = {
+  Qhapaq: "https://d1xh8jk9umgr2r.cloudfront.net/Qhapac_final.mp4",
+  Amaru: "https://d1xh8jk9umgr2r.cloudfront.net/Amaru_final.mp4",
+  Killa: "https://d1xh8jk9umgr2r.cloudfront.net/killa_final.mp4",
+}
+
 // Imágenes de celebración por personaje
 const characterCelebrationImages: Record<CharacterName, any> = {
-
   Qhapaq: require("../../assets/images/chaman.png"),
   Amaru: require("../../assets/Personajes/Amaru1.png"),
   Killa: require("../../assets/Personajes/Guerrera.png"),
@@ -35,6 +42,10 @@ const characterBackgrounds: Record<CharacterName, any> = {
 const { width, height } = Dimensions.get("window")
 
 const ResultsScreen = ({ route, navigation }) => {
+  // Estados para el video
+  const [showVideo, setShowVideo] = useState(true)
+  const [videoRef, setVideoRef] = useState(null)
+
   // Obtener los parámetros de la ruta
   const {
     score,
@@ -96,8 +107,11 @@ const ResultsScreen = ({ route, navigation }) => {
   const finalCorrectAnswers = correctAnswers || storedResults?.correctAnswers || 0
   const finalIncorrectAnswers = incorrectAnswers || storedResults?.incorrectAnswers || 0
 
-  // Animaciones de entrada
-  useEffect(() => {
+  // Manejar cuando el video termina
+  const handleVideoEnd = () => {
+    console.log("Video terminado, mostrando resultados")
+    setShowVideo(false)
+    // Iniciar animaciones de entrada para los resultados
     Animated.sequence([
       Animated.parallel([
         Animated.timing(fadeAnim, {
@@ -119,7 +133,15 @@ const ResultsScreen = ({ route, navigation }) => {
         useNativeDriver: true,
       }),
     ]).start()
-  }, [])
+  }
+
+  // Manejar errores del video
+  const handleVideoError = (error) => {
+    console.error("Error reproduciendo video:", error)
+    // Si hay error, mostrar directamente los resultados
+    setShowVideo(false)
+    handleVideoEnd()
+  }
 
   // Calcular estadísticas mejoradas
   const calculateStats = () => {
@@ -191,7 +213,7 @@ const ResultsScreen = ({ route, navigation }) => {
     if (stats.correctPercentage >= 90) return "¡Rendimiento Excepcional!"
     if (stats.correctPercentage >= 80) return "¡Excelente trabajo!"
     if (stats.correctPercentage >= 70) return "¡Muy buen trabajo!"
-    if (stats.correctPercentage >= 60) return "¡Bu trabaj!"
+    if (stats.correctPercentage >= 60) return "¡Buen trabajo!"
     if (stats.correctPercentage >= 50) return "¡Puedes mejorar!"
     if (stats.correctPercentage >= 30) return "¡Sigue practicando!"
     return "¡No te rindas, inténtalo de nuevo!"
@@ -239,6 +261,30 @@ const ResultsScreen = ({ route, navigation }) => {
     }
   }
 
+  // Si debe mostrar el video, renderizar solo el video
+  if (showVideo) {
+    return (
+      <View style={styles.videoContainer}>
+        <Video
+          ref={(ref) => setVideoRef(ref)}
+          source={{ uri: characterVideos[characterName] }}
+          style={styles.video}
+          shouldPlay={true}
+          isLooping={false}
+          resizeMode="cover"
+          onPlaybackStatusUpdate={(status) => {
+            if (status.didJustFinish) {
+              handleVideoEnd()
+            }
+          }}
+          onError={handleVideoError}
+          useNativeControls={false} // Sin controles
+        />
+      </View>
+    )
+  }
+
+  // Renderizar la pantalla de resultados
   return (
     <ScrollView
       style={[
@@ -330,7 +376,7 @@ const ResultsScreen = ({ route, navigation }) => {
             {/* Estadísticas de tiempo */}
             {stats.averageResponseTime && (
               <View style={styles.timeStatsContainer}>
-                <Text style={styles.timeStatsTitle}>⏱️ Estadísticas de Tiemp</Text>
+                <Text style={styles.timeStatsTitle}>⏱️ Estadísticas de Tiempo</Text>
 
                 <View style={styles.timeStatsGrid}>
                   <View style={styles.timeStatItem}>
@@ -426,6 +472,19 @@ const ResultsScreen = ({ route, navigation }) => {
 }
 
 const styles = StyleSheet.create({
+  // Estilos para el video
+  videoContainer: {
+    flex: 1,
+    backgroundColor: "#000",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  video: {
+    width: width,
+    height: height,
+  },
+
+  // Estilos existentes
   scrollContainer: {
     flex: 1,
   },
