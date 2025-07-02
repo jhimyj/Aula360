@@ -106,7 +106,7 @@ export default function LoginScreen({ navigation, setIsAuthenticated }: Props) {
             <Text style={styles.title}>Inicia Sesión</Text>
 
             <TextInput
-              placeholder="Nombre de usuario"
+              placeholder="Nombre de Usuario"
               placeholderTextColor="#999"          
               style={styles.input}
               value={username}
