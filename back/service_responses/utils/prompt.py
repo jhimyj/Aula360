@@ -42,7 +42,7 @@ def prompt_recommendation(course, topic, user_prompt: str) -> str:
         2️⃣ Para OPEN_ENDED:
             "config": {{}}
 
-        ⚠️ La lista final que devuelvas debe ser un JSON válido y único.
+         La lista final que devuelvas debe ser un JSON válido y único.
 
         Tu respuesta final debe ser solo ese bloque JSON que contenga la lista de preguntas generadas, sin ningún texto adicional.
         """
@@ -66,15 +66,15 @@ def prompt_verify_response(question: dict, response: list) -> str:
             "config": <dict: configuración específica según el tipo de pregunta>
         }}
         
-        📌 La respuesta está en este formato:
+         La respuesta está en este formato:
         ["<respuesta1>", "<respuesta2>", ...]  (mínimo 1, máximo 5)
         
-        📌 Cantidad de respuestas permitidas por tipo de pregunta:
+         Cantidad de respuestas permitidas por tipo de pregunta:
         - MULTIPLE_CHOICE_SINGLE: solo una respuesta
         - MULTIPLE_CHOICE_MULTIPLE: hasta cinco respuestas
         - OPEN_ENDED: una respuesta abierta
         
-        📌 La estructura del campo 'config' depende del tipo de pregunta:
+         La estructura del campo 'config' depende del tipo de pregunta:
         1️⃣ Para MULTIPLE_CHOICE_SINGLE o MULTIPLE_CHOICE_MULTIPLE:
         "config": {{
             "options": ["<opción1>", "<opción2>", ...]  // mínimo 2, máximo 5 opciones
@@ -91,10 +91,10 @@ def prompt_verify_response(question: dict, response: list) -> str:
         
         A continuación, te proporciono la pregunta y la respuesta del estudiante:
         
-        📌 Pregunta:
+         Pregunta:
         {json.dumps(question)}
         
-        📌 Respuesta:
+         Respuesta:
         {json.dumps(response)}
         
         Por favor, devuelve únicamente ese bloque JSON con la evaluación del score y el feedback, sin ningún texto adicional.

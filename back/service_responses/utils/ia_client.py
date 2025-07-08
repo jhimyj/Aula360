@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 import anthropic
 import logging
 
-from utils.config import ANTHROPIC_API_KEY, MAX_TOKENS_ANTHROPIC
+from utils.config import ANTHROPIC_API_KEY, MAX_TOKENS_ANTHROPIC, ARRAY_API_KEY, ANTHROPIC_MODEL
 
 logger = logging.getLogger(__name__)
 
@@ -76,5 +76,12 @@ def create_anthropic_haiku_client_instance():
 
 
 
+def create_dict_anthropic_haiku_client_instances():
+    INSTANCES = {}
 
+    for idx, api_key in enumerate(ARRAY_API_KEY):
+        strategy = AnthropicStrategy(api_key=api_key, model=ANTHROPIC_MODEL, max_tokens=MAX_TOKENS_ANTHROPIC, timeout_seconds=20)
+        client_instance = LLMClient(strategy=strategy)
+        INSTANCES[idx] = client_instance
 
+    return INSTANCES

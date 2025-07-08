@@ -2,3 +2,5 @@ bcrypt
 pyjwt
 requests
 anthropic
+urllib3
+httpx

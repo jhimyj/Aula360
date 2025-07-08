@@ -1,18 +1,20 @@
 import logging
 import boto3
 import json
+import random
 from botocore.exceptions import ClientError
 from boto3.dynamodb.conditions import Key
 
 from utils.response import Response
 from utils.token import get_token_instance
-from utils.config import RESPONSE_TABLE, DATA_QUESTION_REQUIRED
+from utils.config import RESPONSE_TABLE, DATA_QUESTION_REQUIRED, URL_SQS_STUDENT
 from utils.external_api import create_external_api_client_question
 from utils.validator import create_validator_response_student_schema
 from utils.prompt import prompt_verify_response
 from utils.helper_functions import extract_delimited_text
-from utils.ia_client import create_anthropic_haiku_client_instance
+from utils.ia_client import create_dict_anthropic_haiku_client_instances
 from datetime import datetime
+from utils.send_message_sqs import send_single_message_to_sqs_fifo
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -23,7 +25,8 @@ response_table = dynamodb.Table(RESPONSE_TABLE)
 
 _service_question = create_external_api_client_question()
 _validator_response = create_validator_response_student_schema()
-_ia = create_anthropic_haiku_client_instance()
+_ias = create_dict_anthropic_haiku_client_instances()
+MAX_INDEX_IA = len(_ias)-1
 def lambda_handler(event, context):
     request_id = getattr(context, 'aws_request_id', 'unknown')
     logger.info("Inicio de procesamiento de solicitud")
@@ -184,17 +187,17 @@ def lambda_handler(event, context):
 
 
 
-
         # --- GENERAR RESPUESTA IA ---
         try:
             data_question_required = {k: question_data.get(k) for k in DATA_QUESTION_REQUIRED}
             response_student = body["response_student"]
             #mas validaciones luego
+            idx = random.randint(0, MAX_INDEX_IA)
 
             logger.info("generamos el prompt para correccion.")
             prompt_final = prompt_verify_response(question=data_question_required, response=response_student)
             logger.info("llamando a ia")
-            text_ia = _ia.prompt(prompt=prompt_final)
+            text_ia = _ias[idx].prompt(prompt=prompt_final)
             logger.info("extranedo respuesta ia")
             json_text = extract_delimited_text(text=text_ia, char_start="{", char_end="}")
             logger.info("json en texto generado")
@@ -215,11 +218,34 @@ def lambda_handler(event, context):
                 }
             ).to_dict()
 
+        #--- check si es que ya existe respuesta para estudiante--
+        response_response = response_table.get_item(
+            Key={
+                "room_id#student_id": f"{room_id}#{user_id}",
+                "question_id": question_id
+            }
+        )
+
+        item = response_response.get("Item")
+        if item:
+            return Response(
+                status_code=201,
+                body={
+                    "success": True,
+                    "code": "RESPONSE_GENERATE",
+                    "message": "Respuesta corregida correctament.",
+                    "data": dict_ia,
+                    "request_id": request_id
+                }
+            ).to_dict()
+
+
 
         # --- CREACIÓN DE LA RESPONSE ---
         now = datetime.utcnow().isoformat()
         response_data = {
             "room_id#student_id": f"{room_id}#{user_id}",
+            "room_id": room_id,
             "question_id": question_id,
             "question_data": question_data,
             'response_student': response_student,
@@ -228,13 +254,39 @@ def lambda_handler(event, context):
             "updated_at": now
         }
 
-        # Inserción usando recurso de alto nivel
+        # insercion usando recurso de alto nivel
         try:
             response_table.put_item(
                 Item=response_data
             )
             logger.info(
                 f"response creado exitosamente en DynamoDB: room_id={room_id}, student_id={user_id}")
+            try:
+                question_score = question_data.get('score', 0)
+                student_score = dict_ia.get("score", 0)
+                villain_score = question_score - student_score
+
+
+                message = {
+                    "action": "update",
+                    "key": {
+                        "id": user_id,
+                        "room_id": room_id
+                    },
+                    "data": {
+                        "add__score_student": student_score,
+                        "add__score_villain": villain_score,
+                        "add__answered_questions_count": 1
+
+                    }
+                }
+
+                send_single_message_to_sqs_fifo(queue_url=URL_SQS_STUDENT, message=message, num_groups=10)
+
+            except Exception as err:
+                logger.error("error al comunicar a sqs")
+
+
             return Response(
                 status_code=201,
                 body={
