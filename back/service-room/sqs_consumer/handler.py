@@ -17,6 +17,8 @@ from utils.exceptions import (
 
 from config.response_error_handler import handle_exception
 
+from serializers.dynamo_serializer import DynamoSerializer
+
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
@@ -27,6 +29,8 @@ token_validator = get_token_instance()
 
 dynamodb_resource = boto3.resource('dynamodb')
 table = dynamodb_resource.Table(ROOM_TABLE)
+
+serializer = DynamoSerializer()
 
 SQS_ACTION_PERMITED = {"update"}
 
@@ -66,33 +70,31 @@ def parse_and_validate_event(event):
 
 
 def build_update_expression(input_values: dict):
-    """
-    Genera automáticamente UpdateExpression y ExpressionAttributeValues
-    a partir de un diccionario de valores listos para actualizar.
+    logger.info("Construyendo expresión de actualización...")
 
-    Si la clave empieza con 'add_', generará una suma acumulativa.
-
-    :param input_values: Diccionario con los valores a actualizar.
-    :return: Tuple (UpdateExpression, ExpressionAttributeValues)
-    """
-    logger.info("construyendo expresion update")
     set_clauses = []
     expression_values = {}
+    expression_names = {}
 
     for key, value in input_values.items():
-        placeholder = f":{key}"
-        if key.startswith("add__"):
-            # Si empieza con add_, quitamos 'add_' para usar el nombre real del campo
-            real_field = key[len("add__"):]
-            set_clauses.append(f"{real_field} = {real_field} + {placeholder}")
-        else:
-            set_clauses.append(f"{key} = {placeholder}")
+        placeholder_value = f":{key}"
 
-        expression_values[placeholder] = value
+        if key.startswith("add__"):
+            real_field = key[len("add__"):]
+            placeholder_name = f"#{real_field}"
+            expression_names[placeholder_name] = real_field
+            set_clauses.append(f"{placeholder_name} = {placeholder_name} + {placeholder_value}")
+        else:
+            placeholder_name = f"#{key}"
+            expression_names[placeholder_name] = key
+            set_clauses.append(f"{placeholder_name} = {placeholder_value}")
+
+        expression_values[placeholder_value] = value
 
     update_expression = "SET " + ", ".join(set_clauses)
-    logger.info("consulta construida corectamente")
-    return update_expression, expression_values
+
+    logger.info("Expresión de actualización construida correctamente.")
+    return update_expression, expression_names, expression_values
 
 def update_data(key, data):
     logger.info("actualizando valore de room")
@@ -108,12 +110,12 @@ def update_data(key, data):
         details = " ".join(f"{field}: {' '.join(msgs)}" for field, msgs in errs.items())
         raise ValidationError(f"Errores de validación: {details}")
 
-    #construimos las expresiones a updatear
-    update_expression, expression_values = build_update_expression(data)
+    update_expression, expression_names, expression_values = build_update_expression(data)
 
     build_update = {
         "Key": key,
         "UpdateExpression": update_expression,
+        "ExpressionAttributeNames": expression_names,
         "ExpressionAttributeValues": expression_values,
         "ReturnValues": "UPDATED_NEW"
     }
@@ -138,13 +140,16 @@ def lambda_handler(event, context):
         action, key, data = parse_and_validate_event(event)
 
         data_updated = actions[action](key, data)
+
+        data_updated_serializer = serializer.serialize(data_updated)
+
         return Response(
             status_code=200,
             body={
                 "success": True,
                 "code": "ROOM_UPDATED",
                 "message": "room actualizado correctamente",
-                "data": data_updated,
+                "data": data_updated_serializer,
                 "request_id": request_id
             }
         ).to_dict()

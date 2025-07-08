@@ -18,7 +18,6 @@ class DynamoSerializer(SerializerInterface):
             return {key: self.serialize(value) for key, value in doc.items()}
 
         if isinstance(doc, Decimal):
-            # Convertir Decimal a int si no tiene parte decimal, sino a float
             return int(doc) if doc % 1 == 0 else float(doc)
 
         return doc

@@ -13,7 +13,6 @@ token_validator = get_token_instance()
 
 dynamodb_client = boto3.client('dynamodb')
 
-# Esta función maneja la solicitud de obtener los datos de una "room" desde DynamoDB
 def lambda_handler(event, context):
     try:
         headers = event.get('headers')
