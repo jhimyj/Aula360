@@ -7,10 +7,11 @@ provider:
   memorySize: 1024
   timeout: 29
   role: ${env:ROLE}
-  environment: #aca las variables de entorno
+  environment: #aca ponemos las variables de entorno
     ROOM_TABLE: ${env:ROOM_TABLE}
     ROOM_GSI_INDEX_USERID_ID: ${env:ROOM_GSI_INDEX_USERID_ID}
     JWT_SECRET_KEY: ${env:JWT_SECRET_KEY}
+    ROOM_GSI_INDEX_SHORTCODE: ${env:ROOM_GSI_INDEX_SHORTCODE}
 
 
 package:
@@ -26,13 +27,12 @@ package:
     - Dockerfile
     - variables/**
     - businesses_businessId_ai-parse/**
-    - "*.zip" #eres incluir otros ZIP que no sean necesarios
-    - README.md  # Ejemplo, si hay archivos de documentación que no necesitas
+    - "*.zip"
+    - README.md
     - serverless.yml
     - requirements.txt
 
-# Definición del layer que contiene las dependencias comunes.
-layers: #si es que hay librerias externa
+layers:
   commonLib:
     package:
       artifact: layer_common_lib.zip
@@ -79,6 +79,46 @@ functions:
               - X-Amz-Security-Token
               - X-Amz-User-Agent
 
+  delete_room:
+    handler: delete_room/handler.lambda_handler
+    layers:
+      - { Ref: CommonLibLambdaLayer }
+    events:
+      - http:
+          path: rooms/{roomId}
+          method: delete
+          cors:
+            origin: '*'
+            methods:
+              - DELETE
+            headers:
+              - Content-Type
+              - Authorization
+              - X-Amz-Date
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+
+  get_room_code:
+    handler: get_room_code/handler.lambda_handler
+    layers:
+      - { Ref: CommonLibLambdaLayer }
+    events:
+      - http:
+          path: rooms/code/{code}
+          method: get
+          cors:
+            origin: '*'
+            methods:
+              - GET
+            headers:
+              - Content-Type
+              - Authorization
+              - X-Amz-Date
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+
   get_rooms:
     handler: get_rooms/handler.lambda_handler
     layers:
@@ -98,3 +138,9 @@ functions:
               - X-Api-Key
               - X-Amz-Security-Token
               - X-Amz-User-Agent
+
+
+  sqs_consumer:
+    handler: sqs_consumer/handler.lambda_handler
+    layers:
+      - { Ref: CommonLibLambdaLayer }

@@ -80,52 +80,6 @@ def lambda_handler(event, context):
                 }
             ).to_dict()
 
-        # --- ROOM CHECK ---
-        # try:
-        #     room_resp = _service_room.request(
-        #         endpoint=f'/rooms/{room_id}',
-        #         method="GET",
-        #         headers={
-        #             'Authorization': auth_header
-        #         }
-        #     )
-        # except Exception as err:
-        #     logger.error(f"Error al consultar room {room_id}: {err}")
-        #     return Response(
-        #         status_code=502,
-        #         body={
-        #             "success": False,
-        #             "code": "ROOM_SERVICE_ERROR",
-        #             "message": "Error al comunicarse con el servicio de rooms.",
-        #             "details": [str(err)],
-        #             "request_id": request_id
-        #         }
-        #     ).to_dict()
-        #
-        # room_data = room_resp.get("data")
-        # if not room_data:
-        #     return Response(
-        #         status_code=404,
-        #         body={
-        #             "success": False,
-        #             "code": "ROOM_NOT_FOUND",
-        #             "message": "El room especificado no existe.",
-        #             "details": [f"room_id '{room_id}' no encontrado."],
-        #             "request_id": request_id
-        #         }
-        #     ).to_dict()
-        #
-        # if room_data.get("user_id") != user_id:
-        #     return Response(
-        #         status_code=403,
-        #         body={
-        #             "success": False,
-        #             "code": "NOT_ROOM_OWNER",
-        #             "message": "No tienes permiso sobre este room.",
-        #             "details": ["Solo el creador del room puede acceder a los estudiantes."],
-        #             "request_id": request_id
-        #         }
-        #     ).to_dict()
 
         # --- PAGINATED QUERY ---
         size = int(query_params.get("size", 10))

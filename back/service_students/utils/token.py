@@ -25,7 +25,7 @@ class Token:
         :return: El JWT generado.
         """
         expiration = datetime.datetime.utcnow() + datetime.timedelta(seconds=self.expiration_time)
-        payload["exp"] = expiration  # Añadir el tiempo de expiración al payload
+        payload["exp"] = expiration
         print(payload)
         return jwt.encode(payload, self.secret_key, algorithm=self.algorithm)
 

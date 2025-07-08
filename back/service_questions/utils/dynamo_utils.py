@@ -16,7 +16,7 @@ def serialize_dynamo_to_dict(dynamo_data):
             return [serialize_dynamo_to_dict(item) for item in dynamo_data['L']]
         elif 'M' in dynamo_data:
             return serialize_dynamo_to_dict(dynamo_data['M'])
-        elif 'B' in dynamo_data:  # si es tipo binario
+        elif 'B' in dynamo_data:
             return dynamo_data['B']
 
         return {k: serialize_dynamo_to_dict(v) for k, v in dynamo_data.items()}
@@ -49,19 +49,15 @@ def _serialize_value(value):
     if isinstance(value, list):
         return {'L': [_serialize_value(v) for v in value]}
     if isinstance(value, set):
-        # Detecta conjuntos homogéneos
         if all(isinstance(v, str) for v in value):
             return {'SS': list(value)}
         if all(isinstance(v, (int, float, Decimal)) for v in value):
             return {'NS': [str(v) for v in value]}
         if all(isinstance(v, (bytes, bytearray)) for v in value):
             return {'BS': list(value)}
-        # Fallback a lista
         return {'L': [_serialize_value(v) for v in value]}
     if isinstance(value, dict):
-        # Map anidado
         return {'M': {k: _serialize_value(v) for k, v in value.items()}}
-    # Fallback a string
     return {'S': str(value)}
 
 def serialize_to_dynamo(item: dict) -> dict:

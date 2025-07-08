@@ -7,12 +7,13 @@ provider:
   memorySize: 1024
   timeout: 29
   role: ${env:ROLE}
-  environment: #aca las variables de entorno
+  environment: #aca ponemos las variables de entorno
     STUDENT_TABLE: ${env:STUDENT_TABLE}
     STUDENT_GSI_INDEX_ROOMID_ID: ${env:STUDENT_GSI_INDEX_ROOMID_ID}
     STUDENT_GSI_INDEX_USERNAME_ROOMID: ${env:STUDENT_GSI_INDEX_USERNAME_ROOMID}
     HTTPS_SERVICE_ROOM: ${env:HTTPS_SERVICE_ROOM}
     JWT_SECRET_KEY: ${env:JWT_SECRET_KEY}
+    URL_SQS_ROOM: ${env:URL_SQS_ROOM}
 
 
 package:
@@ -28,13 +29,12 @@ package:
     - Dockerfile
     - variables/**
     - businesses_businessId_ai-parse/**
-    - "*.zip" #eres incluir otros ZIP que no sean necesarios
-    - README.md  # Ejemplo, si hay archivos de documentación que no necesitas
+    - "*.zip"
+    - README.md
     - serverless.yml
     - requirements.txt
 
-# Definición del layer que contiene las dependencias comunes.
-layers: #si es que hay librerias externa
+layers:
   commonLib:
     package:
       artifact: layer_common_lib.zip
@@ -121,3 +121,9 @@ functions:
               - X-Api-Key
               - X-Amz-Security-Token
               - X-Amz-User-Agent
+
+
+  sqs_student:
+    handler: sqs_student/handler.lambda_handler
+    layers:
+      - { Ref: CommonLibLambdaLayer }

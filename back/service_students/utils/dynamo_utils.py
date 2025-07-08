@@ -49,19 +49,15 @@ def _serialize_value(value):
     if isinstance(value, list):
         return {'L': [_serialize_value(v) for v in value]}
     if isinstance(value, set):
-        # Detecta conjuntos homogéneos
         if all(isinstance(v, str) for v in value):
             return {'SS': list(value)}
         if all(isinstance(v, (int, float, Decimal)) for v in value):
             return {'NS': [str(v) for v in value]}
         if all(isinstance(v, (bytes, bytearray)) for v in value):
             return {'BS': list(value)}
-        # Fallback a lista
         return {'L': [_serialize_value(v) for v in value]}
     if isinstance(value, dict):
-        # Map anidado
         return {'M': {k: _serialize_value(v) for k, v in value.items()}}
-    # Fallback a string
     return {'S': str(value)}
 
 def serialize_to_dynamo(item: dict) -> dict:

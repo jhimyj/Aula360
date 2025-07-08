@@ -6,9 +6,9 @@ from datetime import datetime
 from utils.validator import get_validator_create_room
 from utils.response import Response
 from utils.token import get_token_instance
-from utils.config import ROOM_TABLE, ROLES_PERMITED_CREATE_ROOM
+from utils.config import ROOM_TABLE, ROLES_PERMITED_CREATE_ROOM, ROOM_GSI_INDEX_SHORTCODE
 from utils.dynamo_utils import serialize_to_dynamo
-
+from utils.helpers import short_id
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
@@ -16,8 +16,6 @@ validator_create_room = get_validator_create_room()
 token_validator = get_token_instance()
 
 dynamodb_client = boto3.client('dynamodb')
-
-
 
 def lambda_handler(event, context):
     """
@@ -33,7 +31,7 @@ def lambda_handler(event, context):
             return Response(status_code=400, body={
                 'error': 'El cuerpo de la solicitud debe contener los parámetros requeridos.'}).to_dict()
 
-        if not validator_create_room.validate(data=body,param_field='body'):
+        if not validator_create_room.validate(data=body, path='body'):
             logger.error(f"Errores de validación: {validator_create_room.get_errors()}")
             return Response(status_code=400, body={'error': 'Fallo en la validación de los datos proporcionados.',
                                                    'details': validator_create_room.get_errors()}).to_dict()
@@ -62,11 +60,36 @@ def lambda_handler(event, context):
             return Response(status_code=401, body={"error": "Rol no permitido para crear un room."}).to_dict()
 
         room_data = {
-            **body,  # Todos los datos validados del body
-            'id': str(uuid.uuid4()),  # ID único para el room
+            **body,
+            'max_score': 0,
+            'number_questions': 0,
+            'number_students': 0,
+            'id': str(uuid.uuid4()),
             'user_id': user_id,
-            'created_at': datetime.utcnow().isoformat(),  # Fecha de creación
+            'created_at': datetime.utcnow().isoformat(),
         }
+
+        max_attempts = 5
+        short_code = None
+
+        for _ in range(max_attempts):
+            candidate_code = short_id(iuu_str=str(uuid.uuid4()), length=6)
+            response = dynamodb_client.query(
+                TableName=ROOM_TABLE,
+                IndexName=ROOM_GSI_INDEX_SHORTCODE,
+                KeyConditionExpression='short_code = :code',
+                ExpressionAttributeValues={':code': {'S': candidate_code}},
+                Limit=1
+            )
+            if response.get('Count', 0) == 0:
+                short_code = candidate_code
+                break
+
+        if not short_code:
+            logger.error("No se pudo generar un shortCode único después de varios intentos.")
+            return Response(status_code=500, body={'error': 'No se pudo generar un shortCode único'}).to_dict()
+
+        room_data['short_code'] = short_code
 
         room_data_serialized = serialize_to_dynamo(room_data)
 
@@ -74,7 +97,7 @@ def lambda_handler(event, context):
             dynamodb_client.put_item(
                 TableName=ROOM_TABLE,
                 Item=room_data_serialized,
-                ConditionExpression="attribute_not_exists(id)"  # Evita la sobrescritura si el id ya existe
+                ConditionExpression="attribute_not_exists(id)"
             )
             logger.info(f"Room creado exitosamente: {room_data['id']} en la tabla {ROOM_TABLE}")
 

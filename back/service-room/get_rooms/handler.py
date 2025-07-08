@@ -52,13 +52,13 @@ def lambda_handler(event, context):
         if not query_params:
             return Response(status_code=400, body={"error": "Parámetros de consulta no proporcionados."}).to_dict()
 
-        size = int(query_params.get('size', 10))  # Tamaño de página 10 por defecto
+        size = int(query_params.get('size', 10))
 
         if size > LIMIT_PAGE_SIZE:
             logger.error(f"El tamaño de página {size} excede el límite permitido de {LIMIT_PAGE_SIZE}.")
             return Response(status_code=400, body={"error": f"El tamaño de página no puede ser mayor a {LIMIT_PAGE_SIZE}."}).to_dict()
 
-        last_evaluated_key = query_params.get('last_evaluated_key')  # Recibe el last_evaluated_key si está presente
+        last_evaluated_key = query_params.get('last_evaluated_key')
 
         query_params_for_dynamo = {
             'TableName': ROOM_TABLE,

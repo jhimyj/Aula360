@@ -14,7 +14,7 @@ def serialize_dynamo_to_dict(dynamo_data):
             return [serialize_dynamo_to_dict(item) for item in dynamo_data['L']]
         elif 'M' in dynamo_data:
             return serialize_dynamo_to_dict(dynamo_data['M'])
-        elif 'B' in dynamo_data:  # si es tipo binario
+        elif 'B' in dynamo_data:
             return dynamo_data['B']
 
         return {k: serialize_dynamo_to_dict(v) for k, v in dynamo_data.items()}

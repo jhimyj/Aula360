@@ -37,7 +37,7 @@ nohup.out
 # Archivos de Docker (si usas contenedores)
 docker-compose.override.yml
 .envrc
-test/
+test/**
 # configuracion specifica de serverles
 .serverless/
 variables
