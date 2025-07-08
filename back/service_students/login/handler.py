@@ -1,5 +1,7 @@
 import json
 import logging
+import uuid
+
 import boto3
 from botocore.exceptions import ClientError
 from boto3.dynamodb.conditions import Key
@@ -36,7 +38,7 @@ def lambda_handler(event, context):
     logger.info("Inicio de login del estudiante")
 
     try:
-        # --- BODY & JSON PARSING ---
+        # --- BODY AND JSON PARSING ---
         body = event.get('body')
         if body is None:
             return Response(400, {
@@ -76,10 +78,53 @@ def lambda_handler(event, context):
             ).to_dict()
 
         username = body.get("username")
-        room_id = body.get("room_id")
+        room_code = body.get("room_code")
 
+        payload = {
+            'id': str(uuid.uuid4()),
+            'role': ROLE_STUDENT,
+            'username': username
+        }
+        token = token_validator.generate_token(payload)
 
-        # --- Consultar en DynamoDB ---
+        try:
+            room_resp = _service_room.request(
+                endpoint=f'/rooms/code/{room_code}',
+                method="GET",
+                headers={'Authorization': f'Bearer {token}'}
+            )
+        except HTTPError as e:
+            logger.error(f"Error validando room: {e}")
+            if e.response is not None and e.response.status_code == 404:
+                return Response(404, {
+                    "success": False,
+                    "code": "ROOM_NOT_FOUND",
+                    "message": "El room no existe.",
+                    "details": ["Verifica el code ingresado."],
+                    "request_id": request_id
+                }).to_dict()
+            return Response(502, {
+                "success": False,
+                "code": "ROOM_SERVICE_ERROR",
+                "message": "Error al comunicarse con el servicio de rooms.",
+                "details": [str(e)],
+                "request_id": request_id
+            }).to_dict()
+
+        room_data = room_resp.get("data")
+        if not room_data:
+            logger.error(f"Room con code {room_code} no encontrado o sin datos")
+            return Response(
+                status_code=404,
+                body={
+                    "success": False,
+                    "code": "ROOM_NOT_FOUND",
+                    "message": "El room especificado no existe.",
+                    "details": [f"room_code '{room_code}' no encontrado."],
+                    "request_id": request_id
+                }
+            ).to_dict()
+        room_id = room_data.get("id")
         try:
             response_bd = students_table.query(
                 IndexName=STUDENT_GSI_INDEX_USERNAME_ROOMID,
@@ -110,7 +155,6 @@ def lambda_handler(event, context):
         student_data = items[0]
         student_id = student_data['id']
 
-        # --- Validar existencia del room (igual que en tu código) ---
         payload = {
             'id': student_id,
             'role': ROLE_STUDENT,
@@ -118,38 +162,13 @@ def lambda_handler(event, context):
         }
         token = token_validator.generate_token(payload)
 
-        try:
-            #aca solo se valida la existencia  no de hace nada con la data retornada
-            _service_room.request(
-                endpoint=f'/rooms/{room_id}',
-                method="GET",
-                headers={'Authorization': f'Bearer {token}'}
-            )
-        except HTTPError as e:
-            logger.error(f"Error validando room: {e}")
-            if e.response is not None and e.response.status_code == 404:
-                return Response(404, {
-                    "success": False,
-                    "code": "ROOM_NOT_FOUND",
-                    "message": "El room no existe.",
-                    "details": ["Verifica el room_id ingresado."],
-                    "request_id": request_id
-                }).to_dict()
-            return Response(502, {
-                "success": False,
-                "code": "ROOM_SERVICE_ERROR",
-                "message": "Error al comunicarse con el servicio de rooms.",
-                "details": [str(e)],
-                "request_id": request_id
-            }).to_dict()
-
-        # --- Devolver token y data del estudiante ---
         return Response(200, {
             "success": True,
             "code": "LOGIN_SUCCESS",
             "message": "Login exitoso.",
             "data": {
-                "token": token
+                "token": token,
+                "room_id": room_id
             },
             "request_id": request_id
         }).to_dict()

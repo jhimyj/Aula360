@@ -2,19 +2,19 @@ from utils.validator import CustomValidator
 key = {
     "type": dict,
     "schema": {
-        "id": {"type": str}
+        "id": {"type": str},
+        "room_id": {"type": str}
     }
 }
+
 
 data_update = {
     "type": dict,
     "schema": {
-        "name": {"type": str, "required": False},
-        "topic": {"type": str, "required": False},
-        "description": {"type": str, "required": False},
-        "add__max_score": {"type": int, "required": False},
-        "add__number_questions": {"type": int, "required": False},
-        "add__number_students": {"type": int, "required": False}
+        "status": {"type": str, "required": False},
+        "add__score_student": {"type": int, "required": False},
+        "add__score_villain": {"type": int, "required": False},
+        "add__answered_questions_count": {"type": int, "required": False}
     }
 }
 

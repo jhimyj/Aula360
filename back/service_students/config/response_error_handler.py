@@ -2,7 +2,8 @@ import logging
 from utils.response import Response
 from exceptions.exceptions import (
     BadRequestError,
-    ValidationError
+    ValidationError,
+    NotFound
 )
 
 logger = logging.getLogger(__name__)
@@ -15,6 +16,10 @@ def handle_exception(err: Exception, request_id: str) -> dict:
     elif isinstance(err, ValidationError):
         logger.error(f"Validation error: {err} - Request ID: {request_id}")
         return _make_response(400, "VALIDATION_ERROR", str(err), request_id)
+
+    elif isinstance(err, NotFound):
+        logger.error(f"NotFound error: {err} - Request ID: {request_id}")
+        return _make_response(404, "NOT_FOUND", str(err), request_id)
 
     else:
         logger.error(f"Unexpected error: {err} - Request ID: {request_id}", exc_info=True)

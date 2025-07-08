@@ -23,7 +23,7 @@ def lambda_handler(event, context):
     logger.info("Inicio de procesamiento de solicitud")
 
     try:
-        # --- AUTORIZACIÓN ---
+        # --- AUTORIZACION ---
         headers = event.get('headers') or {}
         auth_header = headers.get('Authorization')
         if not auth_header:
