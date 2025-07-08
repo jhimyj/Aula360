@@ -1,6 +1,7 @@
 import json
 import logging
 import uuid
+
 import boto3
 from datetime import datetime
 from botocore.exceptions import ClientError
@@ -14,20 +15,21 @@ from utils.response import Response
 from utils.token import get_token_instance
 from utils.config import (
     QUESTION_TABLE,
-    ROLES_PERMITED_CREATE_QUESTION
+    ROLES_PERMITED_CREATE_QUESTION,
+    URL_SQS_ROOM
 )
 from utils.external_api import create_external_api_client_room
+
+from utils.send_message_sqs import send_single_message_to_sqs_fifo
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 token_validator = get_token_instance()
 
-# DynamoDB Resource
 dynamodb = boto3.resource('dynamodb')
 questions_table = dynamodb.Table(QUESTION_TABLE)
 
-# Configuración de validadores
 _validator_question = create_validator_schema_question()
 _validator_multiple_choice_single = create_validator_config_multiple_choice_single()
 _validator_open_ended = create_validator_config_open_ended()
@@ -37,7 +39,6 @@ _dict_validator_types_question = {
     "OPEN_ENDED": _validator_open_ended
 }
 
-# Cliente externo de rooms
 _service_room = create_external_api_client_room()
 
 
@@ -49,7 +50,7 @@ def lambda_handler(event, context):
     logger.info("Inicio de procesamiento de solicitud")
 
     try:
-        # --- BODY & JSON PARSING ---
+        # --- BODY AND JSON PARSING ---
         body = event.get('body')
         if body is None:
             logger.error("Parámetro 'body' ausente en el evento")
@@ -124,6 +125,9 @@ def lambda_handler(event, context):
                     "request_id": request_id
                 }
             ).to_dict()
+
+        #sacmso el el max score para actaualizar room
+        max_score = body.get("score", 0)
 
         # --- AUTORIZACIÓN ---
         headers = event.get('headers') or {}
@@ -245,13 +249,30 @@ def lambda_handler(event, context):
             "updated_at": now
         }
 
-        # Inserción usando recurso de alto nivel
         try:
             questions_table.put_item(
                 Item=question_data,
                 ConditionExpression="attribute_not_exists(id)"
             )
             logger.info("Question creada exitosamente en DynamoDB")
+
+            #una ves creada la pregunta envimos mensaje a la cola de room y comunicarle el cambio
+            try:
+                message = {
+                    "action": "update",
+                    "key": {
+                        "id": room_id
+                    },
+                    "data": {
+                        "add__number_questions": 1,
+                        "add__max_score": max_score
+                    }
+                }
+                send_single_message_to_sqs_fifo(queue_url=URL_SQS_ROOM, message=message, num_groups=10)
+            except Exception as err:
+                logger.error(f"error al enviar mensaje a la cola de rooms{err}")
+
+
             return Response(
                 status_code=201,
                 body={

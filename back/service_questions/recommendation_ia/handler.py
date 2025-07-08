@@ -2,6 +2,7 @@ import json
 import logging
 import uuid
 import boto3
+import random
 from datetime import datetime
 from botocore.exceptions import ClientError
 
@@ -16,7 +17,7 @@ from utils.config import (
 )
 from utils.external_api import create_external_api_client_room
 
-from utils.ia_client import create_anthropic_haiku_client_instance
+from utils.ia_client import create_dict_anthropic_haiku_client_instances
 from utils.prompt import prompt_recommendation
 from utils.helper_functions import extract_delimited_text
 
@@ -25,17 +26,14 @@ logger.setLevel(logging.INFO)
 
 token_validator = get_token_instance()
 
-# DynamoDB Resource
 dynamodb = boto3.resource('dynamodb')
 questions_table = dynamodb.Table(QUESTION_TABLE)
 
-# Configuración de validadores
 _validator_promt_user = create_validator_recommendation_ia_question_schema()
 
-# Cliente externo de rooms
 _service_room = create_external_api_client_room()
-_ia = create_anthropic_haiku_client_instance()
-
+_ias = create_dict_anthropic_haiku_client_instances()
+MAX_INDEX_IA = len(_ias)-1
 
 def lambda_handler(event, context):
     """
@@ -107,7 +105,7 @@ def lambda_handler(event, context):
 
 
 
-        # --- AUTORIZACIÓN ---
+        # --- AUTORIZACION ---
         headers = event.get('headers') or {}
         auth_header = headers.get('Authorization')
         if not auth_header:
@@ -224,8 +222,12 @@ def lambda_handler(event, context):
             user_prompt = body['user_prompt']
             logger.info("generando promt con el de user")
             prompt_final = prompt_recommendation(course,topic,user_prompt)
+
+            #indice aleatorio
+            idx = random.randint(0, MAX_INDEX_IA)
             logger.info("llamando a ia")
-            text_ia = _ia.prompt(prompt=prompt_final)
+
+            text_ia = _ias[idx].prompt(prompt=prompt_final)
             logger.info("extranedo preguntas")
             json_text = extract_delimited_text(text=text_ia,char_start="[",char_end="]")
             logger.info("json en texto generado")

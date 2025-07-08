@@ -7,7 +7,7 @@ from datetime import datetime
 from botocore.exceptions import ClientError
 
 from utils.validator import (
-    create_validator_recommendation_ia_question_schema
+    create_validator_recommendation_ia_with_number_question_schema
 )
 from utils.response import Response
 from utils.token import get_token_instance
@@ -18,7 +18,7 @@ from utils.config import (
 from utils.external_api import create_external_api_client_room
 
 from utils.ia_client import create_dict_anthropic_haiku_client_instances
-from utils.prompt import prompt_recommendation
+from utils.prompt import prompt_recommendation_with_number
 from utils.helper_functions import extract_delimited_text
 
 logger = logging.getLogger(__name__)
@@ -26,14 +26,11 @@ logger.setLevel(logging.INFO)
 
 token_validator = get_token_instance()
 
-# DynamoDB Resource
 dynamodb = boto3.resource('dynamodb')
 questions_table = dynamodb.Table(QUESTION_TABLE)
 
-# Configuración de validadores
-_validator_promt_user = create_validator_recommendation_ia_question_schema()
+_validator_promt_user = create_validator_recommendation_ia_with_number_question_schema()
 
-# Cliente externo de rooms
 _service_room = create_external_api_client_room()
 _ias = create_dict_anthropic_haiku_client_instances()
 MAX_INDEX_IA = len(_ias)-1
@@ -46,7 +43,7 @@ def lambda_handler(event, context):
     logger.info("Inicio de procesamiento de solicitud")
 
     try:
-        # --- BODY & JSON PARSING ---
+        # --- BODY AND JSON PARSING ---
         body = event.get('body')
         if body is None:
             logger.error("Parámetro 'body' ausente en el evento")
@@ -94,7 +91,7 @@ def lambda_handler(event, context):
         if not _validator_promt_user.validate(data=body, path='body'):
             errors = _validator_promt_user.get_errors()
             logger.error(f"Falló validación de question: {errors}")
-            user_errors = [f"Campo '{f}': {'; '.join(msgs)}" for f, msgs in errors.items()]
+            user_errors = [f"Campo '{f}': {' '.join(msgs)}" for f, msgs in errors.items()]
             return Response(
                 status_code=400,
                 body={
@@ -108,7 +105,7 @@ def lambda_handler(event, context):
 
 
 
-        # --- AUTORIZACIÓN ---
+        # --- AUTORIZACION ---
         headers = event.get('headers') or {}
         auth_header = headers.get('Authorization')
         if not auth_header:
@@ -223,8 +220,9 @@ def lambda_handler(event, context):
             course = room_data.get("course", "")
             topic = room_data.get("topic","")
             user_prompt = body['user_prompt']
+            number_questions = body['number_questions']
             logger.info("generando promt con el de user")
-            prompt_final = prompt_recommendation(course,topic,user_prompt)
+            prompt_final = prompt_recommendation_with_number(course,topic,user_prompt,number_questions)
 
             #indice aleatorio
             idx = random.randint(0, MAX_INDEX_IA)

@@ -5,7 +5,7 @@ def extract_delimited_text(text: str, char_start: str, char_end: str) -> Optiona
     usando los caracteres de inicio y fin proporcionados.
     """
     if not text or not char_start or not char_end:
-        return None  # Validación de entrada
+        return None
 
     start = text.find(char_start)
     end = text.rfind(char_end)
