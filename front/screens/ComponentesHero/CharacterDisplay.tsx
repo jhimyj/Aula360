@@ -34,15 +34,15 @@ const CharacterDisplay: React.FC<CharacterDisplayProps> = ({ character, imageSiz
 
   useEffect(() => {
     const state = navigation.getState?.()
-    console.log("📍 Estado actual de navegación:", JSON.stringify(state, null, 2))
+    console.log(" Estado actual de navegación:", JSON.stringify(state, null, 2))
 
     if (state?.routeNames) {
-      console.log("✅ Rutas disponibles:")
+      console.log("Rutas disponibles:")
       state.routeNames.forEach((name, index) => {
         console.log(`- ${index + 1}. ${name}`)
       })
     } else {
-      console.warn("⚠️ No se encontraron rutas desde este contexto")
+      console.warn(" No se encontraron rutas desde este contexto")
     }
   }, [])
 
@@ -135,15 +135,15 @@ const CharacterDisplay: React.FC<CharacterDisplayProps> = ({ character, imageSiz
     }).start()
   }
 
-  // 🔧 FUNCIÓN MEJORADA PARA MANEJAR "SEE MORE"
+  //  FUNCIÓN MEJORADA PARA MANEJAR "SEE MORE"
   const handleSeeMore = () => {
-    console.log("🔍 Abriendo detalles del personaje:", character.name)
+    console.log("Abriendo detalles del personaje:", character.name)
     setShowDetailsDialog(true)
   }
 
   // 🔧 FUNCIÓN MEJORADA PARA CERRAR DIALOG
   const handleCloseDialog = () => {
-    console.log("❌ Cerrando detalles del personaje")
+    console.log(" Cerrando detalles del personaje")
     setShowDetailsDialog(false)
   }
 
@@ -177,7 +177,7 @@ const CharacterDisplay: React.FC<CharacterDisplayProps> = ({ character, imageSiz
           ? "#3498DB"
           : "#7F8C8D"
 
-  // 🎯 FUNCIÓN PARA OBTENER TEXTO DE RAREZA PERSONALIZADO
+  //  FUNCIÓN PARA OBTENER TEXTO DE RAREZA PERSONALIZADO
   const getRarityText = () => {
     if (character.rarity === "legendary") return "LEGENDARIO"
     if (character.rarity === "epic") return "ÉPICO"
@@ -206,7 +206,7 @@ const CharacterDisplay: React.FC<CharacterDisplayProps> = ({ character, imageSiz
         ))}
 
         <View style={styles.header}>
-          {/* 🔧 BOTÓN "SEE MORE" MEJORADO */}
+          {/*  BOTÓN "SEE MORE" MEJORADO */}
           <TouchableOpacity
             style={styles.seeMoreButton}
             onPress={handleSeeMore}
@@ -219,7 +219,7 @@ const CharacterDisplay: React.FC<CharacterDisplayProps> = ({ character, imageSiz
             <Text style={styles.seeMoreText}>Ver Más</Text>
           </TouchableOpacity>
 
-          {/* 🔧 BADGE DE RAREZA MEJORADO */}
+          {/*  BADGE DE RAREZA MEJORADO */}
           <View style={[styles.rarityBadge, { borderColor: rarityBorderColor }]}>
             <Text style={[styles.rarityText, { color: rarityBorderColor }]}>{getRarityText()}</Text>
           </View>
@@ -279,7 +279,7 @@ const CharacterDisplay: React.FC<CharacterDisplayProps> = ({ character, imageSiz
           <Text style={styles.characterClass}>{character.class || "Aventurero"}</Text>
 
           <View style={styles.statsGrid}>
-            {/* 🔧 STATS SIN ICONOS DE MÚSICA - SOLO TEXTO */}
+            {/*  */}
             <StatBar label="FUE" value={character.stats?.strength || 75} color="#FF5252" />
             <StatBar label="SAB" value={character.stats?.wisdom || 80} color="#40C4FF" />
             <StatBar label="AGI" value={character.stats?.agility || 85} color="#69F0AE" />
@@ -320,7 +320,7 @@ const CharacterDisplay: React.FC<CharacterDisplayProps> = ({ character, imageSiz
           </Animated.View>
         </TouchableOpacity>
 
-        {/* 🔧 CHARACTER DETAILS DIALOG CON Z-INDEX MEJORADO */}
+        {/*  CHARACTER DETAILS DIALOG CON Z-INDEX MEJORADO */}
         {showDetailsDialog && (
           <CharacterDetailsDialog character={character} visible={showDetailsDialog} onClose={handleCloseDialog} />
         )}
@@ -329,7 +329,7 @@ const CharacterDisplay: React.FC<CharacterDisplayProps> = ({ character, imageSiz
   )
 }
 
-// 🔧 STATBAR COMPONENT SIMPLIFICADO (SIN ICONOS DE MÚSICA)
+//  STATBAR COMPONENT SIMPLIFICADO (SIN ICONOS DE MÚSICA)
 const StatBar = ({ label, value, color }) => {
   return (
     <View style={styles.statBarContainer}>
@@ -382,9 +382,9 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: 20,
     marginBottom: 10,
-    zIndex: 1, // 🔧 Z-index para evitar sobreposición
+    zIndex: 1, //
   },
-  // 🔧 BOTÓN "SEE MORE" MEJORADO
+  
   seeMoreButton: {
     backgroundColor: "rgba(0,0,0,0.7)", // Más opaco
     paddingHorizontal: 16,
@@ -410,7 +410,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     fontSize: 13,
   },
-  // 🔧 BADGE DE RAREZA MEJORADO
+  //  BADGE DE RAREZA MEJORADO
   rarityBadge: {
     backgroundColor: "rgba(0,0,0,0.7)",
     paddingHorizontal: 16,
@@ -511,7 +511,7 @@ const styles = StyleSheet.create({
     width: "23%",
     marginBottom: 0,
   },
-  // 🔧 LABEL CONTAINER SIN ICONOS
+  //  LABEL CONTAINER SIN ICONOS
   labelContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -584,13 +584,13 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 5,
     marginTop: 5,
-    alignSelf: "center", // 🔧 Centrar el botón
+    alignSelf: "center", // 
   },
   gradientButton: {
     width: "100%",
     height: "100%",
     flexDirection: "row",
-    justifyContent: "center", // 🔧 Centrar contenido
+    justifyContent: "center", // 
     alignItems: "center",
     borderRadius: 25,
     paddingHorizontal: 20,

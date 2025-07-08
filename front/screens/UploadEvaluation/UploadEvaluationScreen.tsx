@@ -56,7 +56,6 @@ interface AIRecommendationResponse {
   request_id: string
 }
 
-// 🎥 Componente Modal de Video para IA
 const AIVideoModal = ({ visible, onClose }: { visible: boolean; onClose: () => void }) => {
   return (
     <Modal
@@ -81,7 +80,7 @@ const AIVideoModal = ({ visible, onClose }: { visible: boolean; onClose: () => v
           
           {/* Loading Content */}
           <View style={styles.videoLoadingContent}>
-            <Text style={styles.videoLoadingTitle}>🤖 Generando con IA</Text>
+            <Text style={styles.videoLoadingTitle}> Generando con IA</Text>
             <Text style={styles.videoLoadingSubtitle}>
               Analizando tu solicitud y creando preguntas personalizadas...
             </Text>
@@ -116,7 +115,7 @@ export default function UploadEvaluationScreenEnhanced() {
   const [isGeneratingAI, setIsGeneratingAI] = useState(false)
   const [aiError, setAiError] = useState<string | null>(null)
 
-  // 🔧 Estado para acumular todas las preguntas generadas
+  //  Estado para acumular todas las preguntas generadas
   const [allGeneratedQuestions, setAllGeneratedQuestions] = useState<Question[]>([])
 
   // Estados para flujo manual - MÚLTIPLES PREGUNTAS
@@ -133,7 +132,7 @@ export default function UploadEvaluationScreenEnhanced() {
   })
   const [isFormValid, setIsFormValid] = useState(false)
 
-  // 🆕 Estados para el modal de opciones y eliminación
+  //  Estados para el modal de opciones y eliminación
   const [showGenerateOptions, setShowGenerateOptions] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [questionToDelete, setQuestionToDelete] = useState<number | null>(null)
@@ -164,7 +163,7 @@ export default function UploadEvaluationScreenEnhanced() {
     }
   }, [currentQuestion, step, flowType])
 
-  // 🔧 Función para generar preguntas con IA (mejorada para acumular)
+  //  Función para generar preguntas con IA (mejorada para acumular)
   const generateAIQuestions = async (isGeneratingMore = false) => {
     if (!userPrompt.trim()) {
       Alert.alert("Error", "Por favor escribe un prompt para generar preguntas.")
@@ -180,10 +179,10 @@ export default function UploadEvaluationScreenEnhanced() {
         throw new Error("No se encontró token de autenticación")
       }
 
-      console.log("🤖 Generando preguntas con IA...")
-      console.log("📝 Prompt:", userPrompt)
-      console.log("🔢 Cantidad solicitada:", questionCount)
-      console.log("🔄 ¿Generando más?:", isGeneratingMore)
+      console.log(" Generando preguntas con IA...")
+      console.log("Prompt:", userPrompt)
+      console.log(" Cantidad solicitada:", questionCount)
+      console.log(" ¿Generando más?:", isGeneratingMore)
       const focos = [
         "haz que las preguntas impliquen análisis y reflexión",
         "enfócate en habilidades comunicativas",
@@ -218,16 +217,16 @@ export default function UploadEvaluationScreenEnhanced() {
         },
       )
 
-      console.log("✅ Respuesta de la IA:", response.data)
+      console.log(" Respuesta de la IA:", response.data)
 
       if (response.data.success) {
         const limitedQuestions = response.data.data.slice(0, questionCount)
-        console.log(`📊 Preguntas recibidas: ${response.data.data.length}, Mostrando: ${limitedQuestions.length}`)
+        console.log(` Preguntas recibidas: ${response.data.data.length}, Mostrando: ${limitedQuestions.length}`)
 
         setAiQuestions(limitedQuestions)
 
         const newEditableQuestions: Question[] = limitedQuestions.map((q, index) => {
-          console.log(`📝 Pregunta ${index + 1}:`, {
+          console.log(` Pregunta ${index + 1}:`, {
             text: q.text,
             type: q.type,
             difficulty: q.difficulty,
@@ -248,12 +247,12 @@ export default function UploadEvaluationScreenEnhanced() {
           const updatedQuestions = [...allGeneratedQuestions, ...newEditableQuestions]
           setAllGeneratedQuestions(updatedQuestions)
           setEditedQuestions(updatedQuestions)
-          console.log(`📈 Total de preguntas acumuladas: ${updatedQuestions.length}`)
+          console.log(` Total de preguntas acumuladas: ${updatedQuestions.length}`)
         } else {
           // Primera vez o reinicio
           setAllGeneratedQuestions(newEditableQuestions)
           setEditedQuestions(newEditableQuestions)
-          console.log(`🆕 Preguntas iniciales: ${newEditableQuestions.length}`)
+          console.log(`Preguntas iniciales: ${newEditableQuestions.length}`)
         }
 
         setStep(3) // Ir al paso de revisión IA
@@ -261,26 +260,26 @@ export default function UploadEvaluationScreenEnhanced() {
         throw new Error(response.data.message || "Error al generar preguntas")
       }
     } catch (error: any) {
-      console.error("❌ Error generating AI questions:", error)
+      console.error(" Error generating AI questions:", error)
       setAiError(error.response?.data?.message || error.message || "Error al generar preguntas con IA")
     } finally {
       setIsGeneratingAI(false)
     }
   }
 
-  // 🆕 Función para eliminar una pregunta
+  //  Función para eliminar una pregunta
   const handleDeleteQuestion = (index: number) => {
     setQuestionToDelete(index)
     setShowDeleteConfirm(true)
   }
 
-  // 🆕 Confirmar eliminación de pregunta
+  //  Confirmar eliminación de pregunta
   const confirmDeleteQuestion = () => {
     if (questionToDelete !== null) {
       const updatedQuestions = allGeneratedQuestions.filter((_, index) => index !== questionToDelete)
       setAllGeneratedQuestions(updatedQuestions)
       setEditedQuestions(updatedQuestions)
-      console.log(`🗑️ Pregunta ${questionToDelete + 1} eliminada. Total restante: ${updatedQuestions.length}`)
+      console.log(`Pregunta ${questionToDelete + 1} eliminada. Total restante: ${updatedQuestions.length}`)
     }
     setShowDeleteConfirm(false)
     setQuestionToDelete(null)
@@ -291,7 +290,6 @@ export default function UploadEvaluationScreenEnhanced() {
     setShowGenerateOptions(true)
   }
 
-  // 🔧 Función para cambiar la solicitud a IA (mantiene preguntas existentes)
   const handleChangeAIPrompt = () => {
     setShowGenerateOptions(false)
     // Mantener las preguntas actuales y volver al paso 2
@@ -316,7 +314,7 @@ export default function UploadEvaluationScreenEnhanced() {
     newAllQuestions[index] = { ...newAllQuestions[index], ...updatedQuestion }
     setAllGeneratedQuestions(newAllQuestions)
 
-    console.log(`✏️ Editando pregunta ${index + 1}:`, updatedQuestion)
+    console.log(` Editando pregunta ${index + 1}:`, updatedQuestion)
   }
 
   // Funciones del flujo manual (sin cambios)
@@ -474,7 +472,7 @@ export default function UploadEvaluationScreenEnhanced() {
         return
       }
 
-      console.log("💾 Guardando TODAS las preguntas de IA:", questionsToSave.length)
+      console.log(" Guardando TODAS las preguntas de IA:", questionsToSave.length)
 
       const questionIds = await createQuestionsList(
         roomId,
@@ -489,7 +487,7 @@ export default function UploadEvaluationScreenEnhanced() {
       )
 
       if (questionIds) {
-        console.log("✅ Preguntas guardadas con IDs:", questionIds)
+        console.log(" Preguntas guardadas con IDs:", questionIds)
         Alert.alert("Preguntas creadas", `Se han creado ${questionIds.length} preguntas exitosamente.`, [
           {
             text: "Crear más",
@@ -522,7 +520,7 @@ export default function UploadEvaluationScreenEnhanced() {
         setStep(2)
       } else if (step === 2) {
         if (userPrompt.trim()) {
-          // 🔧 Si hay preguntas existentes, agregar a ellas; si no, crear nuevas
+          //  Si hay preguntas existentes, agregar a ellas; si no, crear nuevas
           const isAddingMore = allGeneratedQuestions.length > 0
           generateAIQuestions(isAddingMore)
         } else {
@@ -618,7 +616,7 @@ export default function UploadEvaluationScreenEnhanced() {
                 Describe el tema y la IA generará {questionCount} pregunta{questionCount > 1 ? "s" : ""} para ti.
               </Text>
 
-              {/* 🆕 Mostrar preguntas existentes si las hay */}
+              {/* Mostrar preguntas existentes si las hay */}
               {allGeneratedQuestions.length > 0 && (
                 <View style={styles.existingQuestionsInfo}>
                   <Feather name="check-circle" size={20} color="#4CAF50" />
@@ -671,10 +669,10 @@ export default function UploadEvaluationScreenEnhanced() {
                 Revisa y edita todas las preguntas generadas. Puedes modificar cualquier campo antes de guardar.
               </Text>
 
-              {/* 🔧 Sección de preguntas con funcionalidad de eliminación */}
+              {/*  Sección de preguntas con funcionalidad de eliminación */}
               <View style={styles.questionsSection}>
                 <Text style={styles.questionsSectionTitle}>
-                  📝 Preguntas generadas ({allGeneratedQuestions.length})
+                  Preguntas generadas ({allGeneratedQuestions.length})
                 </Text>
 
                 {allGeneratedQuestions.map((question, index) => (
@@ -703,7 +701,7 @@ export default function UploadEvaluationScreenEnhanced() {
                                 : "Difícil"}
                           </Text>
                         </View>
-                        {/* 🆕 Botón de eliminar */}
+                        {/*  Botón de eliminar */}
                         <TouchableOpacity
                           style={styles.deleteButton}
                           onPress={() => handleDeleteQuestion(index)}
@@ -1157,7 +1155,7 @@ export default function UploadEvaluationScreenEnhanced() {
       >
         {renderStepContent()}
 
-        {/* 🆕 Modal de opciones para generar más preguntas */}
+        {/* Modal de opciones para generar más preguntas */}
         <Modal
           visible={showGenerateOptions}
           transparent={true}
@@ -1202,7 +1200,7 @@ export default function UploadEvaluationScreenEnhanced() {
           </View>
         </Modal>
 
-        {/* 🆕 Modal de confirmación para eliminar pregunta */}
+        {/*  Modal de confirmación para eliminar pregunta */}
         <Modal
           visible={showDeleteConfirm}
           transparent={true}
@@ -1280,7 +1278,7 @@ export default function UploadEvaluationScreenEnhanced() {
   )
 }
 
-// 🔧 Estilos actualizados con nuevas funcionalidades
+// Estilos actualizados con nuevas funcionalidades
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -1450,7 +1448,7 @@ const styles = StyleSheet.create({
     marginLeft: 12,
     lineHeight: 20,
   },
-  // 🆕 Nuevo estilo para mostrar preguntas existentes
+  //  Nuevo estilo para mostrar preguntas existentes
   existingQuestionsInfo: {
     flexDirection: "row",
     backgroundColor: "#E8F5E8",
@@ -1548,7 +1546,7 @@ const styles = StyleSheet.create({
     fontFamily: "Poppins_700Bold",
     color: "#333",
   },
-  // 🆕 Nuevo contenedor para acciones de pregunta
+  //  Nuevo contenedor para acciones de pregunta
   questionActions: {
     flexDirection: "row",
     alignItems: "center",
@@ -1564,7 +1562,7 @@ const styles = StyleSheet.create({
     fontFamily: "Poppins_600SemiBold",
     color: "#FFFFFF",
   },
-  // 🆕 Botón de eliminar
+  // Botón de eliminar
   deleteButton: {
     width: 36,
     height: 36,
@@ -1954,7 +1952,7 @@ const styles = StyleSheet.create({
     fontFamily: "Poppins_600SemiBold",
     color: "#666",
   },
-  // 🎥 Estilos para el modal de video
+  //  Estilos para el modal de video
 videoModalOverlay: {
   flex: 1,
   backgroundColor: "rgba(0, 0, 0, 0.8)",

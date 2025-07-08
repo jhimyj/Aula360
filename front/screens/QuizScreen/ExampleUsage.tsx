@@ -6,7 +6,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage"
 import axios from "axios"
 import { useFocusEffect } from "@react-navigation/native"
 import { useCallback } from "react"
-import { MissionManager } from "../ComponentesQuiz/mission-manager" // 🔍 IMPORTAR LA VERSIÓN ACTUALIZADA
+import { MissionManager } from "../ComponentesQuiz/mission-manager"
 import { Audio } from "expo-av"
 import { CommonActions } from "@react-navigation/native"
 
@@ -38,7 +38,7 @@ type ApiResponse = {
   request_id: string
 }
 
-// 🎵 ARCHIVOS DE MÚSICA PARA CADA PERSONAJE
+// RCHIVOS DE MÚSICA PARA CADA PERSONAJE
 const characterMusic: Record<CharacterName, any> = {
   Qhapaq: require("../../assets/Musica/Amaru.mp3"),
   Amaru: require("../../assets/Musica/Killa.mp3"),
@@ -127,7 +127,7 @@ const characterAssets: Record<CharacterName, { backgroundImages: any[] }> = {
 // Función para obtener preguntas del API
 const fetchQuestionsFromAPI = async (roomId: string): Promise<ApiQuestion[]> => {
   try {
-    console.log("🔍 Obteniendo preguntas del API para room:", roomId)
+    console.log(" Obteniendo preguntas del API para room:", roomId)
 
     const studentToken = await AsyncStorage.getItem("studentToken")
 
@@ -135,7 +135,7 @@ const fetchQuestionsFromAPI = async (roomId: string): Promise<ApiQuestion[]> => 
       throw new Error("No se encontró el token del estudiante. Por favor, inicia sesión nuevamente.")
     }
 
-    console.log("🔑 Token del estudiante obtenido para la petición")
+    console.log(" Token del estudiante obtenido para la petición")
 
     const response = await axios.get<ApiResponse>(
       `https://fmrdkboi63.execute-api.us-east-1.amazonaws.com/dev/questions/all/room/${roomId}`,
@@ -148,7 +148,7 @@ const fetchQuestionsFromAPI = async (roomId: string): Promise<ApiQuestion[]> => 
     )
 
     console.log("=".repeat(50))
-    console.log("📡 RESPUESTA COMPLETA DEL ENDPOINT:")
+    console.log(" RESPUESTA COMPLETA DEL ENDPOINT:")
     console.log("=".repeat(50))
     console.log("Status:", response.status)
     console.log("Headers:", JSON.stringify(response.headers, null, 2))
@@ -156,10 +156,10 @@ const fetchQuestionsFromAPI = async (roomId: string): Promise<ApiQuestion[]> => 
     console.log("=".repeat(50))
 
     if (response.data.success && response.data.data) {
-      console.log(`📚 Se obtuvieron ${response.data.data.length} preguntas`)
+      console.log(` Se obtuvieron ${response.data.data.length} preguntas`)
 
       response.data.data.forEach((question, index) => {
-        console.log(`\n📝 PREGUNTA ${index + 1}:`)
+        console.log(`\n PREGUNTA ${index + 1}:`)
         console.log("- ID:", question.id)
         console.log("- Texto:", question.text)
         console.log("- Tipo:", question.type)
@@ -175,15 +175,15 @@ const fetchQuestionsFromAPI = async (roomId: string): Promise<ApiQuestion[]> => 
 
       return response.data.data
     } else {
-      console.error("❌ Respuesta del API no exitosa:", response.data)
+      console.error("Respuesta del API no exitosa:", response.data)
       throw new Error(response.data.message || "Error al obtener preguntas")
     }
   } catch (error: any) {
-    console.error("💥 Error al obtener preguntas del API:", error)
+    console.error(" Error al obtener preguntas del API:", error)
 
     if (error.response) {
       console.log("=".repeat(50))
-      console.log("❌ ERROR DE RESPUESTA:")
+      console.log(" ERROR DE RESPUESTA:")
       console.log("=".repeat(50))
       console.error("- Status:", error.response.status)
       console.error("- Status Text:", error.response.statusText)
@@ -191,7 +191,7 @@ const fetchQuestionsFromAPI = async (roomId: string): Promise<ApiQuestion[]> => 
       console.error("- Data:", JSON.stringify(error.response.data, null, 2))
       console.log("=".repeat(50))
 
-      // 🔐 MEJORAR DETECCIÓN DE ERRORES DE AUTENTICACIÓN
+      //  MEJORAR DETECCIÓN DE ERRORES DE AUTENTICACIÓN
       if (error.response.status === 401) {
         throw new Error("Token de autenticación inválido. Por favor, inicia sesión nuevamente.")
       } else if (error.response.status === 403) {
@@ -203,14 +203,14 @@ const fetchQuestionsFromAPI = async (roomId: string): Promise<ApiQuestion[]> => 
       throw new Error(error.response.data?.message || `Error del servidor: ${error.response.status}`)
     } else if (error.request) {
       console.log("=".repeat(50))
-      console.log("❌ ERROR DE REQUEST:")
+      console.log(" ERROR DE REQUEST:")
       console.log("=".repeat(50))
       console.error("Request:", error.request)
       console.log("=".repeat(50))
       throw new Error("No se pudo conectar con el servidor. Verifica tu conexión a internet.")
     } else {
       console.log("=".repeat(50))
-      console.log("❌ ERROR GENERAL:")
+      console.log(" ERROR GENERAL:")
       console.log("=".repeat(50))
       console.error("Message:", error.message)
       console.log("=".repeat(50))
@@ -235,7 +235,7 @@ const buildMissionsFromAPI = async (characterName: CharacterName, villainName: V
       throw new Error("No se encontró el Room ID")
     }
 
-    console.log("🏠 Room ID obtenido del localStorage:", roomId)
+    console.log(" Room ID obtenido del localStorage:", roomId)
 
     const apiQuestions = await fetchQuestionsFromAPI(roomId)
 
@@ -243,12 +243,12 @@ const buildMissionsFromAPI = async (characterName: CharacterName, villainName: V
       throw new Error("No se encontraron preguntas para este room")
     }
 
-    console.log("🎯 PROCESANDO TODAS LAS PREGUNTAS PARA MISIONES:")
+    console.log(" PROCESANDO TODAS LAS PREGUNTAS PARA MISIONES:")
     console.log(`- Total de preguntas recibidas: ${apiQuestions.length}`)
     console.log(`- Se crearán ${apiQuestions.length} misiones`)
 
     return apiQuestions.map((apiQuestion, index) => {
-      console.log(`\n🔄 PROCESANDO PREGUNTA ${index + 1} de ${apiQuestions.length}:`)
+      console.log(`\n PROCESANDO PREGUNTA ${index + 1} de ${apiQuestions.length}:`)
       console.log("- Tipo original:", apiQuestion.type)
       console.log("- Config original:", JSON.stringify(apiQuestion.config, null, 2))
 
@@ -256,7 +256,7 @@ const buildMissionsFromAPI = async (characterName: CharacterName, villainName: V
 
       if (apiQuestion.type === "OPEN_ENDED") {
         options = []
-        console.log("✏️ PREGUNTA ABIERTA - NO se crean opciones")
+        console.log(" PREGUNTA ABIERTA - NO se crean opciones")
       } else if (apiQuestion.type === "MULTIPLE_CHOICE_SINGLE" && apiQuestion.config.options) {
         const correctOptionIndex =
           apiQuestion.config.correct_option !== undefined ? apiQuestion.config.correct_option : 0
@@ -297,7 +297,7 @@ const buildMissionsFromAPI = async (characterName: CharacterName, villainName: V
         options = []
       }
 
-      console.log(`✅ Pregunta ${index + 1} procesada exitosamente`)
+      console.log(` Pregunta ${index + 1} procesada exitosamente`)
 
       const getImageByIndex = (imageArray: any[], index: number) => {
         return imageArray[index % imageArray.length]
@@ -367,7 +367,6 @@ const buildMissionsFromAPI = async (characterName: CharacterName, villainName: V
           title: getTransitionTitle(),
           description: getTransitionDescription(),
         },
-        // 🔍 CONFIGURACIÓN DEL AMPLIFICADOR
         amplifier: {
           enabled: true,
           threshold: 1,
@@ -380,7 +379,7 @@ const buildMissionsFromAPI = async (characterName: CharacterName, villainName: V
       }
     })
   } catch (error) {
-    console.error("💥 Error en buildMissionsFromAPI:", error)
+    console.error(" Error en buildMissionsFromAPI:", error)
     throw error
   }
 }
@@ -397,10 +396,10 @@ const QuizScreen = ({ navigation }) => {
   // 🎵 FUNCIÓN PARA REPRODUCIR MÚSICA DE FONDO
   const playBackgroundMusic = async (characterName: CharacterName) => {
     try {
-      console.log(`🎵 Iniciando música de fondo para ${characterName}`)
+      console.log(` Iniciando música de fondo para ${characterName}`)
 
       if (backgroundMusic) {
-        console.log("🛑 Deteniendo música anterior")
+        console.log(" Deteniendo música anterior")
         await backgroundMusic.stopAsync()
         await backgroundMusic.unloadAsync()
         setBackgroundMusic(null)
@@ -418,39 +417,37 @@ const QuizScreen = ({ navigation }) => {
       const { sound } = await Audio.Sound.createAsync(musicSource, {
         shouldPlay: true,
         isLooping: true,
-        volume: 0.6,
+        volume: 0.2,
       })
 
       setBackgroundMusic(sound)
-      console.log(`✅ Música de ${characterName} iniciada exitosamente`)
+      console.log(` Música de ${characterName} iniciada exitosamente`)
     } catch (error) {
-      console.error("❌ Error al reproducir música de fondo:", error)
+      console.error(" Error al reproducir música de fondo:", error)
     }
   }
 
-  // 🎵 FUNCIÓN PARA DETENER MÚSICA DE FONDO
   const stopBackgroundMusic = async () => {
     try {
       if (backgroundMusic) {
-        console.log("🛑 Deteniendo música de fondo")
+        console.log(" Deteniendo música de fondo")
         await backgroundMusic.stopAsync()
         await backgroundMusic.unloadAsync()
         setBackgroundMusic(null)
-        console.log("✅ Música detenida exitosamente")
+        console.log("Música detenida exitosamente")
       }
     } catch (error) {
-      console.error("❌ Error al detener música de fondo:", error)
+      console.error("Error al detener música de fondo:", error)
     }
   }
 
-  // 🏠 NAVEGACIÓN AL STUDENT DASHBOARD AL PRESIONAR BACK
   useFocusEffect(
     useCallback(() => {
-      console.log("🎯 QuizScreen ENFOCADO - Activando quiz y configurando navegación back")
+      console.log(" QuizScreen ENFOCADO - Activando quiz y configurando navegación back")
       setIsQuizActive(true)
 
       const onBackPress = () => {
-        console.log("🏠 BOTÓN BACK PRESIONADO - Navegando a StudentDashboard")
+        console.log("BOTÓN BACK PRESIONADO - Navegando a StudentDashboard")
 
         Alert.alert(
           "¿Salir del Quiz?",
@@ -459,14 +456,14 @@ const QuizScreen = ({ navigation }) => {
             {
               text: "Cancelar",
               onPress: () => {
-                console.log("❌ Usuario canceló salir del quiz")
+                console.log("Usuario canceló salir del quiz")
               },
               style: "cancel",
             },
             {
               text: "Salir",
               onPress: async () => {
-                console.log("✅ Usuario confirmó salir del quiz - Navegando a StudentDashboard")
+                console.log(" Usuario confirmó salir del quiz - Navegando a StudentDashboard")
 
                 await stopBackgroundMusic()
 
@@ -495,7 +492,7 @@ const QuizScreen = ({ navigation }) => {
       }
 
       return () => {
-        console.log("🎯 QuizScreen DESENFOCADO - Desactivando quiz y restaurando navegación")
+        console.log("QuizScreen DESENFOCADO - Desactivando quiz y restaurando navegación")
 
         stopBackgroundMusic()
 
@@ -516,10 +513,9 @@ const QuizScreen = ({ navigation }) => {
     }, [navigation, backgroundMusic]),
   )
 
-  // 🧹 CLEANUP AL DESMONTAR
   useEffect(() => {
     return () => {
-      console.log("🧹 QuizScreen DESMONTÁNDOSE - Limpieza final")
+      console.log(" QuizScreen DESMONTÁNDOSE - Limpieza final")
 
       stopBackgroundMusic()
 
@@ -548,21 +544,21 @@ const QuizScreen = ({ navigation }) => {
       }
 
       const missions = await buildMissionsFromAPI(characterName, villainName)
-      console.log(`🎮 Se crearon ${missions.length} misiones exitosamente`)
+      console.log(` Se crearon ${missions.length} misiones exitosamente`)
       setMissionsData(missions)
 
       await playBackgroundMusic(characterName)
     } catch (error: any) {
       console.error("Error cargando preguntas:", error)
 
-      // 🔐 DETECTAR ERRORES DE AUTENTICACIÓN
+      // DETECTAR ERRORES DE AUTENTICACIÓN
       const isAuthError =
         error.message?.includes("Token de autenticación inválido") ||
         error.message?.includes("inicia sesión nuevamente") ||
         error.message?.includes("No se encontró el token del estudiante")
 
       if (isAuthError) {
-        console.log("🚨 ERROR DE AUTENTICACIÓN DETECTADO - Redirigiendo al login")
+        console.log(" ERROR DE AUTENTICACIÓN DETECTADO - Redirigiendo al login")
 
         Alert.alert(
           "Sesión Expirada",
@@ -571,9 +567,8 @@ const QuizScreen = ({ navigation }) => {
             {
               text: "Ir al Login",
               onPress: async () => {
-                console.log("🔐 Navegando al login por error de autenticación")
+                console.log("Navegando al login por error de autenticación")
 
-                // 🧹 LIMPIAR DATOS DE USUARIO
                 const keysToRemove = [
                   "userRole",
                   "userInfo",
@@ -589,16 +584,14 @@ const QuizScreen = ({ navigation }) => {
 
                 try {
                   await AsyncStorage.multiRemove(keysToRemove)
-                  console.log("✅ Datos de usuario limpiados")
+                  console.log("Datos de usuario limpiados")
                 } catch (cleanupError) {
-                  console.error("❌ Error limpiando datos:", cleanupError)
+                  console.error(" Error limpiando datos:", cleanupError)
                 }
 
-                // 🛑 DETENER MÚSICA
                 await stopBackgroundMusic()
                 setIsQuizActive(false)
 
-                // 🚀 NAVEGAR AL LOGIN Y RESETEAR STACK
                 navigation.dispatch(
                   CommonActions.reset({
                     index: 0,
@@ -611,7 +604,6 @@ const QuizScreen = ({ navigation }) => {
           { cancelable: false },
         )
       } else {
-        // 🔄 ERRORES NORMALES - MOSTRAR OPCIONES DE REINTENTAR
         Alert.alert("Error al cargar preguntas", error.message || "No se pudieron cargar las preguntas", [
           {
             text: "Reintentar",
@@ -654,7 +646,7 @@ const QuizScreen = ({ navigation }) => {
         }
 
         const missions = await buildMissionsFromAPI(characterName, villainName)
-        console.log(`🎮 Se crearon ${missions.length} misiones exitosamente`)
+        console.log(` Se crearon ${missions.length} misiones exitosamente`)
         setMissionsData(missions)
 
         await playBackgroundMusic(characterName)
@@ -694,8 +686,8 @@ const QuizScreen = ({ navigation }) => {
     correctAnswers?: number,
     incorrectAnswers?: number,
   ) => {
-    console.log(`🏁 Quiz completado: ${score}/${totalMissions}`)
-    console.log(`📊 Respuestas correctas: ${correctAnswers}, incorrectas: ${incorrectAnswers}`)
+    console.log(`Quiz completado: ${score}/${totalMissions}`)
+    console.log(` Respuestas correctas: ${correctAnswers}, incorrectas: ${incorrectAnswers}`)
 
     await stopBackgroundMusic()
 

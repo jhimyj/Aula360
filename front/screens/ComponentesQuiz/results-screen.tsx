@@ -88,7 +88,7 @@ const ResultsScreen = ({ route, navigation }) => {
           if (savedResults) {
             const parsedResults = JSON.parse(savedResults)
             setStoredResults(parsedResults)
-            console.log("📊 Resultados cargados desde AsyncStorage:", parsedResults)
+            console.log("Resultados cargados desde AsyncStorage:", parsedResults)
           }
         }
       } catch (error) {
@@ -249,26 +249,26 @@ const ResultsScreen = ({ route, navigation }) => {
         routes: [{ name: "MainTabs" }],
       })
 
-      console.log("✅ Navegación exitosa al dashboard de estudiantes")
+      console.log("Navegación exitosa al dashboard de estudiantes")
     } catch (error) {
-      console.error("❌ Error al navegar al dashboard:", error)
+      console.error(" Error al navegar al dashboard:", error)
 
       // Método 2 (alternativo): Intentar navegar con rutas anidadas
       try {
         navigation.navigate("MainTabs", { screen: "StudentDashboard" })
-        console.log("✅ Navegación alternativa exitosa")
+        console.log("Navegación alternativa exitosa")
       } catch (fallbackError) {
-        console.error("❌ Error en navegación alternativa:", fallbackError)
+        console.error("Error en navegación alternativa:", fallbackError)
 
         // Método 3 (último recurso): Intentar a través del navegador padre
         try {
           const parent = navigation.getParent()
           if (parent) {
             parent.navigate("MainTabs")
-            console.log("✅ Navegación a través del padre exitosa")
+            console.log(" Navegación a través del padre exitosa")
           }
         } catch (parentError) {
-          console.error("❌ Error en todos los métodos de navegación:", parentError)
+          console.error("Error en todos los métodos de navegación:", parentError)
           alert("No se pudo navegar al dashboard. Por favor, inténtalo de nuevo.")
         }
       }
@@ -350,7 +350,7 @@ const ResultsScreen = ({ route, navigation }) => {
 
             {/* Estadísticas de respuestas correctas/incorrectas */}
             <View style={styles.answersStatsContainer}>
-              <Text style={styles.answersStatsTitle}>📊 Resumen de Respuestas</Text>
+              <Text style={styles.answersStatsTitle}> Resumen de Respuestas</Text>
 
               <View style={styles.answersStatsGrid}>
                 <View style={styles.answerStatItem}>
@@ -408,7 +408,7 @@ const ResultsScreen = ({ route, navigation }) => {
             {/* Estadísticas de tiempo */}
             {stats.averageResponseTime && (
               <View style={styles.timeStatsContainer}>
-                <Text style={styles.timeStatsTitle}>⏱️ Estadísticas de Tiempo</Text>
+                <Text style={styles.timeStatsTitle}>⏱Estadísticas de Tiempo</Text>
 
                 <View style={styles.timeStatsGrid}>
                   <View style={styles.timeStatItem}>

@@ -171,16 +171,16 @@ export const MissionScreen = ({
     if (!answered && (questionType === "MULTIPLE_CHOICE_SINGLE" || questionType === "MULTIPLE_CHOICE_MULTIPLE")) {
       if (questionType === "MULTIPLE_CHOICE_SINGLE") {
         setSelectedOption(optionId)
-        console.log("✅ Opción seleccionada (única):", optionId)
+        console.log("Opción seleccionada (única):", optionId)
       } else if (questionType === "MULTIPLE_CHOICE_MULTIPLE") {
         setSelectedOptions((prev) => {
           if (prev.includes(optionId)) {
             const newSelection = prev.filter((id) => id !== optionId)
-            console.log("✅ Opciones seleccionadas (múltiple):", newSelection)
+            console.log(" Opciones seleccionadas (múltiple):", newSelection)
             return newSelection
           } else {
             const newSelection = [...prev, optionId]
-            console.log("✅ Opciones seleccionadas (múltiple):", newSelection)
+            console.log(" Opciones seleccionadas (múltiple):", newSelection)
             return newSelection
           }
         })
@@ -189,7 +189,7 @@ export const MissionScreen = ({
   }
 
   const handleTextInputFocus = () => {
-    console.log("📝 TextInput recibió foco")
+    console.log(" TextInput recibió foco")
     setIsFocused(true)
     setTimeout(() => {
       scrollViewRef.current?.scrollToEnd({ animated: true });
@@ -197,12 +197,12 @@ export const MissionScreen = ({
   }
 
   const handleTextInputBlur = () => {
-    console.log("📝 TextInput perdió foco")
+    console.log("TextInput perdió foco")
     setIsFocused(false)
   }
 
   const handleTextInputPress = () => {
-    console.log("📝 TextInput fue presionado")
+    console.log("TextInput fue presionado")
     if (textInputRef.current && !answered) {
       textInputRef.current.focus()
     }
@@ -211,7 +211,7 @@ export const MissionScreen = ({
   const handleSubmit = () => {
     const isOpenEndedQuestion = questionType === "OPEN_ENDED"
 
-    console.log("🚀 ENVIANDO RESPUESTA:")
+    console.log("ENVIANDO RESPUESTA:")
     console.log("- questionType:", questionType)
     console.log("- isOpenEndedQuestion:", isOpenEndedQuestion)
     console.log("- selectedOption:", selectedOption)
@@ -223,7 +223,7 @@ export const MissionScreen = ({
 
     if (isOpenEndedQuestion) {
       if (userAnswer.trim()) {
-        console.log("✅ Enviando respuesta abierta:", userAnswer)
+        console.log("Enviando respuesta abierta:", userAnswer)
         setIsCorrect(true)
         setAnswered(true)
         if (onSubmit) {
@@ -234,7 +234,7 @@ export const MissionScreen = ({
       if (selectedOption) {
         const selected = options.find((option) => option.id === selectedOption)
         const correct = selected?.isCorrect || false
-        console.log("✅ Enviando respuesta de opción única:", { selectedOption, correct })
+        console.log("Enviando respuesta de opción única:", { selectedOption, correct })
         setIsCorrect(correct)
         setAnswered(true)
         if (onSubmit) {
@@ -245,7 +245,7 @@ export const MissionScreen = ({
       if (selectedOptions.length > 0) {
         const selectedOptionObjects = options.filter((option) => selectedOptions.includes(option.id))
         const hasCorrectAnswer = selectedOptionObjects.some((option) => option.isCorrect)
-        console.log("✅ Enviando respuesta de opción múltiple:", { selectedOptions, hasCorrectAnswer })
+        console.log("Enviando respuesta de opción múltiple:", { selectedOptions, hasCorrectAnswer })
         setIsCorrect(hasCorrectAnswer)
         setAnswered(true)
         if (onSubmit) {
@@ -421,13 +421,13 @@ export const MissionScreen = ({
   const renderOptions = () => {
     const isOpenEndedQuestion = questionType === "OPEN_ENDED"
 
-    console.log("🎨 RENDERIZANDO CONTENIDO:")
+    console.log(" RENDERIZANDO CONTENIDO:")
     console.log("- questionType:", questionType)
     console.log("- options length:", options.length)
     console.log("- isOpenEndedQuestion:", isOpenEndedQuestion)
 
     if (isOpenEndedQuestion) {
-      console.log("✏️ Renderizando campo de texto para pregunta abierta")
+      console.log("Renderizando campo de texto para pregunta abierta")
       return (
         <View style={styles.openEndedContainer}>
           <TouchableWithoutFeedback onPress={handleTextInputPress}>
@@ -446,7 +446,7 @@ export const MissionScreen = ({
                 numberOfLines={6}
                 value={userAnswer}
                 onChangeText={(text) => {
-                  console.log("📝 Texto cambiado:", text)
+                  console.log("Texto cambiado:", text)
                   setUserAnswer(text)
                 }}
                 onFocus={handleTextInputFocus}
@@ -465,7 +465,7 @@ export const MissionScreen = ({
         </View>
       )
     } else {
-      console.log("📝 Renderizando opciones de opción múltiple")
+      console.log("Renderizando opciones de opción múltiple")
       return (
         <ScrollView 
           style={[

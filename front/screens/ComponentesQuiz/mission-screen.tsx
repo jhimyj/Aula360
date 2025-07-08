@@ -20,7 +20,7 @@ import {
   StatusBar,
 } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
-import { ReadingModeOverlay } from "../ComponentesQuiz/reading-mode-modal" // 🔥 NUEVO OVERLAY
+import { ReadingModeOverlay } from "../ComponentesQuiz/reading-mode-modal" //  NUEVO OVERLAY
 
 // Tipos para las propiedades
 type OptionType = {
@@ -80,7 +80,7 @@ export const MissionScreen = ({
   const textInputRef = useRef<TextInput>(null)
   const scrollViewRef = useRef<ScrollView>(null)
 
-  // 🔥 NUEVO ESTADO PARA EL OVERLAY
+  //  NUEVO ESTADO PARA EL OVERLAY
   const [overlayVisible, setOverlayVisible] = useState(false)
 
   // Actualizar dimensiones cuando cambia la orientación
@@ -104,7 +104,7 @@ export const MissionScreen = ({
     setAnswered(false)
     setIsCorrect(false)
     setIsFocused(false)
-    setOverlayVisible(false) // 🔥 RESETEAR OVERLAY
+    setOverlayVisible(false) //  RESETEAR OVERLAY
   }, [missionNumber, question])
 
   useEffect(() => {
@@ -340,7 +340,7 @@ export const MissionScreen = ({
       <SafeAreaView style={styles.safeArea}>
         <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
 
-        {/* 🔥 BOTÓN FLOTANTE PARA ABRIR OVERLAY */}
+        {/*  BOTÓN FLOTANTE PARA ABRIR OVERLAY */}
         {amplifier && amplifier.enabled && (
           <TouchableOpacity style={styles.floatingButton} onPress={() => setOverlayVisible(true)} activeOpacity={0.8}>
             <Ionicons name="book-outline" size={24} color="white" />
@@ -410,7 +410,7 @@ export const MissionScreen = ({
           </TouchableWithoutFeedback>
         </KeyboardAvoidingView>
 
-        {/* 🔥 OVERLAY ABSOLUTO QUE SÍ FUNCIONA */}
+        {/* OVERLAY ABSOLUTO QUE SÍ FUNCIONA */}
         <ReadingModeOverlay
           visible={overlayVisible}
           onClose={() => setOverlayVisible(false)}
@@ -695,7 +695,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 
-  // 🔥 BOTÓN FLOTANTE
+  //  BOTÓN FLOTANTE
   floatingButton: {
     position: "absolute",
     top: 50,

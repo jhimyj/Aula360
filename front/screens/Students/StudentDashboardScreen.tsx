@@ -10,7 +10,7 @@ import CharacterDisplay from "../ComponentesHero/CharacterDisplay"
 import CharacterList from "../ComponentesHero/CharacterList"
 import type { Character } from "../ComponentesHero/types"
 
-// 🎯 TIPOS PARA INCLUIR VILLAINSELECTION EN AUTHSTACK
+//  TIPOS PARA INCLUIR VILLAINSELECTION EN AUTHSTACK
 type RootStackParamList = {
   Login: undefined
   Register: undefined
@@ -87,7 +87,7 @@ export default function StudentDashboardScreen() {
   const [isPlaying, setIsPlaying] = useState(true)
 
   useEffect(() => {
-    console.log("✅ Entraste a StudentDashboardScreen")
+    console.log(" Entraste a StudentDashboardScreen")
     setIsNavigating(false)
   }, [])
 
@@ -140,7 +140,7 @@ export default function StudentDashboardScreen() {
     }
   }, [isFocused, playBackgroundSound, stopSound])
 
-  // 🔧 FUNCIÓN TOGGLEPLAYBACK REMOVIDA - YA NO SE NECESITA
+  //  FUNCIÓN TOGGLEPLAYBACK REMOVIDA - YA NO SE NECESITA
   // const togglePlayback = async () => {
   //   if (!soundRef.current) return
   //   try {
@@ -158,62 +158,61 @@ export default function StudentDashboardScreen() {
   // ------------- Guardar personaje seleccionado ------
   const handleSelectCharacter = (character: CharacterWithSize) => {
     setSelectedCharacter(character)
-    console.log(`🎯 Personaje seleccionado: ${character.name}`)
+    console.log(` Personaje seleccionado: ${character.name}`)
   }
 
-  // 🔍 FUNCIÓN PARA VERIFICAR RUTAS DISPONIBLES EN TODOS LOS NIVELES
+  //  FUNCIÓN PARA VERIFICAR RUTAS DISPONIBLES EN TODOS LOS NIVELES
   const checkAvailableRoutes = () => {
     let currentNav = navigation
     let level = 0
 
-    console.log("🔍 VERIFICANDO RUTAS DISPONIBLES EN TODOS LOS NIVELES:")
+    console.log("VERIFICANDO RUTAS DISPONIBLES EN TODOS LOS NIVELES:")
 
     while (currentNav) {
       const state = currentNav.getState()
-      console.log(`📋 Nivel ${level} - Rutas:`, state?.routeNames || [])
+      console.log(`Nivel ${level} - Rutas:`, state?.routeNames || [])
       currentNav = currentNav.getParent()
       level++
     }
   }
 
-  // 🎯 FUNCIÓN PARA CONFIRMAR PERSONAJE - VERSIÓN MEJORADA
+  //  FUNCIÓN PARA CONFIRMAR PERSONAJE - VERSIÓN MEJORADA
   const handleConfirmCharacter = async () => {
     if (isNavigating) {
-      console.log("⚠️ Ya se está navegando, ignorando...")
+      console.log(" Ya se está navegando, ignorando...")
       return
     }
 
     try {
       setIsNavigating(true)
-      console.log(`🎯 INICIANDO NAVEGACIÓN - Personaje: ${selectedCharacter.name}`)
+      console.log(` INICIANDO NAVEGACIÓN - Personaje: ${selectedCharacter.name}`)
 
-      // 🎯 GUARDAR EL PERSONAJE
+      //  GUARDAR EL PERSONAJE
       await AsyncStorage.setItem("selectedCharacterName", selectedCharacter.name)
       await AsyncStorage.setItem("blockMissionInfo", "true")
       await AsyncStorage.setItem("screenState", "navigating_to_villain")
 
-      console.log(`✅ Personaje guardado: ${selectedCharacter.name}`)
+      console.log(`Personaje guardado: ${selectedCharacter.name}`)
 
-      // 🔍 VERIFICAR RUTAS DISPONIBLES EN TODOS LOS NIVELES
       checkAvailableRoutes()
 
-      // 🚀 MÉTODO 1: USANDO COMMONACTIONS (SOLUCIÓN PRINCIPAL)
-      console.log("🚀 EJECUTANDO NAVEGACIÓN CON COMMONACTIONS...")
+      //  MÉTODO 1: USANDO COMMONACTIONS (SOLUCIÓN PRINCIPAL)
+      console.log(" EJECUTANDO NAVEGACIÓN CON COMMONACTIONS...")
       navigation.dispatch(
         CommonActions.navigate({
           name: "VillainSelection",
         }),
       )
 
-      console.log("✅ NAVEGACIÓN EJECUTADA EXITOSAMENTE")
+      console.log(" NAVEGACIÓN EJECUTADA EXITOSAMENTE")
 
       // Timeout para resetear flag
       setTimeout(() => {
         setIsNavigating(false)
-        console.log("🔄 Flag de navegación reseteado")
+        console.log("Flag de navegación reseteado")
       }, 2000)
     } catch (error) {
-      console.error("❌ ERROR EN NAVEGACIÓN:", error)
+      console.error("ERROR EN NAVEGACIÓN:", error)
       setIsNavigating(false)
 
       Alert.alert("Error de Navegación", `No se pudo navegar: ${error.message}`, [
@@ -228,7 +227,7 @@ export default function StudentDashboardScreen() {
     }
   }
 
-  // 🎯 CARGAR PERSONAJE
+  //  CARGAR PERSONAJE
   useEffect(() => {
     const loadSelectedCharacter = async () => {
       try {
@@ -237,7 +236,7 @@ export default function StudentDashboardScreen() {
           const foundCharacter = characters.find((char) => char.name === savedCharacterName)
           if (foundCharacter) {
             setSelectedCharacter(foundCharacter)
-            console.log(`📱 Personaje cargado: ${foundCharacter.name}`)
+            console.log(` Personaje cargado: ${foundCharacter.name}`)
           }
         }
       } catch (error) {
@@ -260,7 +259,7 @@ export default function StudentDashboardScreen() {
     <SafeAreaView style={styles.container}>
       <StatusBar style="light" />
       <View style={styles.content}>
-        {/* 🚫 BOTÓN DE VOLUMEN REMOVIDO COMPLETAMENTE */}
+        {/*  BOTÓN DE VOLUMEN REMOVIDO COMPLETAMENTE */}
         {/* 
         <TouchableOpacity
           style={[
@@ -321,7 +320,7 @@ const styles = StyleSheet.create({
     flex: 1,
     marginBottom: 10,
   },
-  // 🚫 ESTILOS DEL BOTÓN DE MÚSICA REMOVIDOS
+  //  ESTILOS DEL BOTÓN DE MÚSICA REMOVIDOS
   // musicButton: {
   //   position: "absolute",
   //   zIndex: 100,

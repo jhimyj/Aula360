@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react"
 import { View, StyleSheet, Text, Animated, Dimensions } from "react-native"
 import { Video } from "expo-av"
-import { MissionScreen } from "./mission-screen" // 🔍 IMPORTAR LA VERSIÓN ACTUALIZADA
+import { MissionScreen } from "./mission-screen" 
 import { FeedbackScreen } from "./feedback-screen"
 import { TransitionScreen } from "./transition-screen"
 import { CharacterFeedback } from "./character-feedback"
@@ -49,7 +49,7 @@ type MissionType = {
     title: string
     description: string
   }
-  // 🔍 NUEVO: Configuración del amplificador
+  //  NUEVO: Configuración del amplificador
   amplifier?: {
     enabled: boolean
     threshold: number
@@ -61,8 +61,8 @@ type MissionType = {
   score?: number
 }
 
-// Estados posibles de la misión
-type MissionState = "QUESTION" | "FEEDBACK" | "TRANSITION" | "LOADING"
+// Estados posibles de la misión -  AGREGADO INTRO
+type MissionState = "INTRO" | "QUESTION" | "FEEDBACK" | "TRANSITION" | "LOADING"
 
 type MissionManagerProps = {
   missions: MissionType[]
@@ -114,7 +114,25 @@ const characterResultVideos: Record<string, { win: string; lose: string }> = {
   },
 }
 
-// 🎥 Componente de pantalla con video de evaluación de IA
+//  URLs de videos de introducción para cada personaje
+const characterIntroVideos: Record<string, string[]> = {
+  Qhapaq: [
+    "https://d1xh8jk9umgr2r.cloudfront.net/Qhapac/QhapacMision1.mp4",
+    "https://d1xh8jk9umgr2r.cloudfront.net/Qhapac/QhapacMision2.mp4",
+  ],
+  Amaru: [
+    "https://d1xh8jk9umgr2r.cloudfront.net/Amaru/AmaruMision1.mp4",
+    "https://d1xh8jk9umgr2r.cloudfront.net/Amaru/AmaruMision2.mp4",
+    "https://d1xh8jk9umgr2r.cloudfront.net/Amaru/AmaruMision3.mp4",
+  ],
+  Killa: [
+    "https://d1xh8jk9umgr2r.cloudfront.net/Killa/Mision1Killa.mp4",
+    "https://d1xh8jk9umgr2r.cloudfront.net/Killa/MIsion2Killa.mp4",
+    "https://d1xh8jk9umgr2r.cloudfront.net/Killa/Mision3Killa.mp4",
+  ],
+}
+
+//  Componente de pantalla con video de evaluación de IA
 const AIEvaluationScreen = () => {
   // Animaciones
   const fadeAnim = useRef(new Animated.Value(0)).current
@@ -140,7 +158,6 @@ const AIEvaluationScreen = () => {
     <View style={styles.aiLoadingContainer}>
       {/* Fondo con gradiente simulado */}
       <View style={styles.gradientBackground} />
-
       {/* Contenedor principal animado */}
       <Animated.View
         style={[
@@ -162,10 +179,8 @@ const AIEvaluationScreen = () => {
             resizeMode="contain"
           />
         </View>
-
         {/* Texto principal */}
         <Animated.Text style={[styles.aiMainText, { opacity: fadeAnim }]}>🤖 IA Evaluando</Animated.Text>
-
         {/* Subtexto con animación */}
         <Animated.View
           style={[
@@ -178,7 +193,6 @@ const AIEvaluationScreen = () => {
         >
           <Text style={styles.aiSubtext}>Analizando tu respuesta con inteligencia artificial...</Text>
         </Animated.View>
-
         {/* Información adicional */}
         <Animated.View style={[styles.infoContainer, { opacity: fadeAnim }]}>
           <View style={styles.infoItem}>
@@ -199,10 +213,80 @@ const AIEvaluationScreen = () => {
   )
 }
 
+//  Componente de pantalla de introducción con video del personaje - ARREGLADO
+const IntroScreen = ({
+  videoUrl,
+  characterName,
+  missionNumber,
+  onFinish,
+}: {
+  videoUrl: string
+  characterName: string
+  missionNumber: number
+  onFinish: () => void
+}) => {
+  const fadeAnim = useRef(new Animated.Value(0)).current
+  const slideAnim = useRef(new Animated.Value(30)).current
+  const videoRef = useRef(null)
+  const [videoEnded, setVideoEnded] = useState(false)
+
+  useEffect(() => {
+    // Animación de entrada
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+    ]).start()
+
+    const safetyTimer = setTimeout(() => {
+      console.log("Timer de seguridad activado - el video puede estar teniendo problemas")
+      if (!videoEnded) {
+        onFinish()
+      }
+    }, 30000) // 30 segundos como respaldo de seguridad
+
+    return () => clearTimeout(safetyTimer)
+  }, [videoEnded])
+
+  const handleVideoEnd = () => {
+    console.log("Video de introducción terminado naturalmente")
+    setVideoEnded(true)
+    setTimeout(onFinish, 500) // Solo 0.5 segundos de pausa
+  }
+
+  return (
+    <View style={styles.introContainer}>
+      {/* Video en pantalla completa */}
+      <Video
+        ref={videoRef}
+        source={{ uri: videoUrl }}
+        style={styles.fullScreenVideo}
+        shouldPlay
+        isLooping={false}
+        isMuted={false}
+        resizeMode="cover" // Cambiar a cover para llenar toda la pantalla
+        onPlaybackStatusUpdate={(status) => {
+          if (status.isLoaded && status.didJustFinish && !videoEnded) {
+            console.log(" Video terminado - status.didJustFinish:", status.didJustFinish)
+            handleVideoEnd()
+          }
+        }}
+      />
+    </View>
+  )
+}
+
 export const MissionManager = ({ missions, onComplete }: MissionManagerProps) => {
   const [currentMissionIndex, setCurrentMissionIndex] = useState(0)
   const [score, setScore] = useState(0)
-  const [missionState, setMissionState] = useState<MissionState>("QUESTION")
+  const [missionState, setMissionState] = useState<MissionState>("INTRO") // 
   const [lastAnswerCorrect, setLastAnswerCorrect] = useState(false)
   const [showCharacterFeedback, setShowCharacterFeedback] = useState(true)
   const [userAnswers, setUserAnswers] = useState<{ [key: number]: string }>({})
@@ -219,6 +303,13 @@ export const MissionManager = ({ missions, onComplete }: MissionManagerProps) =>
   const [incorrectAnswers, setIncorrectAnswers] = useState<number>(0)
   const questionStartTimeRef = useRef<number>(Date.now())
 
+  //  Función para seleccionar video de introducción aleatorio
+  const getRandomIntroVideo = (characterName: string): string => {
+    const videos = characterIntroVideos[characterName] || characterIntroVideos.Qhapaq
+    const randomIndex = Math.floor(Math.random() * videos.length)
+    return videos[randomIndex]
+  }
+
   // Cargar el personaje seleccionado al inicio
   useEffect(() => {
     const loadSelectedCharacter = async () => {
@@ -226,18 +317,17 @@ export const MissionManager = ({ missions, onComplete }: MissionManagerProps) =>
         const characterName = await AsyncStorage.getItem("selectedCharacterName")
         if (characterName) {
           setSelectedCharacter(characterName)
-          console.log("🎭 Personaje seleccionado cargado:", characterName)
+          console.log(" Personaje seleccionado cargado:", characterName)
         }
       } catch (error) {
         console.error("Error al cargar el personaje seleccionado:", error)
       }
     }
-
     loadSelectedCharacter()
   }, [])
 
   useEffect(() => {
-    console.log("🎯 MISSION MANAGER - Estado actual:")
+    console.log(" MISSION MANAGER - Estado actual:")
     console.log("- currentMissionIndex:", currentMissionIndex)
     console.log("- missionState:", missionState)
     console.log("- missions.length:", missions.length)
@@ -248,35 +338,39 @@ export const MissionManager = ({ missions, onComplete }: MissionManagerProps) =>
     // Reiniciar el tiempo de inicio cuando cambia la misión o el estado
     if (missionState === "QUESTION") {
       questionStartTimeRef.current = Date.now()
-      console.log("⏱️ Tiempo de inicio registrado:", questionStartTimeRef.current)
+      console.log("Tiempo de inicio registrado:", questionStartTimeRef.current)
     }
   }, [currentMissionIndex, missionState, missions.length, showCharacterFeedback])
+
+  //  Función para manejar el fin de la introducción
+  const handleIntroFinish = () => {
+    console.log(" Introducción terminada - cambiando a QUESTION")
+    setMissionState("QUESTION")
+  }
 
   // Función para llamar al endpoint de feedback de IA
   const generateFeedback = async (questionId: string, responseStudent: string[]): Promise<FeedbackResponse | null> => {
     try {
-      console.log("🚀 Llamando al endpoint de feedback de IA")
-
+      console.log(" Llamando al endpoint de feedback de IA")
       // Obtener room_id y token del AsyncStorage
       const roomId = await AsyncStorage.getItem("roomId")
       const token = await AsyncStorage.getItem("studentToken")
 
       if (!roomId) {
-        console.error("❌ No se encontró room_id en AsyncStorage")
+        console.error(" No se encontró room_id en AsyncStorage")
         return null
       }
 
       if (!token) {
-        console.error("❌ No se encontró token en AsyncStorage")
+        console.error("No se encontró token en AsyncStorage")
         return null
       }
 
-      console.log("📦 Datos para el endpoint:", {
+      console.log("Datos para el endpoint:", {
         room_id: roomId,
         question_id: questionId,
         response_student: responseStudent,
       })
-      console.log("TOKEN:", token)
 
       const response = await fetch("https://6axx5kevpc.execute-api.us-east-1.amazonaws.com/dev/responses/generate", {
         method: "POST",
@@ -291,8 +385,6 @@ export const MissionManager = ({ missions, onComplete }: MissionManagerProps) =>
         }),
       })
 
-      console.log(response)
-
       if (!response.ok) {
         const errorData = await response.json().catch(() => null)
         const errorMessage = errorData?.message || `Error HTTP: ${response.status}`
@@ -300,29 +392,28 @@ export const MissionManager = ({ missions, onComplete }: MissionManagerProps) =>
       }
 
       const data: FeedbackResponse = await response.json()
-      console.log("✅ Respuesta del endpoint de feedback:", data)
-
+      console.log("Respuesta del endpoint de feedback:", data)
       return data
     } catch (error) {
-      console.error("❌ Error llamando al endpoint de feedback:", error)
+      console.error("Error llamando al endpoint de feedback:", error)
       return null
     }
   }
 
   const handleSubmit = async (selectedOption: string | string[], isCorrect: boolean, userAnswer?: string) => {
-    console.log("🎯 HANDLE SUBMIT - Iniciando procesamiento")
+    console.log("HANDLE SUBMIT - Iniciando procesamiento")
     console.log("- currentMissionIndex:", currentMissionIndex)
     console.log("- missions.length:", missions.length)
 
     if (currentMissionIndex >= missions.length) {
-      console.log("❌ Índice de misión fuera de rango")
+      console.log(" Índice de misión fuera de rango")
       return
     }
 
     // Calcular el tiempo de respuesta
     const endTime = Date.now()
     const responseTime = endTime - questionStartTimeRef.current
-    console.log("⏱️ Tiempo de respuesta:", responseTime, "ms")
+    console.log("Tiempo de respuesta:", responseTime, "ms")
 
     // Guardar el tiempo de respuesta
     setResponseTimes((prev) => [...prev, responseTime])
@@ -342,7 +433,6 @@ export const MissionManager = ({ missions, onComplete }: MissionManagerProps) =>
       if (currentMission.questionType === "OPEN_ENDED" && userAnswer) {
         // Para preguntas abiertas, usar la respuesta del usuario
         responseStudent = [userAnswer]
-
         // Guardar la respuesta del usuario
         setUserAnswers((prev) => ({
           ...prev,
@@ -354,20 +444,20 @@ export const MissionManager = ({ missions, onComplete }: MissionManagerProps) =>
         if (selectedOptionObj) {
           responseStudent = [selectedOptionObj.text]
         }
-        console.log("📝 SINGLE CHOICE - Respuesta preparada:", responseStudent)
+        console.log("SINGLE CHOICE - Respuesta preparada:", responseStudent)
       } else if (currentMission.questionType === "MULTIPLE_CHOICE_MULTIPLE") {
-        // 🔥 PARA MÚLTIPLES OPCIONES, ENVIAR TODAS LAS RESPUESTAS SELECCIONADAS
+        //  PARA MÚLTIPLES OPCIONES, ENVIAR TODAS LAS RESPUESTAS SELECCIONADAS
         if (Array.isArray(selectedOption)) {
           const selectedOptionObjects = currentMission.options.filter((opt) => selectedOption.includes(opt.id))
           responseStudent = selectedOptionObjects.map((opt) => opt.text)
         }
-        console.log("📝 MULTIPLE CHOICE - Respuestas preparadas:", responseStudent)
+        console.log("MULTIPLE CHOICE - Respuestas preparadas:", responseStudent)
       }
 
       // Obtener el ID de la pregunta actual
       const questionId = currentMission.id.toString()
 
-      console.log("🚀 ENVIANDO AL ENDPOINT DE IA:")
+      console.log(" ENVIANDO AL ENDPOINT DE IA:")
       console.log("- questionId:", questionId)
       console.log("- responseStudent:", responseStudent)
       console.log("- Número de respuestas:", responseStudent.length)
@@ -384,11 +474,11 @@ export const MissionManager = ({ missions, onComplete }: MissionManagerProps) =>
         currentAiScore = feedbackResponse.data.score
         currentFeedback = feedbackResponse.data.feedback
 
-        // 🎯 DETERMINAR SI LA RESPUESTA ES CORRECTA BASADO EN EL SCORE
+        //  DETERMINAR SI LA RESPUESTA ES CORRECTA BASADO EN EL SCORE
         // Si el score es mayor a 0, consideramos la respuesta como correcta
         isAnswerCorrect = currentAiScore > 0
 
-        console.log("🎯 EVALUACIÓN DE RESPUESTA:")
+        console.log(" EVALUACIÓN DE RESPUESTA:")
         console.log("- Score de IA:", currentAiScore)
         console.log("- ¿Es correcta?:", isAnswerCorrect)
         console.log("- Lógica: score > 0 =", currentAiScore > 0)
@@ -399,13 +489,13 @@ export const MissionManager = ({ missions, onComplete }: MissionManagerProps) =>
         // Guardar el score de IA
         setAiScores((prev) => [...prev, currentAiScore])
 
-        // 🎯 ACTUALIZAR CONTADORES DE RESPUESTAS CORRECTAS/INCORRECTAS
+        //  ACTUALIZAR CONTADORES DE RESPUESTAS CORRECTAS/INCORRECTAS
         if (isAnswerCorrect) {
           setCorrectAnswers((prev) => prev + 1)
-          console.log("✅ Respuesta CORRECTA (score > 0) - Incrementando contador")
+          console.log("Respuesta CORRECTA (score > 0) - Incrementando contador")
         } else {
           setIncorrectAnswers((prev) => prev + 1)
-          console.log("❌ Respuesta INCORRECTA (score = 0) - Incrementando contador")
+          console.log(" Respuesta INCORRECTA (score = 0) - Incrementando contador")
         }
 
         // Actualizar puntuación total
@@ -417,7 +507,6 @@ export const MissionManager = ({ missions, onComplete }: MissionManagerProps) =>
         // Fallback al comportamiento original si falla el endpoint
         setAiFeedback("")
         setAiScore(0)
-
         // Guardar un score de 0 para esta pregunta
         setAiScores((prev) => [...prev, 0])
 
@@ -445,17 +534,15 @@ export const MissionManager = ({ missions, onComplete }: MissionManagerProps) =>
         },
       ])
 
-      console.log("📊 ESTADÍSTICAS ACTUALIZADAS:")
+      console.log(" ESTADÍSTICAS ACTUALIZADAS:")
       console.log("- Respuestas correctas:", isAnswerCorrect ? correctAnswers + 1 : correctAnswers)
       console.log("- Respuestas incorrectas:", isAnswerCorrect ? incorrectAnswers : incorrectAnswers + 1)
       console.log("- Score total:", currentAiScore > 0 ? score + currentAiScore : score)
     } catch (error) {
-      console.error("❌ Error en handleSubmit:", error)
-
+      console.error(" Error en handleSubmit:", error)
       // Fallback al comportamiento original
       setAiFeedback("")
       setAiScore(0)
-
       // Guardar un score de 0 para esta pregunta
       setAiScores((prev) => [...prev, 0])
 
@@ -480,27 +567,28 @@ export const MissionManager = ({ missions, onComplete }: MissionManagerProps) =>
     }
 
     // Continuar con el flujo normal
-    console.log("🎯 Cambiando a estado FEEDBACK")
+    console.log("Cambiando a estado FEEDBACK")
     setShowCharacterFeedback(true)
     setMissionState("FEEDBACK")
   }
 
   useEffect(() => {
     if (missionState === "FEEDBACK" && showCharacterFeedback) {
-      console.log("⏰ Iniciando timer para ocultar character feedback")
+      console.log(" Iniciando timer para ocultar character feedback")
       const timer = setTimeout(() => {
-        console.log("⏰ Timer completado - ocultando character feedback")
+        console.log("Timer completado - ocultando character feedback")
         setShowCharacterFeedback(false)
       }, 2000)
+
       return () => {
-        console.log("⏰ Limpiando timer")
+        console.log("Limpiando timer")
         clearTimeout(timer)
       }
     }
   }, [missionState, showCharacterFeedback])
 
   const handleFeedbackContinue = () => {
-    console.log("🎯 HANDLE FEEDBACK CONTINUE")
+    console.log("HANDLE FEEDBACK CONTINUE")
     console.log("- currentMissionIndex:", currentMissionIndex)
     console.log("- missions.length:", missions.length)
 
@@ -510,8 +598,8 @@ export const MissionManager = ({ missions, onComplete }: MissionManagerProps) =>
 
     // Si es la última misión, llamar a onComplete
     if (currentMissionIndex >= missions.length - 1) {
-      console.log("🏁 Última misión completada - llamando onComplete")
-      console.log("📊 ESTADÍSTICAS FINALES:")
+      console.log("Última misión completada - llamando onComplete")
+      console.log("ESTADÍSTICAS FINALES:")
       console.log("- Respuestas correctas:", correctAnswers)
       console.log("- Respuestas incorrectas:", incorrectAnswers)
       console.log("- Score total:", score)
@@ -535,9 +623,9 @@ export const MissionManager = ({ missions, onComplete }: MissionManagerProps) =>
               incorrectAnswers,
             }),
           )
-          console.log("💾 Resultados guardados en AsyncStorage")
+          console.log("Resultados guardados en AsyncStorage")
         } catch (error) {
-          console.error("❌ Error guardando resultados:", error)
+          console.error("Error guardando resultados:", error)
         }
       }
       return
@@ -550,22 +638,22 @@ export const MissionManager = ({ missions, onComplete }: MissionManagerProps) =>
 
     if (nextMission && nextMission.transition) {
       // Cambiar al estado de transición
-      console.log("🔄 Cambiando a estado TRANSITION")
+      console.log("Cambiando a estado TRANSITION")
       setMissionState("TRANSITION")
     } else {
       // Si no hay información de transición, avanzar directamente a la siguiente misión
-      console.log("➡️ Avanzando directamente a la siguiente misión")
+      console.log("Avanzando directamente a la siguiente misión")
       setCurrentMissionIndex((prev) => {
         const newIndex = prev + 1
         console.log("- Nuevo índice:", newIndex)
         return newIndex
       })
-      setMissionState("QUESTION")
+      setMissionState("INTRO")
     }
   }
 
   const handleTransitionFinish = () => {
-    console.log("🎯 HANDLE TRANSITION FINISH")
+    console.log("HANDLE TRANSITION FINISH")
     console.log("- currentMissionIndex antes:", currentMissionIndex)
 
     // Avanzar a la siguiente misión
@@ -575,20 +663,19 @@ export const MissionManager = ({ missions, onComplete }: MissionManagerProps) =>
       return newIndex
     })
 
-    // Volver al estado de pregunta
-    console.log("🔄 Cambiando a estado QUESTION")
-    setMissionState("QUESTION")
+    console.log("Cambiando a estado INTRO")
+    setMissionState("INTRO")
   }
 
   // Renderizar según el estado actual
   const currentMission = missions[currentMissionIndex]
 
-  console.log("🎨 RENDERIZANDO ESTADO:", missionState)
+  console.log("RENDERIZANDO ESTADO:", missionState)
   console.log("- currentMission existe:", !!currentMission)
   console.log("- currentMission número:", currentMission?.missionNumber)
 
   if (!currentMission) {
-    console.log("❌ No hay misión actual - renderizando null")
+    console.log(" No hay misión actual - renderizando null")
     return null
   }
 
@@ -596,12 +683,27 @@ export const MissionManager = ({ missions, onComplete }: MissionManagerProps) =>
   const characterVideos = characterResultVideos[selectedCharacter] || characterResultVideos.Qhapaq
 
   switch (missionState) {
+    case "INTRO": 
+      console.log("Renderizando pantalla de introducción")
+      const introVideo = getRandomIntroVideo(selectedCharacter)
+      console.log("- Video de introducción seleccionado:", introVideo)
+      return (
+        <View style={styles.container}>
+          <IntroScreen
+            videoUrl={introVideo}
+            characterName={selectedCharacter}
+            missionNumber={currentMission.missionNumber}
+            onFinish={handleIntroFinish}
+          />
+        </View>
+      )
+
     case "LOADING":
-      console.log("🔄 Renderizando pantalla de carga con video")
+      console.log("Renderizando pantalla de carga con video")
       return <AIEvaluationScreen />
 
     case "QUESTION":
-      console.log("❓ Renderizando pantalla de pregunta")
+      console.log("Renderizando pantalla de pregunta")
       console.log("- Misión:", currentMission.missionNumber)
       console.log("- Tipo:", currentMission.questionType)
       return (
@@ -614,7 +716,6 @@ export const MissionManager = ({ missions, onComplete }: MissionManagerProps) =>
             questionType={currentMission.questionType}
             options={currentMission.options}
             onSubmit={handleSubmit}
-            // 🔍 PASAR PROPS DEL AMPLIFICADOR
             amplifier={currentMission.amplifier}
             difficulty={currentMission.difficulty}
             tags={currentMission.tags}
@@ -624,12 +725,12 @@ export const MissionManager = ({ missions, onComplete }: MissionManagerProps) =>
       )
 
     case "FEEDBACK":
-      console.log("💬 Renderizando pantalla de feedback")
+      console.log("Renderizando pantalla de feedback")
       console.log("- showCharacterFeedback:", showCharacterFeedback)
 
       // Verificar que exista el objeto feedback
       if (!currentMission.feedback) {
-        console.error(`❌ La misión ${currentMission.id} no tiene definido el objeto feedback`)
+        console.error(`La misión ${currentMission.id} no tiene definido el objeto feedback`)
         // Avanzar a la siguiente misión o estado
         handleFeedbackContinue()
         return null
@@ -678,26 +779,23 @@ export const MissionManager = ({ missions, onComplete }: MissionManagerProps) =>
       )
 
     case "TRANSITION":
-      console.log("🔄 Renderizando pantalla de transición")
-
+      console.log("Renderizando pantalla de transición")
       // Si es la última misión, no mostrar transición
       if (currentMissionIndex >= missions.length - 1) {
-        console.log("❌ Es la última misión - no mostrar transición")
+        console.log("Es la última misión - no mostrar transición")
         return null
       }
 
       const nextMission = missions[currentMissionIndex + 1]
-
       // Verificar que exista la siguiente misión y su objeto transition
       if (!nextMission || !nextMission.transition) {
-        console.error(`❌ La misión ${currentMissionIndex + 1} no tiene definido el objeto transition`)
+        console.error(`La misión ${currentMissionIndex + 1} no tiene definido el objeto transition`)
         // Avanzar directamente a la siguiente misión
         handleTransitionFinish()
         return null
       }
 
       console.log("- Transición hacia misión:", nextMission.missionNumber)
-
       return (
         <View style={styles.container}>
           <TransitionScreen
@@ -712,7 +810,7 @@ export const MissionManager = ({ missions, onComplete }: MissionManagerProps) =>
       )
 
     default:
-      console.log("❌ Estado no reconocido:", missionState)
+      console.log("Estado no reconocido:", missionState)
       return null
   }
 }
@@ -721,7 +819,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  // 🎥 Estilos para la pantalla de evaluación de IA con video
   aiLoadingContainer: {
     flex: 1,
     justifyContent: "center",
@@ -797,5 +894,19 @@ const styles = StyleSheet.create({
     color: "#E0E0E0",
     marginLeft: 10,
     fontWeight: "500",
+  },
+  introContainer: {
+    flex: 1,
+    backgroundColor: "#000",
+  },
+  // Agregar nuevo estilo para video en pantalla completa:
+  fullScreenVideo: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    bottom: 0,
+    right: 0,
+    width: screenWidth,
+    height: screenHeight,
   },
 })

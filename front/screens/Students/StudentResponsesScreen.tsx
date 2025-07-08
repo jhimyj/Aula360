@@ -83,7 +83,7 @@ const StudentResponsesScreen: React.FC = () => {
       }
 
       const url = `https://6axx5kevpc.execute-api.us-east-1.amazonaws.com/dev/responses/rooms/${roomId}/students/${studentId}`
-      console.log("📡 Obteniendo respuestas:", url)
+      console.log(" Obteniendo respuestas:", url)
 
       const response = await fetch(url, {
         method: "GET",
@@ -98,7 +98,7 @@ const StudentResponsesScreen: React.FC = () => {
       }
 
       const data: ResponsesResponse = await response.json()
-      console.log("✅ Respuestas obtenidas:", data)
+      console.log(" Respuestas obtenidas:", data)
 
       if (data.success && data.data) {
         setResponses(data.data)
@@ -106,7 +106,7 @@ const StudentResponsesScreen: React.FC = () => {
         throw new Error(data.message || "Error al obtener respuestas")
       }
     } catch (error: any) {
-      console.error("❌ Error obteniendo respuestas:", error)
+      console.error(" Error obteniendo respuestas:", error)
       setError(error.message)
       Alert.alert("Error", `No se pudieron cargar las respuestas: ${error.message}`)
     } finally {

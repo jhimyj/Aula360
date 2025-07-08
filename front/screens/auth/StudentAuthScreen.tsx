@@ -118,9 +118,9 @@ export default function StudentAuthScreen({ setIsAuthenticated, onBack }: Props)
       // Eliminar todas las claves de autenticación anteriores
       await AsyncStorage.multiRemove(authKeys)
       
-      console.log("✅ Sesión anterior limpiada completamente")
+      console.log("Sesión anterior limpiada completamente")
     } catch (error) {
-      console.error("❌ Error al limpiar sesión anterior:", error)
+      console.error(" Error al limpiar sesión anterior:", error)
       // No lanzar error aquí, solo loggearlo
     }
   }
@@ -128,9 +128,9 @@ export default function StudentAuthScreen({ setIsAuthenticated, onBack }: Props)
   // Función para guardar datos de autenticación de forma segura
   const saveAuthenticationData = async (token: string, studentInfo: any) => {
     try {
-      console.log("💾 GUARDANDO NUEVA SESIÓN DE AUTENTICACIÓN")
-      console.log("🔑 Nuevo token:", token)
-      console.log("📋 Información del estudiante:", studentInfo)
+      console.log(" GUARDANDO NUEVA SESIÓN DE AUTENTICACIÓN")
+      console.log(" Nuevo token:", token)
+      console.log(" Información del estudiante:", studentInfo)
 
       // PASO 1: Limpiar completamente la sesión anterior
       await clearPreviousSession()
@@ -149,20 +149,20 @@ export default function StudentAuthScreen({ setIsAuthenticated, onBack }: Props)
       // Usar multiSet para operación atómica
       await AsyncStorage.multiSet(authData)
 
-      console.log("✅ Nueva sesión guardada exitosamente")
+      console.log("Nueva sesión guardada exitosamente")
       
       // Verificar que el token se guardó correctamente
       
       const savedToken = await AsyncStorage.getItem("studentToken")
       if (savedToken === token) {
-        console.log("✅ Token verificado correctamente en AsyncStorage")
+        console.log("Token verificado correctamente en AsyncStorage")
       } else {
         throw new Error("Error: Token no se guardó correctamente")
       }
       
       return true
     } catch (error) {
-      console.error("❌ Error al guardar datos de autenticación:", error)
+      console.error(" Error al guardar datos de autenticación:", error)
       throw new Error("Error al guardar datos de autenticación")
     }
   }
@@ -181,7 +181,7 @@ export default function StudentAuthScreen({ setIsAuthenticated, onBack }: Props)
         { headers: { "Content-Type": "application/json" } },
       )
       
-      console.log("✅ Estudiante creado exitosamente:", response.data)
+      console.log("Estudiante creado exitosamente:", response.data)
 
       // Extraer datos de la nueva estructura de respuesta
       const { success, data: responseData, message } = response.data
@@ -199,8 +199,8 @@ export default function StudentAuthScreen({ setIsAuthenticated, onBack }: Props)
         throw new Error("Token no encontrado en la respuesta del servidor")
       }
 
-      console.log("🔑 NUEVO TOKEN RECIBIDO DEL REGISTRO:", token)
-      console.log("🏠 Room ID obtenido:", roomId)
+      console.log("NUEVO TOKEN RECIBIDO DEL REGISTRO:", token)
+      console.log("Room ID obtenido:", roomId)
 
       const studentInfo = {
         id: studentId,
@@ -226,11 +226,11 @@ export default function StudentAuthScreen({ setIsAuthenticated, onBack }: Props)
       // Guardar personaje por defecto para nuevos estudiantes
       await AsyncStorage.setItem("selectedCharacterName", "Qhapaq")
 
-      console.log("📋 NUEVA SESIÓN DE REGISTRO GUARDADA COMPLETAMENTE")
+      console.log(" NUEVA SESIÓN DE REGISTRO GUARDADA COMPLETAMENTE")
 
       return { success: true, token, message, studentData, studentInfo }
     } catch (error: any) {
-      console.error("❌ Error al crear estudiante:", error.response?.data || error.message)
+      console.error(" Error al crear estudiante:", error.response?.data || error.message)
       const apiMessage = error.response?.data?.message || error.response?.data?.error
       throw new Error(apiMessage || "Error desconocido al crear estudiante")
     }
@@ -250,7 +250,7 @@ export default function StudentAuthScreen({ setIsAuthenticated, onBack }: Props)
         { headers: { "Content-Type": "application/json" } },
       )
       
-      console.log("✅ Respuesta completa del login:", response.data)
+      console.log("Respuesta completa del login:", response.data)
 
       // Extraer datos de la nueva estructura de respuesta
       const { success, data: responseData, message } = response.data
@@ -265,12 +265,12 @@ export default function StudentAuthScreen({ setIsAuthenticated, onBack }: Props)
       const studentData = responseData?.student
 
       if (!token) {
-        console.error("❌ Token no encontrado en la respuesta:", response.data)
+        console.error("Token no encontrado en la respuesta:", response.data)
         throw new Error("Token no encontrado en la respuesta del servidor")
       }
 
-      console.log("🔑 NUEVO TOKEN RECIBIDO DEL LOGIN:", token)
-      console.log("🏠 Room ID obtenido:", roomId)
+      console.log("NUEVO TOKEN RECIBIDO DEL LOGIN:", token)
+      console.log(" Room ID obtenido:", roomId)
 
       const studentInfo = {
         id: studentData?.id || responseData?.id,
@@ -299,11 +299,11 @@ export default function StudentAuthScreen({ setIsAuthenticated, onBack }: Props)
         console.log("- Personaje asignado:", "Amaru")
       }
 
-      console.log("📋 NUEVA SESIÓN DE LOGIN GUARDADA COMPLETAMENTE")
+      console.log(" NUEVA SESIÓN DE LOGIN GUARDADA COMPLETAMENTE")
 
       return { token, message, studentInfo }
     } catch (error: any) {
-      console.error("❌ Error al hacer login:", error.response?.data || error.message)
+      console.error(" Error al hacer login:", error.response?.data || error.message)
       const apiMessage = error.response?.data?.message || error.response?.data?.error
       throw new Error(apiMessage || "Error desconocido al hacer login")
     }
@@ -318,11 +318,11 @@ export default function StudentAuthScreen({ setIsAuthenticated, onBack }: Props)
     setIsLoading(true)
     try {
       if (isFirstTime) {
-        console.log("🚀 INICIANDO PROCESO DE REGISTRO...")
+        console.log(" INICIANDO PROCESO DE REGISTRO...")
         const createResult = await createStudent(roomCode, username)
 
         if (createResult.token && createResult.success) {
-          console.log("✅ REGISTRO EXITOSO - Token guardado:", createResult.token)
+          console.log(" REGISTRO EXITOSO - Token guardado:", createResult.token)
           Alert.alert(
             "¡Cuenta creada! 🎓",
             `¡Hola ${username}! Tu cuenta de estudiante ha sido creada exitosamente. ¡Bienvenido al dashboard!`,
@@ -330,7 +330,7 @@ export default function StudentAuthScreen({ setIsAuthenticated, onBack }: Props)
               {
                 text: "OK",
                 onPress: () => {
-                  console.log("🎯 Navegando al dashboard con nueva sesión")
+                  console.log(" Navegando al dashboard con nueva sesión")
                   setIsAuthenticated(true)
                 },
               },
@@ -338,27 +338,27 @@ export default function StudentAuthScreen({ setIsAuthenticated, onBack }: Props)
           )
         } else {
           // Fallback al login si no se pudo crear
-          console.log("⚠️ Fallback: Intentando login...")
+          console.log(" Fallback: Intentando login...")
           const loginResult = await loginStudent(roomCode, username)
           if (loginResult.token) {
-            console.log("✅ LOGIN FALLBACK EXITOSO - Token guardado:", loginResult.token)
+            console.log("LOGIN FALLBACK EXITOSO - Token guardado:", loginResult.token)
             setIsAuthenticated(true)
           }
         }
       } else {
-        console.log("🔑 INICIANDO PROCESO DE LOGIN...")
+        console.log(" INICIANDO PROCESO DE LOGIN...")
         const loginResult = await loginStudent(roomCode, username)
         
         if (loginResult.token) {
-          console.log("✅ LOGIN EXITOSO - Token guardado:", loginResult.token)
+          console.log(" LOGIN EXITOSO - Token guardado:", loginResult.token)
           Alert.alert(
-            "¡Bienvenido de vuelta! 👋",
+            "¡Bienvenido de vuelta! ",
             `¡Hola ${username}! Has iniciado sesión exitosamente. ¡Accediendo al dashboard!`,
             [
               {
                 text: "OK",
                 onPress: () => {
-                  console.log("🎯 Navegando al dashboard con nueva sesión")
+                  console.log(" Navegando al dashboard con nueva sesión")
                   setIsAuthenticated(true)
                 },
               },
@@ -367,7 +367,7 @@ export default function StudentAuthScreen({ setIsAuthenticated, onBack }: Props)
         }
       }
     } catch (error: any) {
-      console.error("❌ Error en handleSubmit:", error.message)
+      console.error(" Error en handleSubmit:", error.message)
       Alert.alert("Error", error.message)
     } finally {
       setIsLoading(false)

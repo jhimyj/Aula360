@@ -396,7 +396,7 @@ const styles = StyleSheet.create({
     height: "100%",
   },
   descriptionContainer: {
-    backgroundColor: "rgba(255, 255, 255, 0.9)",
+    backgroundColor: "rgba(2, 0, 0, 0.9)",
     borderRadius: 15,
     padding: 20,
     width: width * 0.85,

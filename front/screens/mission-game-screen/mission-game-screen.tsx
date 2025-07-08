@@ -47,7 +47,7 @@ const MissionGameScreen = ({ navigation }) => {
   useFocusEffect(
     React.useCallback(() => {
       const loadCharacterData = async () => {
-        console.log("🚀 MissionGameScreen montado");
+        console.log(" MissionGameScreen montado");
         setIsLoading(true);
         setError(null);
 
@@ -141,7 +141,7 @@ const MissionGameScreen = ({ navigation }) => {
 
   // Navegar al finalizar el video
   const handlePlaybackEnd = () => {
-    console.log("✅ Video finalizado, navegando a mission");
+    console.log("Video finalizado, navegando a mission");
     
     // Pequeño retraso para asegurar que la navegación funcione correctamente
     setTimeout(() => {

@@ -30,7 +30,6 @@ const useResponsiveDimensions = () => {
     // Funciones de escalado responsivo MEJORADAS
     wp: (percentage: number) => (width * percentage) / 100,
     hp: (percentage: number) => (height * percentage) / 100,
-    // 🎯 FONT SIZE CORREGIDO PARA TABLETS
     fontSize: (size: number) => {
       if (width >= 1024) return Math.min(size * 0.9, size) // Tablets grandes - más pequeño
       if (width >= 768) return Math.min(size * 0.95, size) // Tablets medianos - un poco más pequeño
@@ -58,7 +57,7 @@ export default function PreviousRooms({
     return null
   }
 
-  // 🎯 ORDENAR Y LIMITAR A LAS 3 SALAS MÁS RECIENTES
+  // ORDENAR Y LIMITAR A LAS 3 SALAS MÁS RECIENTES
   const getRecentRooms = (roomsArray) => {
     if (!roomsArray || roomsArray.length === 0) return []
 
@@ -96,7 +95,7 @@ export default function PreviousRooms({
         )}
       </View>
 
-      {/* 🎯 MOSTRAR SOLO LAS 3 SALAS MÁS RECIENTES */}
+      {/* MOSTRAR SOLO LAS 3 SALAS MÁS RECIENTES */}
       {recentRooms.map((room, index) => (
         <RoomCard
           key={room.id}
@@ -107,12 +106,11 @@ export default function PreviousRooms({
           onViewQuestions={onViewQuestions}
           onUploadEvaluation={onUploadEvaluation}
           dimensions={dimensions}
-          // 🎯 INDICADOR DE SALA MÁS RECIENTE
           isLatest={index === 0} // La primera es la más reciente
         />
       ))}
 
-      {/* 🎯 INDICADOR SI HAY MÁS SALAS */}
+      {/* INDICADOR SI HAY MÁS SALAS */}
       {rooms.length > 3 && (
         <View style={responsiveStyles.moreRoomsIndicator}>
           <Text style={responsiveStyles.moreRoomsText}>+{rooms.length - 3} salas más</Text>
@@ -138,7 +136,6 @@ const createResponsiveStyles = (dimensions) => {
       paddingHorizontal: spacing(isSmallScreen ? 2 : 4),
     },
     sectionTitle: {
-      // 🎯 TAMAÑO CORREGIDO PARA TABLETS
       fontSize: fontSize(isTablet ? 18 : 18), // Mismo tamaño para tablets y móviles
       fontFamily: "Poppins_600SemiBold",
       color: "#333",
@@ -152,13 +149,11 @@ const createResponsiveStyles = (dimensions) => {
       backgroundColor: "rgba(67, 97, 238, 0.1)",
     },
     viewAllText: {
-      // 🎯 TAMAÑO CORREGIDO PARA TABLETS
       fontSize: fontSize(isTablet ? 14 : 14), // Mismo tamaño para tablets y móviles
       fontFamily: "Poppins_500Medium",
       color: "#4361EE",
       marginRight: spacing(4),
     },
-    // 🎯 NUEVOS ESTILOS PARA INDICADOR DE MÁS SALAS
     moreRoomsIndicator: {
       alignItems: "center",
       paddingVertical: spacing(12),

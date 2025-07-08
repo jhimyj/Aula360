@@ -122,7 +122,7 @@ export default function RoomCard({ room, onViewMore, onEdit, onDelete, onViewQue
 
       if (response.status === 204) {
         // Éxito - 204 No Content
-        Alert.alert("✅ Eliminada", "La sala ha sido eliminada exitosamente")
+        Alert.alert("Eliminada", "La sala ha sido eliminada exitosamente")
 
         // Llamar al callback onDelete si existe para actualizar la lista en el componente padre
         if (onDelete) {
@@ -143,7 +143,7 @@ export default function RoomCard({ room, onViewMore, onEdit, onDelete, onViewQue
         text: "Copiar Código",
         onPress: () => {
           Clipboard.setString(room.short_code || room.id)
-          Alert.alert("✅ Copiado", "El código ha sido copiado al portapapeles")
+          Alert.alert("Copiado", "El código ha sido copiado al portapapeles")
         },
       },
       {
@@ -182,7 +182,7 @@ export default function RoomCard({ room, onViewMore, onEdit, onDelete, onViewQue
 
       const roomCode = room.short_code || room.id
 
-      const shareMessage = `🎓 ¡Únete a LIA! 🚀\n\n📚 Sala: ${room.name}\n📖 Curso: ${room.course || "No especificado"}\n🎯 Tema: ${room.topic || "General"}\n\n🔑 Código: ${roomCode}\n\n¡Escanea el código QR para unirte a la sala de estudio!`
+      const shareMessage = ` ¡Únete a LIA! \n\n Sala: ${room.name}\n Curso: ${room.course || "No especificado"}\n Tema: ${room.topic || "General"}\n\n Código: ${roomCode}\n\n¡Escanea el código QR para unirte a la sala de estudio!`
 
       if (Platform.OS === "android") {
         try {
@@ -260,7 +260,7 @@ export default function RoomCard({ room, onViewMore, onEdit, onDelete, onViewQue
       } catch (albumError) {
         console.warn("No se pudo crear álbum específico:", albumError)
       }
-      Alert.alert("✅ Guardado", "El código QR ha sido guardado en tu galería")
+      Alert.alert(" Guardado", "El código QR ha sido guardado en tu galería")
     } catch (error) {
       console.error("Error al guardar QR:", error)
       Alert.alert("Error", `No se pudo guardar el código QR: ${error.message}`)
@@ -273,7 +273,7 @@ export default function RoomCard({ room, onViewMore, onEdit, onDelete, onViewQue
     try {
       const roomCode = room.short_code || room.id
 
-      const shareMessage = `🎓 ¡Únete a LIA! 🚀\n\n📚 Sala: ${room.name}\n📖 Curso: ${room.course || "No especificado"}\n🎯 Tema: ${room.topic || "General"}\n\n🔑 Código de la sala: ${roomCode}\n\n¡Usa este código para unirte a la sala de estudio!`
+      const shareMessage = ` ¡Únete a LIA! \n\n Sala: ${room.name}\n Curso: ${room.course || "No especificado"}\nTema: ${room.topic || "General"}\n\n Código de la sala: ${roomCode}\n\n¡Usa este código para unirte a la sala de estudio!`
 
       await Share.share({
         message: shareMessage,

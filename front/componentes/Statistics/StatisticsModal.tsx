@@ -117,7 +117,7 @@ export const StatisticsModal = ({ visible, onClose, room }) => {
       setExportLoading(true)
 
       const shareMessage =
-        `📊 Estadísticas de la sala: ${room.name}\n\n` +
+        `Estadísticas de la sala: ${room.name}\n\n` +
         `Total de preguntas: ${stats.totalQuestions}\n` +
         `Media: ${stats.mean}\n` +
         `Mediana: ${stats.median}\n` +
@@ -210,7 +210,7 @@ export const StatisticsModal = ({ visible, onClose, room }) => {
         console.warn("No se pudo crear álbum específico:", albumError)
       }
 
-      Alert.alert("✅ Guardado", "Las estadísticas han sido guardadas en tu galería")
+      Alert.alert("Guardado", "Las estadísticas han sido guardadas en tu galería")
     } catch (error) {
       console.error("Error al guardar estadísticas:", error)
       Alert.alert("Error", `No se pudieron guardar las estadísticas: ${error.message}`)

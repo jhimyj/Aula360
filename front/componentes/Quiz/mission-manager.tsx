@@ -101,7 +101,7 @@ export const MissionManager = ({ missions, onComplete }: MissionManagerProps) =>
   const questionStartTimeRef = useRef<number>(Date.now())
 
   useEffect(() => {
-    console.log("🎯 MISSION MANAGER - Estado actual:")
+    console.log(" MISSION MANAGER - Estado actual:")
     console.log("- currentMissionIndex:", currentMissionIndex)
     console.log("- missionState:", missionState)
     console.log("- missions.length:", missions.length)
@@ -112,30 +112,30 @@ export const MissionManager = ({ missions, onComplete }: MissionManagerProps) =>
     // Reiniciar el tiempo de inicio cuando cambia la misión o el estado
     if (missionState === "QUESTION") {
       questionStartTimeRef.current = Date.now()
-      console.log("⏱️ Tiempo de inicio registrado:", questionStartTimeRef.current)
+      console.log("Tiempo de inicio registrado:", questionStartTimeRef.current)
     }
   }, [currentMissionIndex, missionState, missions.length, showCharacterFeedback])
 
   // Función para llamar al endpoint de feedback de IA
   const generateFeedback = async (questionId: string, responseStudent: string[]): Promise<FeedbackResponse | null> => {
     try {
-      console.log("🚀 Llamando al endpoint de feedback de IA")
+      console.log(" Llamando al endpoint de feedback de IA")
 
       // Obtener room_id y token del AsyncStorage
       const roomId = await AsyncStorage.getItem("roomId")
       const token = await AsyncStorage.getItem("studentToken")
      console.log("ROOM",roomId)
       if (!roomId) {
-        console.error("❌ No se encontró room_id en AsyncStorage")
+        console.error(" No se encontró room_id en AsyncStorage")
         return null
       }
 
       if (!token) {
-        console.error("❌ No se encontró token en AsyncStorage")
+        console.error("No se encontró token en AsyncStorage")
         return null
       }
 
-      console.log("📦 Datos para el endpoint:", {
+      console.log(" Datos para el endpoint:", {
         room_id: roomId,
         question_id: questionId,
         response_student: responseStudent,
@@ -164,29 +164,29 @@ export const MissionManager = ({ missions, onComplete }: MissionManagerProps) =>
       }
 
       const data: FeedbackResponse = await response.json()
-      console.log("✅ Respuesta del endpoint de feedback:", data)
+      console.log(" Respuesta del endpoint de feedback:", data)
 
       return data
     } catch (error) {
-      console.error("❌ Error llamando al endpoint de feedback:", error)
+      console.error(" Error llamando al endpoint de feedback:", error)
       return null
     }
   }
 
   const handleSubmit = async (selectedOption: string | string[], isCorrect: boolean, userAnswer?: string) => {
-    console.log("🎯 HANDLE SUBMIT - Iniciando procesamiento")
+    console.log(" HANDLE SUBMIT - Iniciando procesamiento")
     console.log("- currentMissionIndex:", currentMissionIndex)
     console.log("- missions.length:", missions.length)
 
     if (currentMissionIndex >= missions.length) {
-      console.log("❌ Índice de misión fuera de rango")
+      console.log(" Índice de misión fuera de rango")
       return
     }
 
     // Calcular el tiempo de respuesta
     const endTime = Date.now()
     const responseTime = endTime - questionStartTimeRef.current
-    console.log("⏱️ Tiempo de respuesta:", responseTime, "ms")
+    console.log("Tiempo de respuesta:", responseTime, "ms")
 
     // Guardar el tiempo de respuesta
     setResponseTimes((prev) => [...prev, responseTime])
@@ -218,20 +218,20 @@ export const MissionManager = ({ missions, onComplete }: MissionManagerProps) =>
         if (selectedOptionObj) {
           responseStudent = [selectedOptionObj.text]
         }
-        console.log("📝 SINGLE CHOICE - Respuesta preparada:", responseStudent)
+        console.log(" SINGLE CHOICE - Respuesta preparada:", responseStudent)
       } else if (currentMission.questionType === "MULTIPLE_CHOICE_MULTIPLE") {
         // 🔥 PARA MÚLTIPLES OPCIONES, ENVIAR TODAS LAS RESPUESTAS SELECCIONADAS
         if (Array.isArray(selectedOption)) {
           const selectedOptionObjects = currentMission.options.filter((opt) => selectedOption.includes(opt.id))
           responseStudent = selectedOptionObjects.map((opt) => opt.text)
         }
-        console.log("📝 MULTIPLE CHOICE - Respuestas preparadas:", responseStudent)
+        console.log(" MULTIPLE CHOICE - Respuestas preparadas:", responseStudent)
       }
 
       // Obtener el ID de la pregunta actual
       const questionId = currentMission.id.toString()
 
-      console.log("🚀 ENVIANDO AL ENDPOINT DE IA:")
+      console.log(" ENVIANDO AL ENDPOINT DE IA:")
       console.log("- questionId:", questionId)
       console.log("- responseStudent:", responseStudent)
       console.log("- Número de respuestas:", responseStudent.length)
@@ -248,11 +248,11 @@ export const MissionManager = ({ missions, onComplete }: MissionManagerProps) =>
         currentAiScore = feedbackResponse.data.score
         currentFeedback = feedbackResponse.data.feedback
 
-        // 🎯 DETERMINAR SI LA RESPUESTA ES CORRECTA BASADO EN EL SCORE
+        // DETERMINAR SI LA RESPUESTA ES CORRECTA BASADO EN EL SCORE
         // Si el score es mayor a 0, consideramos la respuesta como correcta
         isAnswerCorrect = currentAiScore > 0
 
-        console.log("🎯 EVALUACIÓN DE RESPUESTA:")
+        console.log("EVALUACIÓN DE RESPUESTA:")
         console.log("- Score de IA:", currentAiScore)
         console.log("- ¿Es correcta?:", isAnswerCorrect)
 
@@ -262,13 +262,13 @@ export const MissionManager = ({ missions, onComplete }: MissionManagerProps) =>
         // Guardar el score de IA
         setAiScores((prev) => [...prev, currentAiScore])
 
-        // 🎯 ACTUALIZAR CONTADORES DE RESPUESTAS CORRECTAS/INCORRECTAS
+        //  ACTUALIZAR CONTADORES DE RESPUESTAS CORRECTAS/INCORRECTAS
         if (isAnswerCorrect) {
           setCorrectAnswers((prev) => prev + 1)
-          console.log("✅ Respuesta CORRECTA - Incrementando contador")
+          console.log("Respuesta CORRECTA - Incrementando contador")
         } else {
           setIncorrectAnswers((prev) => prev + 1)
-          console.log("❌ Respuesta INCORRECTA - Incrementando contador")
+          console.log("Respuesta INCORRECTA - Incrementando contador")
         }
 
         // Actualizar puntuación total
@@ -308,12 +308,12 @@ export const MissionManager = ({ missions, onComplete }: MissionManagerProps) =>
         },
       ])
 
-      console.log("📊 ESTADÍSTICAS ACTUALIZADAS:")
+      console.log(" ESTADÍSTICAS ACTUALIZADAS:")
       console.log("- Respuestas correctas:", isAnswerCorrect ? correctAnswers + 1 : correctAnswers)
       console.log("- Respuestas incorrectas:", isAnswerCorrect ? incorrectAnswers : incorrectAnswers + 1)
       console.log("- Score total:", currentAiScore > 0 ? score + currentAiScore : score)
     } catch (error) {
-      console.error("❌ Error en handleSubmit:", error)
+      console.error(" Error en handleSubmit:", error)
 
       // Fallback al comportamiento original
       setAiFeedback("")
@@ -343,27 +343,27 @@ export const MissionManager = ({ missions, onComplete }: MissionManagerProps) =>
     }
 
     // Continuar con el flujo normal
-    console.log("🎯 Cambiando a estado FEEDBACK")
+    console.log("Cambiando a estado FEEDBACK")
     setShowCharacterFeedback(true)
     setMissionState("FEEDBACK")
   }
 
   useEffect(() => {
     if (missionState === "FEEDBACK" && showCharacterFeedback) {
-      console.log("⏰ Iniciando timer para ocultar character feedback")
+      console.log("Iniciando timer para ocultar character feedback")
       const timer = setTimeout(() => {
-        console.log("⏰ Timer completado - ocultando character feedback")
+        console.log(" Timer completado - ocultando character feedback")
         setShowCharacterFeedback(false)
       }, 2000)
       return () => {
-        console.log("⏰ Limpiando timer")
+        console.log("Limpiando timer")
         clearTimeout(timer)
       }
     }
   }, [missionState, showCharacterFeedback])
 
   const handleFeedbackContinue = () => {
-    console.log("🎯 HANDLE FEEDBACK CONTINUE")
+    console.log(" HANDLE FEEDBACK CONTINUE")
     console.log("- currentMissionIndex:", currentMissionIndex)
     console.log("- missions.length:", missions.length)
 
@@ -373,8 +373,8 @@ export const MissionManager = ({ missions, onComplete }: MissionManagerProps) =>
 
     // Si es la última misión, llamar a onComplete
     if (currentMissionIndex >= missions.length - 1) {
-      console.log("🏁 Última misión completada - llamando onComplete")
-      console.log("📊 ESTADÍSTICAS FINALES:")
+      console.log(" Última misión completada - llamando onComplete")
+      console.log(" ESTADÍSTICAS FINALES:")
       console.log("- Respuestas correctas:", correctAnswers)
       console.log("- Respuestas incorrectas:", incorrectAnswers)
       console.log("- Score total:", score)
@@ -398,9 +398,9 @@ export const MissionManager = ({ missions, onComplete }: MissionManagerProps) =>
               incorrectAnswers,
             }),
           )
-          console.log("💾 Resultados guardados en AsyncStorage")
+          console.log("Resultados guardados en AsyncStorage")
         } catch (error) {
-          console.error("❌ Error guardando resultados:", error)
+          console.error("Error guardando resultados:", error)
         }
       }
       return
@@ -413,11 +413,11 @@ export const MissionManager = ({ missions, onComplete }: MissionManagerProps) =>
 
     if (nextMission && nextMission.transition) {
       // Cambiar al estado de transición
-      console.log("🔄 Cambiando a estado TRANSITION")
+      console.log(" Cambiando a estado TRANSITION")
       setMissionState("TRANSITION")
     } else {
       // Si no hay información de transición, avanzar directamente a la siguiente misión
-      console.log("➡️ Avanzando directamente a la siguiente misión")
+      console.log("Avanzando directamente a la siguiente misión")
       setCurrentMissionIndex((prev) => {
         const newIndex = prev + 1
         console.log("- Nuevo índice:", newIndex)
@@ -446,12 +446,12 @@ export const MissionManager = ({ missions, onComplete }: MissionManagerProps) =>
   // Renderizar según el estado actual
   const currentMission = missions[currentMissionIndex]
 
-  console.log("🎨 RENDERIZANDO ESTADO:", missionState)
+  console.log("RENDERIZANDO ESTADO:", missionState)
   console.log("- currentMission existe:", !!currentMission)
   console.log("- currentMission número:", currentMission?.missionNumber)
 
   if (!currentMission) {
-    console.log("❌ No hay misión actual - renderizando null")
+    console.log("No hay misión actual - renderizando null")
     return null
   }
 
@@ -466,7 +466,7 @@ export const MissionManager = ({ missions, onComplete }: MissionManagerProps) =>
       )
 
     case "QUESTION":
-      console.log("❓ Renderizando pantalla de pregunta")
+      console.log("Renderizando pantalla de pregunta")
       console.log("- Misión:", currentMission.missionNumber)
       console.log("- Tipo:", currentMission.questionType)
       return (
@@ -484,12 +484,12 @@ export const MissionManager = ({ missions, onComplete }: MissionManagerProps) =>
       )
 
     case "FEEDBACK":
-      console.log("💬 Renderizando pantalla de feedback")
+      console.log(" Renderizando pantalla de feedback")
       console.log("- showCharacterFeedback:", showCharacterFeedback)
 
       // Verificar que exista el objeto feedback
       if (!currentMission.feedback) {
-        console.error(`❌ La misión ${currentMission.id} no tiene definido el objeto feedback`)
+        console.error(`La misión ${currentMission.id} no tiene definido el objeto feedback`)
         // Avanzar a la siguiente misión o estado
         handleFeedbackContinue()
         return null

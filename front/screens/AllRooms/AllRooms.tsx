@@ -36,7 +36,7 @@ export default function AllRooms() {
     Poppins_700Bold,
   })
 
-  // 🎯 FUNCIÓN PARA ORDENAR SALAS POR FECHA (MÁS RECIENTES PRIMERO)
+  //  FUNCIÓN PARA ORDENAR SALAS POR FECHA (MÁS RECIENTES PRIMERO)
   const getSortedRooms = (roomsArray) => {
     if (!roomsArray || roomsArray.length === 0) return []
 
@@ -67,7 +67,7 @@ export default function AllRooms() {
     return sortedRooms
   }
 
-  // 🎯 OBTENER SALAS ORDENADAS
+  //  OBTENER SALAS ORDENADAS
   const sortedRooms = getSortedRooms(rooms)
 
   // Función para cargar más salas al llegar al final del scroll
@@ -186,14 +186,14 @@ export default function AllRooms() {
           </View>
         ) : (
           <>
-            {/* 🎯 CONTADOR ACTUALIZADO CON SALAS ORDENADAS */}
+            {/* CONTADOR ACTUALIZADO CON SALAS ORDENADAS */}
             <Text style={styles.roomCount}>
               {sortedRooms.length} sala{sortedRooms.length !== 1 ? "s" : ""} encontrada
               {sortedRooms.length !== 1 ? "s" : ""}
               {sortedRooms.length > 0 && <Text style={styles.sortIndicator}> • Ordenadas por fecha</Text>}
             </Text>
 
-            {/* 🎯 MOSTRAR SALAS ORDENADAS */}
+            {/*  MOSTRAR SALAS ORDENADAS */}
             {sortedRooms.map((room, index) => (
               <RoomCard
                 key={room.id}
@@ -201,7 +201,6 @@ export default function AllRooms() {
                 onViewMore={handleViewMore}
                 onEdit={handleEdit}
                 onDelete={handleDelete}
-                // 🎯 INDICAR CUÁL ES LA MÁS RECIENTE
                 isLatest={index === 0 && sortedRooms.length > 1}
               />
             ))}
@@ -283,7 +282,7 @@ const styles = StyleSheet.create({
     color: "#666",
     marginBottom: 20,
   },
-  // 🎯 NUEVO ESTILO PARA INDICADOR DE ORDENAMIENTO
+  //  NUEVO ESTILO PARA INDICADOR DE ORDENAMIENTO
   sortIndicator: {
     fontSize: 12,
     fontFamily: "Poppins_400Regular",

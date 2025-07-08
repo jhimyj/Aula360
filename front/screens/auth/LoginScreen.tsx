@@ -74,14 +74,14 @@ export default function LoginScreen({ navigation, setIsAuthenticated }: Props) {
       await AsyncStorage.setItem('userRole', userRole);
       await AsyncStorage.setItem('userInfo', JSON.stringify(userInfo));
       
-      console.log('✅ Login exitoso como TEACHER con TOKEN');
-      console.log('📋 Rol asignado:', userRole);
-      console.log('👤 Usuario:', userInfo.username);
+      console.log('Login exitoso como TEACHER con TOKEN');
+      console.log('Rol asignado:', userRole);
+      console.log('Usuario:', userInfo.username);
       
       setIsAuthenticated(true);
       
     } catch (error: any) {
-      console.error('❌ Error al iniciar sesión:', error.response?.data || error.message);
+      console.error('Error al iniciar sesión:', error.response?.data || error.message);
       setErrorMessage('Usuario o contraseña incorrectos');
     } finally {
       setIsLoading(false);
@@ -90,7 +90,7 @@ export default function LoginScreen({ navigation, setIsAuthenticated }: Props) {
 
   // Función para navegar a la autenticación de estudiantes
   const handleContinueAsStudent = () => {
-    console.log('🎓 Navegando a autenticación de estudiante');
+    console.log('Navegando a autenticación de estudiante');
     navigation.navigate('StudentAuth');
   };
 

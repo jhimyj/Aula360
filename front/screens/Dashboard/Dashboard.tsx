@@ -61,7 +61,6 @@ const useResponsiveDimensions = () => {
     fontSize: (size: number) => Math.round(size * (width / 375)),
     spacing: (size: number) => Math.round(size * (width / 375)),
 
-    // 🎯 FUNCIÓN ESPECIAL PARA EMPTY STATE - MÁS INTELIGENTE
     emptyStateFontSize: (baseSize: number) => {
       if (width >= 1024) return Math.round(baseSize * 1.1) // Tablets grandes
       if (width >= 768) return Math.round(baseSize * 1.0) // Tablets medianos
@@ -271,7 +270,7 @@ export default function Dashboard() {
   }
 
   const handleLoadMoreInModal = () => {
-    console.log("📄 Cargando más salas desde el modal...")
+    console.log(" Cargando más salas desde el modal...")
     loadMoreRooms()
   }
 
@@ -285,7 +284,7 @@ export default function Dashboard() {
 
   const limitedRooms = rooms.slice(0, 3)
 
-  console.log("🏠 DASHBOARD - Estado de salas:")
+  console.log(" DASHBOARD - Estado de salas:")
   console.log("- Total de salas:", rooms.length)
   console.log("- ¿Hay más salas?:", hasMoreRooms)
   console.log("- ¿Cargando más?:", isLoadingMore)
@@ -447,7 +446,7 @@ const createResponsiveStyles = (dimensions) => {
       shadowRadius: 4,
       elevation: 3,
     },
-    // 🎯 SISTEMA RESPONSIVO INTELIGENTE SOLO PARA EMPTY STATE
+    //  SISTEMA RESPONSIVO INTELIGENTE SOLO PARA EMPTY STATE
     emptyStateTitle: {
       fontSize: emptyStateFontSize(20), // Base 20px, se escala inteligentemente
       fontFamily: "Poppins_600SemiBold",

@@ -68,7 +68,6 @@ export default function VillainSelectionScreen({ navigation }) {
   const [selectedVillainSaved, setSelectedVillainSaved] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
 
-  // Detect screen size changes
   useEffect(() => {
     const subscription = Dimensions.addEventListener("change", ({ window }) => {
       setDimensions(window)
@@ -77,7 +76,6 @@ export default function VillainSelectionScreen({ navigation }) {
     return () => subscription.remove()
   }, [])
 
-  // 🔧 CÁLCULOS RESPONSIVOS MEJORADOS
   const deviceInfo = useCallback(() => {
     const { width, height } = dimensions
     const aspectRatio = width / height
@@ -101,7 +99,6 @@ export default function VillainSelectionScreen({ navigation }) {
     }
   }, [dimensions])
 
-  // 🔧 FUNCIÓN DE TAMAÑO RESPONSIVO MEJORADA
   const getResponsiveSize = useCallback(
     (baseSize: number, options = {}) => {
       const device = deviceInfo()
@@ -131,7 +128,6 @@ export default function VillainSelectionScreen({ navigation }) {
     [deviceInfo],
   )
 
-  // 🔧 CÁLCULOS DE LAYOUT RESPONSIVOS
   const getLayoutDimensions = useCallback(() => {
     const device = deviceInfo()
     const { width, height } = device
@@ -205,22 +201,21 @@ export default function VillainSelectionScreen({ navigation }) {
     return () => clearTimeout(t)
   }, [selectedVillain])
 
-  // 🔧 LIMPIAR ESTADO AL ENTRAR A LA PANTALLA
+  // LIMPIAR ESTADO AL ENTRAR A LA PANTALLA
   useEffect(() => {
     const initializeScreen = async () => {
       try {
-        // 🔧 LIMPIAR ESTADO DE SELECCIÓN PREVIA
-        console.log("🧹 Limpiando estado de selección previa...")
+        console.log("Limpiando estado de selección previa...")
         await AsyncStorage.removeItem("selectedVillain")
         await AsyncStorage.removeItem("selectedVillainName")
         await AsyncStorage.removeItem("selectedVillainId")
         await AsyncStorage.removeItem("villainSelectionComplete")
 
-        // 🔧 ASEGURAR QUE SIEMPRE EMPIECE CON "SELECCIONAR VILLANO"
+        // ASEGURAR QUE SIEMPRE EMPIECE CON "SELECCIONAR VILLANO"
         setSelectedVillainSaved(false)
         setSelectedVillain(0) // Empezar siempre con el primer villano
 
-        console.log("✅ Estado inicial limpio - Botón mostrará 'SELECCIONAR VILLANO'")
+        console.log(" Estado inicial limpio - Botón mostrará 'SELECCIONAR VILLANO'")
       } catch (error) {
         console.error("Error al limpiar estado inicial:", error)
       }
@@ -233,14 +228,14 @@ export default function VillainSelectionScreen({ navigation }) {
     navigation?.goBack?.()
   }
 
-  // 🔧 FUNCIÓN ORIGINAL DEL CARRUSEL - SIN CAMBIOS
+  //  FUNCIÓN ORIGINAL DEL CARRUSEL - SIN CAMBIOS
   const handleVillainSelect = (index) => {
     setSelectedVillain(index)
-    // 🔧 ASEGURAR QUE AL CAMBIAR VILLANO, EL BOTÓN VUELVA A "SELECCIONAR"
+    //  ASEGURAR QUE AL CAMBIAR VILLANO, EL BOTÓN VUELVA A "SELECCIONAR"
     setSelectedVillainSaved(false)
   }
 
-  // 🎯 FUNCIÓN ACTUALIZADA PARA NAVEGAR A MISSIONGAMESCREEN
+  //  FUNCIÓN ACTUALIZADA PARA NAVEGAR A MISSIONGAMESCREEN
   const handleStartMission = async () => {
     try {
       setIsLoading(true)
@@ -252,16 +247,16 @@ export default function VillainSelectionScreen({ navigation }) {
         ["gameState", "starting_mission"],
       ])
 
-      console.log("🎮 Iniciando misión con villano:", villains[selectedVillain].name)
-      console.log("🚀 Navegando a MissionGameScreen...")
+      console.log("Iniciando misión con villano:", villains[selectedVillain].name)
+      console.log("Navegando a MissionGameScreen...")
 
       // Pequeño retraso para mostrar el estado de carga
       await new Promise((resolve) => setTimeout(resolve, 800))
 
       navigation?.navigate?.("MissionGameScreen")
-      console.log("✅ Navegación a MissionGameScreen ejecutada")
+      console.log(" Navegación a MissionGameScreen ejecutada")
     } catch (error) {
-      console.error("❌ Error al iniciar misión:", error)
+      console.error(" Error al iniciar misión:", error)
       Alert.alert("Error", "No se pudo iniciar la misión", [
         { text: "Reintentar", onPress: handleStartMission },
         { text: "Cancelar", style: "cancel" },
@@ -271,7 +266,6 @@ export default function VillainSelectionScreen({ navigation }) {
     }
   }
 
-  // 🎯 FUNCIÓN MEJORADA PARA GUARDAR VILLANO
   const handleSelectVillain = async () => {
     try {
       setIsLoading(true)
@@ -298,9 +292,9 @@ export default function VillainSelectionScreen({ navigation }) {
       // Pequeño retraso para mostrar el estado de carga
       await new Promise((resolve) => setTimeout(resolve, 600))
 
-      console.log(`✅ Villano ${villain.name} guardado completamente en AsyncStorage`)
+      console.log(`Villano ${villain.name} guardado completamente en AsyncStorage`)
 
-      // 🔧 CAMBIAR ESTADO A "INICIAR MISIÓN"
+      //  CAMBIAR ESTADO A "INICIAR MISIÓN"
       setSelectedVillainSaved(true)
 
       Alert.alert(
@@ -309,7 +303,7 @@ export default function VillainSelectionScreen({ navigation }) {
         [{ text: "¡A la batalla!", style: "default" }],
       )
     } catch (error) {
-      console.error("❌ Error al guardar el villano:", error)
+      console.error(" Error al guardar el villano:", error)
       Alert.alert("Error", "No se pudo guardar el villano seleccionado", [
         { text: "Intentar de nuevo", onPress: handleSelectVillain },
         { text: "Cancelar", style: "cancel" },
@@ -319,19 +313,16 @@ export default function VillainSelectionScreen({ navigation }) {
     }
   }
 
-  // 🎯 FUNCIÓN PARA MANEJAR LA ACCIÓN DEL BOTÓN PRINCIPAL
   const handleMainButtonAction = async () => {
-    // Si ya hay un villano seleccionado, iniciamos la misión
     if (selectedVillainSaved) {
       await handleStartMission()
     }
-    // Si no hay villano seleccionado, lo seleccionamos
     else {
       await handleSelectVillain()
     }
   }
 
-  // 🔧 OBTENER DIMENSIONES DE LAYOUT
+  //  OBTENER DIMENSIONES DE LAYOUT
   const layout = getLayoutDimensions()
   const device = deviceInfo()
 
@@ -341,7 +332,7 @@ export default function VillainSelectionScreen({ navigation }) {
       <RNStatusBar barStyle="light-content" backgroundColor="#051438" />
       <LinearGradient colors={["#051438", "#0A2463", "#1E3A8A"]} style={styles.gradient}>
         <View style={[styles.container, { paddingHorizontal: layout.horizontalPadding }]}>
-          {/* 🔧 HEADER RESPONSIVO */}
+          {/*  HEADER RESPONSIVO */}
           <View style={[styles.header, { height: layout.headerHeight }]}>
             <BackButton onPress={handleBack} />
             <Text
@@ -368,7 +359,7 @@ export default function VillainSelectionScreen({ navigation }) {
             />
           </View>
 
-          {/* 🔧 CARRUSEL RESPONSIVO */}
+          {/*  CARRUSEL RESPONSIVO */}
           <View
             style={[
               styles.carouselSection,
@@ -439,7 +430,7 @@ export default function VillainSelectionScreen({ navigation }) {
             </VillainCarousel>
           </View>
 
-          {/* 🔧 TARJETA RESPONSIVA CON BOTÓN DINÁMICO */}
+          {/*  TARJETA RESPONSIVA CON BOTÓN DINÁMICO */}
           <View
             style={[
               styles.cardSection,
@@ -464,7 +455,7 @@ export default function VillainSelectionScreen({ navigation }) {
   )
 }
 
-// 🔧 ESTILOS RESPONSIVOS MEJORADOS
+//  ESTILOS RESPONSIVOS MEJORADOS
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
