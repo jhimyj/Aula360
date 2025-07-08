@@ -2,12 +2,13 @@
 
 import type React from "react"
 import { useRef, useEffect, useState } from "react"
-import { View, Text, StyleSheet, TouchableOpacity, Animated, Dimensions, Easing, Platform } from "react-native"
+import { View, Text, StyleSheet, TouchableOpacity, Animated, Dimensions, Easing } from "react-native"
 import { LinearGradient } from "expo-linear-gradient"
 import { Feather } from "@expo/vector-icons"
 import { BlurView } from "expo-blur"
 import type { Character } from "./types"
 import CharacterDetailsDialog from "./CharacterDetailsDialog"
+import { useNavigation } from "@react-navigation/native"
 
 const { width, height } = Dimensions.get("window")
 
@@ -24,10 +25,26 @@ const CharacterDisplay: React.FC<CharacterDisplayProps> = ({ character, imageSiz
   const [showDetailsDialog, setShowDetailsDialog] = useState(false)
   const floatAnim = useRef(new Animated.Value(0)).current
   const rotateAnim = useRef(new Animated.Value(0)).current
+  const navigation = useNavigation()
+
   const glowAnim = useRef(new Animated.Value(0)).current
   const scaleAnim = useRef(new Animated.Value(0.95)).current
   const buttonScaleAnim = useRef(new Animated.Value(1)).current
   const particleAnim = useRef(new Animated.Value(0)).current
+
+  useEffect(() => {
+    const state = navigation.getState?.()
+    console.log(" Estado actual de navegación:", JSON.stringify(state, null, 2))
+
+    if (state?.routeNames) {
+      console.log("Rutas disponibles:")
+      state.routeNames.forEach((name, index) => {
+        console.log(`- ${index + 1}. ${name}`)
+      })
+    } else {
+      console.warn(" No se encontraron rutas desde este contexto")
+    }
+  }, [])
 
   useEffect(() => {
     // Initial entrance animation
@@ -118,11 +135,15 @@ const CharacterDisplay: React.FC<CharacterDisplayProps> = ({ character, imageSiz
     }).start()
   }
 
+  //  FUNCIÓN MEJORADA PARA MANEJAR "SEE MORE"
   const handleSeeMore = () => {
+    console.log("Abriendo detalles del personaje:", character.name)
     setShowDetailsDialog(true)
   }
 
+  // 🔧 FUNCIÓN MEJORADA PARA CERRAR DIALOG
   const handleCloseDialog = () => {
+    console.log(" Cerrando detalles del personaje")
     setShowDetailsDialog(false)
   }
 
@@ -156,8 +177,13 @@ const CharacterDisplay: React.FC<CharacterDisplayProps> = ({ character, imageSiz
           ? "#3498DB"
           : "#7F8C8D"
 
-  // Determine if we're on a mobile device
-  const isMobile = Platform.OS === 'ios' || Platform.OS === 'android'
+  //  FUNCIÓN PARA OBTENER TEXTO DE RAREZA PERSONALIZADO
+  const getRarityText = () => {
+    if (character.rarity === "legendary") return "LEGENDARIO"
+    if (character.rarity === "epic") return "ÉPICO"
+    if (character.rarity === "rare") return "RARO"
+    return "HÉROE" // Cambiado de "COMÚN" a "HÉROE"
+  }
 
   return (
     <View style={styles.container}>
@@ -180,18 +206,22 @@ const CharacterDisplay: React.FC<CharacterDisplayProps> = ({ character, imageSiz
         ))}
 
         <View style={styles.header}>
-          <TouchableOpacity 
-            style={styles.seeMoreButton} 
-            onPress={handleSeeMore} 
+          {/*  BOTÓN "SEE MORE" MEJORADO */}
+          <TouchableOpacity
+            style={styles.seeMoreButton}
+            onPress={handleSeeMore}
             activeOpacity={0.7}
             accessibilityRole="button"
             accessibilityLabel="Ver más detalles del personaje"
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} // Área de toque más grande
           >
-            <Feather name="info" size={14} color="#FFFFFF" style={styles.infoIcon} />
-            <Text style={styles.seeMoreText}>See More</Text>
+            <Feather name="info" size={16} color="#FFFFFF" style={styles.infoIcon} />
+            <Text style={styles.seeMoreText}>Ver Más</Text>
           </TouchableOpacity>
-          <View style={styles.rarityBadge}>
-            <Text style={styles.rarityText}>{character.rarity || "COMÚN"}</Text>
+
+          {/*  BADGE DE RAREZA MEJORADO */}
+          <View style={[styles.rarityBadge, { borderColor: rarityBorderColor }]}>
+            <Text style={[styles.rarityText, { color: rarityBorderColor }]}>{getRarityText()}</Text>
           </View>
         </View>
 
@@ -249,10 +279,11 @@ const CharacterDisplay: React.FC<CharacterDisplayProps> = ({ character, imageSiz
           <Text style={styles.characterClass}>{character.class || "Aventurero"}</Text>
 
           <View style={styles.statsGrid}>
-            <StatBar label="FUE" value={character.stats?.strength || 75} color="#FF5252" icon="award" />
-            <StatBar label="SAB" value={character.stats?.wisdom || 80} color="#40C4FF" icon="book" />
-            <StatBar label="AGI" value={character.stats?.agility || 85} color="#69F0AE" icon="wind" />
-            <StatBar label="DEF" value={character.stats?.defense || 70} color="#FFAB40" icon="shield" />
+            {/*  */}
+            <StatBar label="FUE" value={character.stats?.strength || 75} color="#FF5252" />
+            <StatBar label="SAB" value={character.stats?.wisdom || 80} color="#40C4FF" />
+            <StatBar label="AGI" value={character.stats?.agility || 85} color="#69F0AE" />
+            <StatBar label="DEF" value={character.stats?.defense || 70} color="#FFAB40" />
           </View>
 
           {character.abilities && (
@@ -289,24 +320,21 @@ const CharacterDisplay: React.FC<CharacterDisplayProps> = ({ character, imageSiz
           </Animated.View>
         </TouchableOpacity>
 
-        {/* Character Details Dialog */}
-        <CharacterDetailsDialog
-          character={character}
-          visible={showDetailsDialog}
-          onClose={handleCloseDialog}
-        />
+        {/*  CHARACTER DETAILS DIALOG CON Z-INDEX MEJORADO */}
+        {showDetailsDialog && (
+          <CharacterDetailsDialog character={character} visible={showDetailsDialog} onClose={handleCloseDialog} />
+        )}
       </LinearGradient>
     </View>
   )
 }
 
-// StatBar helper component
-const StatBar = ({ label, value, color, icon }) => {
+//  STATBAR COMPONENT SIMPLIFICADO (SIN ICONOS DE MÚSICA)
+const StatBar = ({ label, value, color }) => {
   return (
     <View style={styles.statBarContainer}>
       <View style={styles.labelContainer}>
-        <Feather name={icon} size={14} color={color} />
-        <Text style={styles.statLabel}>{label}</Text>
+        <Text style={[styles.statLabel, { color }]}>{label}</Text>
       </View>
       <View style={styles.barContainer}>
         <View
@@ -354,37 +382,48 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: 20,
     marginBottom: 10,
+    zIndex: 1, //
   },
+  
   seeMoreButton: {
-    backgroundColor: "rgba(0,0,0,0.6)",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 15,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.2)",
+    backgroundColor: "rgba(0,0,0,0.7)", // Más opaco
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: "rgba(255,255,255,0.3)",
     flexDirection: "row",
     alignItems: "center",
-    minWidth: 100, // Asegura un área de toque mínima para dispositivos móviles
-    justifyContent: "center", // Centra el contenido
+    minWidth: 110,
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
   },
   infoIcon: {
-    marginRight: 5,
+    marginRight: 6,
   },
   seeMoreText: {
     color: "#FFFFFF",
     fontWeight: "bold",
-    fontSize: 12,
+    fontSize: 13,
   },
+  //  BADGE DE RAREZA MEJORADO
   rarityBadge: {
-    backgroundColor: "rgba(0,0,0,0.6)",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 15,
-    borderWidth: 1,
-    borderColor: "rgba(255,215,0,0.3)",
+    backgroundColor: "rgba(0,0,0,0.7)",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
   },
   rarityText: {
-    color: "#FFD700",
     fontWeight: "bold",
     fontSize: 12,
     textTransform: "uppercase",
@@ -472,16 +511,16 @@ const styles = StyleSheet.create({
     width: "23%",
     marginBottom: 0,
   },
+  //  LABEL CONTAINER SIN ICONOS
   labelContainer: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center", // Centrar el texto
     marginBottom: 4,
   },
   statLabel: {
-    color: "#FFFFFF",
     fontSize: 14,
     fontWeight: "bold",
-    marginLeft: 4,
   },
   barContainer: {
     height: 8,
@@ -508,7 +547,7 @@ const styles = StyleSheet.create({
   statValue: {
     color: "#FFFFFF",
     fontSize: 12,
-    textAlign: "right",
+    textAlign: "center", // Centrar el valor
     fontWeight: "bold",
   },
   abilitiesContainer: {
@@ -543,17 +582,18 @@ const styles = StyleSheet.create({
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
-    marginLeft: -40,
     shadowRadius: 5,
     marginTop: 5,
+    alignSelf: "center", // 
   },
   gradientButton: {
     width: "100%",
     height: "100%",
     flexDirection: "row",
-    justifyContent: "flex-start",
+    justifyContent: "center", // 
     alignItems: "center",
     borderRadius: 25,
+    paddingHorizontal: 20,
   },
   buttonIcon: {
     marginRight: 8,

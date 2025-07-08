@@ -2,7 +2,7 @@ import logging
 import boto3
 from utils.response import Response
 from utils.token import get_token_instance
-from utils.config import ROOM_TABLE, ROLES_PERMITED_CREATE_ROOM
+from utils.config import ROOM_TABLE, ROLES_PERMITTED_GET_ROOM, ROLES_PERMITED_CREATE_ROOM
 from utils.dynamo_utils import serialize_dynamo_to_dict
 
 logger = logging.getLogger(__name__)
@@ -58,10 +58,13 @@ def lambda_handler(event, context):
 
         room_data = response['Items'][0]
         room_data = serialize_dynamo_to_dict(room_data)
-
-        if role not in ROLES_PERMITED_CREATE_ROOM or room_data["user_id"] != user_id:
+        if role not in ROLES_PERMITTED_GET_ROOM:
             logger.error(f"Acceso no autorizado para el usuario {user_id} a la room con ID: {room_id}")
-            return Response(status_code=403, body={"error": "Acceso no autorizado a la room."}).to_dict()
+            return Response(status_code=403, body={"error": "Acceso no autorizado al room."}).to_dict()
+
+        if role in ROLES_PERMITED_CREATE_ROOM and room_data["user_id"] != user_id:
+            logger.error(f"Acceso no autorizado para el usuario {user_id} a la room con ID: {room_id}")
+            return Response(status_code=403, body={"error": "Acceso no autorizado al room."}).to_dict()
 
         return Response(status_code=200, body={'message': 'Datos obtenidos correctamente', 'data': room_data}).to_dict()
 

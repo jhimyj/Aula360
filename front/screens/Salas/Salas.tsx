@@ -370,7 +370,7 @@ const styles = StyleSheet.create({
   },
   input: {
     marginBottom: 12,
-    paddingLeft: 25,  // Da un poco de espacio extra en el lado izquierdo
+    paddingLeft: 25,  
     backgroundColor: '#FFFFFF',
   },
   errorText: {
@@ -397,29 +397,3 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
 });
-
-// Example of how to use this component:
-/*
-import Salas from './SalasEnhanced';
-
-export default function App() {
-  const [showSalas, setShowSalas] = useState(false);
-  
-  return (
-    <View style={{ flex: 1 }}>
-      {showSalas ? (
-        <Salas onBack={() => setShowSalas(false)} />
-      ) : (
-        <Button onPress={() => setShowSalas(true)}>
-          Crear Sala
-        </Button>
-      )}
-    </View>
-  );
-}
-*/
-
-// Note: This component requires these dependencies:
-// - react-native-paper
-// - @expo/vector-icons
-// - expo-linear-gradient (optional for gradient effects)

@@ -1,0 +1,350 @@
+import re
+import string
+from collections import Counter
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
+import nltk
+
+# Descargar stopwords si no las tienes
+try:
+    nltk.data.find('corpora/stopwords')
+except LookupError:
+    nltk.download('stopwords')
+from nltk.corpus import stopwords
+
+# PATRONES ESPECÍFICOS PARA CLASIFICACIÓN
+patrones_auditoria = {
+    "no_auditado": [
+        "no auditado", "no auditada", "sin auditar", "información no auditada",
+        "estados financieros no auditados", "cifras no auditadas", "datos no auditados",
+        "resultados no auditados", "informe no auditado", "reporte no auditado"
+    ],
+    "auditado": [
+        "auditado", "auditada", "auditoría", "auditores independientes",
+        "dictamen de auditoría", "opinión de auditoría", "informe de auditoría",
+        "estados financieros auditados", "cifras auditadas", "reporte auditado"
+    ]
+}
+
+# Referencias mejoradas con pesos específicos
+referencia_anual = {
+    # Indicadores fuertes (peso alto)
+    "fuertes": [
+        "reporte anual", "informe anual", "memoria anual", "ejercicio fiscal completo",
+        "cierre del ejercicio", "ejercicio económico completo", "al 31 de diciembre",
+        "año fiscal", "ejercicio anual", "balance general anual"
+    ],
+    # Indicadores moderados
+    "moderados": [
+        "balance general", "patrimonio", "capital social", "reservas",
+        "excedente de revaluación", "resultado acumulado anual",
+        "estados financieros consolidados anuales"
+    ],
+    # Indicadores débiles (aparecen en ambos pero más en anuales)
+    "debiles": [
+        "total activo", "total pasivo", "activo corriente", "pasivo corriente",
+        "activo no corriente", "pasivo no corriente"
+    ]
+}
+
+referencia_trimestral = {
+    # Indicadores fuertes
+    "fuertes": [
+        "reporte trimestral", "informe trimestral", "primer trimestre", "segundo trimestre",
+        "tercer trimestre", "cuarto trimestre", "1t", "2t", "3t", "4t",
+        "q1", "q2", "q3", "q4", "trimestre", "al 31 de marzo", "al 30 de junio",
+        "al 30 de septiembre", "resultados trimestrales"
+    ],
+    # Indicadores moderados
+    "moderados": [
+        "resultado del trimestre", "información no auditada", "resultado parcial",
+        "estado financiero parcial", "resultados intermedios", "informes interinos",
+        "ejercicio parcial", "cifras acumuladas"
+    ],
+    # Indicadores débiles
+    "debiles": [
+        "estado de situación financiera", "estado de resultados",
+        "estado de flujo de efectivo", "datos consolidados"
+    ]
+}
+
+# Configuración de stopwords mejorada
+stop_words = set(stopwords.words('spanish'))
+stop_words.update(string.punctuation)
+stop_words.update(["al", "de", "del", "la", "y", "el", "los", "las", "en", "por", "para", "con", "un", "una"])
+
+def normalizar_texto_avanzado(texto):
+    """Normalización más inteligente del texto"""
+    texto = texto.lower()
+    
+    # Conservar patrones importantes antes de limpiar
+    # Normalizar fechas específicas
+    texto = re.sub(r"al\s+31\s+de\s+diciembre\s+de\s+\d{4}", " <FECHA_ANUAL> ", texto)
+    texto = re.sub(r"al\s+31\s+de\s+marzo\s+de\s+\d{4}", " <FECHA_Q1> ", texto)
+    texto = re.sub(r"al\s+30\s+de\s+junio\s+de\s+\d{4}", " <FECHA_Q2> ", texto)
+    texto = re.sub(r"al\s+30\s+de\s+septiembre\s+de\s+\d{4}", " <FECHA_Q3> ", texto)
+    
+    # Normalizar términos de auditoría
+    texto = re.sub(r"no\s+audita(do|da|dos|das)", " NO_AUDITADO ", texto)
+    texto = re.sub(r"(?<!no\s)audita(do|da|dos|das)", " AUDITADO ", texto)
+    
+    # Normalizar trimestres
+    texto = re.sub(r"(primer|1er|i)\s+trimestre", " PRIMER_TRIMESTRE ", texto)
+    texto = re.sub(r"(segundo|2do|ii)\s+trimestre", " SEGUNDO_TRIMESTRE ", texto)
+    texto = re.sub(r"(tercer|3er|iii)\s+trimestre", " TERCER_TRIMESTRE ", texto)
+    texto = re.sub(r"(cuarto|4to|iv)\s+trimestre", " CUARTO_TRIMESTRE ", texto)
+    
+    # Limpiar caracteres especiales pero conservar tokens importantes
+    texto = re.sub(r"[^\w\s\<\>\_]", " ", texto)
+    texto = re.sub(r"\s+", " ", texto)
+    
+    return texto.strip()
+
+def detectar_auditoria(texto_normalizado):
+    """Detecta específicamente patrones de auditoría"""
+    no_auditado_count = 0
+    auditado_count = 0
+    
+    # Contar patrones de "no auditado"
+    for patron in patrones_auditoria["no_auditado"]:
+        no_auditado_count += len(re.findall(re.escape(patron), texto_normalizado))
+    
+    # Contar específicamente "NO_AUDITADO" token
+    no_auditado_count += len(re.findall(r'\bNO_AUDITADO\b', texto_normalizado))
+    
+    # Contar patrones de "auditado" (pero no "no auditado")
+    for patron in patrones_auditoria["auditado"]:
+        if "no " not in patron:
+            auditado_count += len(re.findall(re.escape(patron), texto_normalizado))
+    
+    # Contar específicamente "AUDITADO" token
+    auditado_count += len(re.findall(r'\bAUDITADO\b', texto_normalizado))
+    
+    return {
+        "no_auditado_menciones": no_auditado_count,
+        "auditado_menciones": auditado_count,
+        "indicador_auditoria": "no_auditado" if no_auditado_count > 0 else "auditado" if auditado_count > 0 else "indefinido"
+    }
+
+def calcular_score_ponderado(texto_normalizado, referencias):
+    """Calcula score ponderado basado en la fuerza de los indicadores"""
+    score = 0
+    matches_detalle = {"fuertes": [], "moderados": [], "debiles": []}
+    
+    for nivel, palabras_clave in referencias.items():
+        peso = {"fuertes": 3, "moderados": 2, "debiles": 1}[nivel]
+        
+        for clave in palabras_clave:
+            # Normalizar la clave para buscarla
+            clave_norm = clave.lower()
+            # Contar ocurrencias
+            count = len(re.findall(re.escape(clave_norm), texto_normalizado))
+            if count > 0:
+                score += count * peso
+                matches_detalle[nivel].append((clave, count))
+    
+    return score, matches_detalle
+
+def clasificar_texto_mejorado(texto):
+    """Clasificación mejorada con múltiples criterios"""
+    texto_norm = normalizar_texto_avanzado(texto)
+    texto_filtrado = eliminar_stopwords_inteligente(texto_norm)
+    
+    # 1. Análisis de auditoría (criterio principal)
+    info_auditoria = detectar_auditoria(texto_norm)
+    
+    # 2. Análisis de scores ponderados
+    score_anual, matches_anual = calcular_score_ponderado(texto_norm, referencia_anual)
+    score_trimestral, matches_trimestral = calcular_score_ponderado(texto_norm, referencia_trimestral)
+    
+    # 3. Análisis TF-IDF como respaldo
+    sim_anual, sim_trimestral = calcular_similitud_tfidf(texto_filtrado)
+    
+    # 4. Lógica de clasificación mejorada
+    clasificacion = determinar_clasificacion_final(
+        info_auditoria, score_anual, score_trimestral, sim_anual, sim_trimestral
+    )
+    
+    # 5. Análisis adicional
+    top_words = obtener_top_words(texto_filtrado, n=15)
+    
+    return {
+        "clase": clasificacion["clase"],
+        "confianza": clasificacion["confianza"],
+        "razonamiento": clasificacion["razonamiento"],
+        "auditoria_info": info_auditoria,
+        "scores": {
+            "anual": score_anual,
+            "trimestral": score_trimestral,
+            "similitud_anual": sim_anual,
+            "similitud_trimestral": sim_trimestral
+        },
+        "matches_detalle": {
+            "anual": matches_anual,
+            "trimestral": matches_trimestral
+        },
+        "top_words": top_words,
+        "texto_normalizado": texto_filtrado[:500] + "..." if len(texto_filtrado) > 500 else texto_filtrado
+    }
+
+def determinar_clasificacion_final(info_auditoria, score_anual, score_trimestral, sim_anual, sim_trimestral):
+    """Lógica de clasificación con múltiples criterios"""
+    
+    # Criterio 1: Si tiene "no auditado", muy probablemente es trimestral
+    if info_auditoria["no_auditado_menciones"] > 0:
+        return {
+            "clase": "Trimestral",
+            "confianza": 0.9,
+            "razonamiento": f"Contiene {info_auditoria['no_auditado_menciones']} menciones de 'no auditado', indicador fuerte de reporte trimestral"
+        }
+    
+    # Criterio 2: Diferencia significativa en scores ponderados
+    diferencia_scores = abs(score_anual - score_trimestral)
+    if diferencia_scores >= 5:  # Umbral de diferencia significativa
+        clase = "Anual" if score_anual > score_trimestral else "Trimestral"
+        confianza = min(0.85, 0.6 + (diferencia_scores / 20))
+        return {
+            "clase": clase,
+            "confianza": confianza,
+            "razonamiento": f"Score ponderado {clase.lower()}: {max(score_anual, score_trimestral)} vs {min(score_anual, score_trimestral)}"
+        }
+    
+    # Criterio 3: Similitud TF-IDF como respaldo
+    diferencia_sim = abs(sim_anual - sim_trimestral)
+    if diferencia_sim >= 0.1:
+        clase = "Anual" if sim_anual > sim_trimestral else "Trimestral"
+        confianza = min(0.75, 0.5 + diferencia_sim)
+        return {
+            "clase": clase,
+            "confianza": confianza,
+            "razonamiento": f"Similitud TF-IDF {clase.lower()}: {max(sim_anual, sim_trimestral):.3f} vs {min(sim_anual, sim_trimestral):.3f}"
+        }
+    
+    # Criterio por defecto: usar el score más alto pero con baja confianza
+    if score_anual >= score_trimestral:
+        return {
+            "clase": "Anual",
+            "confianza": 0.5,
+            "razonamiento": "Clasificación incierta, ligeramente favorece anual"
+        }
+    else:
+        return {
+            "clase": "Trimestral",
+            "confianza": 0.5,
+            "razonamiento": "Clasificación incierta, ligeramente favorece trimestral"
+        }
+
+def eliminar_stopwords_inteligente(texto):
+    """Elimina stopwords pero conserva tokens importantes"""
+    palabras = texto.split()
+    palabras_filtradas = []
+    
+    for palabra in palabras:
+        # Conservar tokens especiales (en mayúsculas o con guiones bajos)
+        if palabra.isupper() or "_" in palabra or "<" in palabra:
+            palabras_filtradas.append(palabra)
+        # Eliminar stopwords normales
+        elif palabra not in stop_words and len(palabra) > 2:
+            palabras_filtradas.append(palabra)
+    
+    return " ".join(palabras_filtradas)
+
+def calcular_similitud_tfidf(texto_filtrado):
+    """Calcula similitud TF-IDF con referencias"""
+    # Concatenar referencias por nivel de importancia
+    ref_anual_concat = " ".join(
+        referencia_anual["fuertes"] * 2 +  # Dar más peso a indicadores fuertes
+        referencia_anual["moderados"] +
+        referencia_anual["debiles"]
+    )
+    
+    ref_trimestral_concat = " ".join(
+        referencia_trimestral["fuertes"] * 2 +
+        referencia_trimestral["moderados"] +
+        referencia_trimestral["debiles"]
+    )
+    
+    try:
+        vectorizer = TfidfVectorizer(ngram_range=(1,2), stop_words=list(stop_words), max_features=1000)
+        corpus = [ref_anual_concat, ref_trimestral_concat, texto_filtrado]
+        tfidf_matrix = vectorizer.fit_transform(corpus)
+        
+        sim_anual = cosine_similarity(tfidf_matrix[2], tfidf_matrix[0])[0][0]
+        sim_trimestral = cosine_similarity(tfidf_matrix[2], tfidf_matrix[1])[0][0]
+        
+        return sim_anual, sim_trimestral
+    except:
+        return 0.0, 0.0
+
+def obtener_top_words(texto, n=15):
+    """Obtiene las palabras más frecuentes"""
+    palabras = texto.split()
+    contador = Counter(palabras)
+    return contador.most_common(n)
+
+def analizar_archivo(ruta_archivo):
+    """Analiza un archivo de texto"""
+    try:
+        with open(ruta_archivo, "r", encoding="utf-8") as f:
+            contenido = f.read()
+        return clasificar_texto_mejorado(contenido)
+    except FileNotFoundError:
+        return {"error": f"Archivo no encontrado: {ruta_archivo}"}
+    except Exception as e:
+        return {"error": f"Error al procesar archivo: {str(e)}"}
+
+def mostrar_resultados(resultado):
+    """Muestra los resultados de forma organizada"""
+    if "error" in resultado:
+        print(f"❌ {resultado['error']}")
+        return
+    
+    print("="*60)
+    print(f"📊 CLASIFICACIÓN: {resultado['clase'].upper()}")
+    print(f"🎯 CONFIANZA: {resultado['confianza']:.2%}")
+    print(f"💭 RAZONAMIENTO: {resultado['razonamiento']}")
+    print("="*60)
+    
+    print("\n🔍 ANÁLISIS DE AUDITORÍA:")
+    info_aud = resultado['auditoria_info']
+    print(f"   • No auditado: {info_aud['no_auditado_menciones']} menciones")
+    print(f"   • Auditado: {info_aud['auditado_menciones']} menciones")
+    print(f"   • Indicador: {info_aud['indicador_auditoria']}")
+    
+    print("\n📈 SCORES:")
+    scores = resultado['scores']
+    print(f"   • Score Anual: {scores['anual']}")
+    print(f"   • Score Trimestral: {scores['trimestral']}")
+    print(f"   • Similitud TF-IDF Anual: {scores['similitud_anual']:.4f}")
+    print(f"   • Similitud TF-IDF Trimestral: {scores['similitud_trimestral']:.4f}")
+    
+    print("\n🏷️ TOP PALABRAS:")
+    for palabra, freq in resultado["top_words"][:10]:
+        print(f"   • {palabra}: {freq}")
+    
+    print("\n🎯 MATCHES CLAVE (Anual):")
+    for nivel, matches in resultado["matches_detalle"]["anual"].items():
+        if matches:
+            print(f"   {nivel.capitalize()}:")
+            for match, count in matches[:5]:
+                print(f"     - '{match}': {count}")
+    
+    print("\n🎯 MATCHES CLAVE (Trimestral):")
+    for nivel, matches in resultado["matches_detalle"]["trimestral"].items():
+        if matches:
+            print(f"   {nivel.capitalize()}:")
+            for match, count in matches[:5]:
+                print(f"     - '{match}': {count}")
+
+if __name__ == "__main__":
+    # Ejemplo de uso
+    ruta = "Dunas-anual.txt"  # Cambia por la ruta real de tu archivo
+    
+    print("🚀 Iniciando análisis de clasificación financiera...")
+    resultado = analizar_archivo(ruta)
+    mostrar_resultados(resultado)
+    
+    # También puedes analizar texto directamente:
+    # texto_ejemplo = "Este es un reporte trimestral no auditado del primer trimestre..."
+    # resultado_directo = clasificar_texto_mejorado(texto_ejemplo)
+    # mostrar_resultados(resultado_directo)

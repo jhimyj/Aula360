@@ -1,0 +1,246 @@
+[33mcommit 2feb363d570c946a214e74306ad4f1ce3f9f42ad[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mfeature/StudentsFron-fix[m[33m, [m[1;31morigin/feature/StudentsFron-fix[m[33m)[m
+Author: Aldair456 <aldair.seminario@utec.edu.pe>
+Date:   Wed May 28 23:59:57 2025 -0500
+
+    corrigo flujo
+
+[33mcommit 6ee0c8d593f55b228423ed19ecff42f55b89951b[m
+Author: Aldair456 <aldair.seminario@utec.edu.pe>
+Date:   Wed May 28 23:19:18 2025 -0500
+
+    opciones multiples
+
+[33mcommit fac37d5c6ff6cef46aae536b9a059a661253c884[m
+Author: Aldair456 <aldair.seminario@utec.edu.pe>
+Date:   Wed May 28 12:42:52 2025 -0500
+
+    Agrego arreglos
+
+[33mcommit 83952928a899bdf7647c886631d27de197af37fb[m
+Author: Aldair456 <aldair.seminario@utec.edu.pe>
+Date:   Wed May 28 02:45:38 2025 -0500
+
+    get stuendts
+
+[33mcommit 537f54e06aca53e537c58c5a11e659b2c10526e3[m
+Author: Aldair456 <aldair.seminario@utec.edu.pe>
+Date:   Wed May 28 01:47:14 2025 -0500
+
+    Mas misiones
+
+[33mcommit 43ca8ef2b5ed8490309d95538249e4dda2be8e1b[m
+Author: Aldair456 <aldair.seminario@utec.edu.pe>
+Date:   Wed May 28 00:52:23 2025 -0500
+
+    feetback IA
+
+[33mcommit 907ca44ec7f0a3d25a7220b4af1ed3cc1e7e6eb4[m[33m ([m[1;31morigin/feature/StudentsFron[m[33m, [m[1;32mfeature/StudentsFron[m[33m)[m
+Author: Aldair456 <aldair.seminario@utec.edu.pe>
+Date:   Tue May 27 23:32:51 2025 -0500
+
+    IA
+
+[33mcommit 2a0447a026e26bf8f03197b1cb7d0f656fc30d36[m
+Author: Aldair456 <aldair.seminario@utec.edu.pe>
+Date:   Tue May 27 20:00:16 2025 -0500
+
+    Preugntas profe
+
+[33mcommit 1141692f582387a7dfd3796725d53c0b4b0a13c1[m
+Author: Aldair456 <aldair.seminario@utec.edu.pe>
+Date:   Tue May 27 17:07:08 2025 -0500
+
+    Termino navegaciòn
+
+[33mcommit 4e98ed244bb2f82aaab94a6729239d309f8c3b27[m
+Author: Aldair456 <aldair.seminario@utec.edu.pe>
+Date:   Tue May 27 00:22:27 2025 -0500
+
+    navegacion casi completoa
+
+[33mcommit bdb90514633e75c041230a4586a97fb5115c68fc[m
+Author: Aldair456 <aldair.seminario@utec.edu.pe>
+Date:   Mon May 26 16:16:53 2025 -0500
+
+    Agrego flujo casi completo
+
+[33mcommit 619ef03775d785dbc68683818e59dfe5cf9f9b29[m
+Author: JairoCatacora <alair.catacora@utec.edu.pe>
+Date:   Sun May 25 11:40:11 2025 -0500
+
+    Add logout functionality to ResultsScreen and implement character image removal
+
+[33mcommit d1ee93f07676c1fb625ae9396cca8f8bb15884f3[m
+Author: Aldair456 <aldair.seminario@utec.edu.pe>
+Date:   Sun May 25 00:56:25 2025 -0500
+
+    Agrego todo menos roles
+
+[33mcommit 1989b4459358d49fd5c06e446ed0b18be7be28db[m[33m ([m[1;31morigin/develop[m[33m)[m
+Merge: d92bb62 45a41f1
+Author: Aldair Adrian Seminario Sanchez <104234950+Aldair456@users.noreply.github.com>
+Date:   Fri May 23 17:22:55 2025 -0500
+
+    Merge pull request #14 from jhimyj/feature/Question
+    
+    Feature/question
+
+[33mcommit 45a41f13450152268751d076e647d16464445264[m
+Merge: 64f1b70 d92bb62
+Author: Aldair Adrian Seminario Sanchez <104234950+Aldair456@users.noreply.github.com>
+Date:   Fri May 23 17:22:43 2025 -0500
+
+    Merge branch 'develop' into feature/Question
+
+[33mcommit 64f1b70297d40eee67b20ef60228bfc9ea307421[m
+Author: Aldair456 <aldair.seminario@utec.edu.pe>
+Date:   Fri May 23 17:15:27 2025 -0500
+
+    Termino Question
+
+[33mcommit d92bb62efb6ef79f4ecd162e6c655ce5c9c2b985[m
+Merge: ff7bebe 12c99d1
+Author: Aldair Adrian Seminario Sanchez <104234950+Aldair456@users.noreply.github.com>
+Date:   Fri May 23 17:01:54 2025 -0500
+
+    Merge pull request #13 from jhimyj/feature/misiones
+    
+    misionesGame
+
+[33mcommit 12c99d13073945aaa613ebe132eb07bc99f96c66[m
+Merge: b9b8db6 ff7bebe
+Author: Aldair Adrian Seminario Sanchez <104234950+Aldair456@users.noreply.github.com>
+Date:   Fri May 23 17:01:07 2025 -0500
+
+    Merge branch 'develop' into feature/misiones
+
+[33mcommit ff7bebea5eecbe318650a6ff8bf7eb0ca0e38cbd[m[33m ([m[1;31morigin/feature/service_response[m[33m)[m
+Merge: 9989167 474341c
+Author: jhimyj <112188333+jhimyj@users.noreply.github.com>
+Date:   Fri May 23 14:33:49 2025 -0500
+
+    Merge pull request #12 from jhimyj/feature/service_student
+    
+    Feature/service student
+
+[33mcommit 474341cc4e84e822592b16732f3d927427410813[m
+Author: jhimy <jhimy.delgado@utec.edu.pe>
+Date:   Fri May 23 14:29:24 2025 -0500
+
+    servicio room modificado para adaptarse a students
+
+[33mcommit 678ce335dcf39f886bdab4c89c439a5ad5540fe6[m
+Author: jhimy <jhimy.delgado@utec.edu.pe>
+Date:   Fri May 23 14:25:13 2025 -0500
+
+    servicio students deployado primer avance
+
+[33mcommit d482b023110ec91415c8ba45af0ccddf4835c7de[m
+Author: jhimyj <112188333+jhimyj@users.noreply.github.com>
+Date:   Fri May 23 04:16:41 2025 -0500
+
+    Update ArquitecturaBack.drawio
+    
+    arreglado el diagrama de draw.io
+
+[33mcommit 998916765f7f106ce287ec43cd27ba201be9aeda[m
+Merge: 4448d28 b38d39c
+Author: jhimyj <112188333+jhimyj@users.noreply.github.com>
+Date:   Fri May 23 03:01:32 2025 -0500
+
+    Merge pull request #11 from jhimyj/feature/service_question
+    
+    Feature/service question
+
+[33mcommit b38d39c4a8667920a50718f24e9670fa8f4e8c68[m
+Merge: 4a90b21 4448d28
+Author: jhimyj <112188333+jhimyj@users.noreply.github.com>
+Date:   Fri May 23 03:00:22 2025 -0500
+
+    Merge branch 'develop' into feature/service_question
+
+[33mcommit 4a90b2138e9729bc95d6a520d772bb51fac57fe7[m
+Author: jhimy <jhimy.delgado@utec.edu.pe>
+Date:   Fri May 23 02:36:19 2025 -0500
+
+    terminado question por ahora
+
+[33mcommit e4aee3e66afc0a24b2b953b12d50ecf53d29e6ec[m
+Author: JairoCatacora <112722355+JairoCatacora@users.noreply.github.com>
+Date:   Thu May 22 18:28:39 2025 -0500
+
+    Delete merge-error
+
+[33mcommit a28df7317481858cdfbd7902969c0685cd27a4df[m
+Author: JairoCatacora <alair.catacora@utec.edu.pe>
+Date:   Thu May 22 18:27:16 2025 -0500
+
+    villianDetails
+
+[33mcommit 4448d28361b47c758583cc345509b644104d2fe9[m
+Author: Aldair Adrian Seminario Sanchez <104234950+Aldair456@users.noreply.github.com>
+Date:   Thu May 22 03:00:29 2025 -0500
+
+    Actualizar ArquitecturaBack.drawio
+
+[33mcommit 81f17c08d5a8d6ef8f02ee56a361c3f44ade0f86[m
+Author: Aldair Adrian Seminario Sanchez <104234950+Aldair456@users.noreply.github.com>
+Date:   Thu May 22 02:59:24 2025 -0500
+
+    Actualizar ArquitecturaBack.drawio
+
+[33mcommit 6d00bb84e7f7ead8843a07b481e58dde488b4ef3[m
+Author: Aldair Adrian Seminario Sanchez <104234950+Aldair456@users.noreply.github.com>
+Date:   Thu May 22 02:54:50 2025 -0500
+
+    Actualizar ArquitecturaBack.drawio
+
+[33mcommit 39df4aae018079e95fb05cc0854f80e1fe432100[m
+Author: Aldair Adrian Seminario Sanchez <104234950+Aldair456@users.noreply.github.com>
+Date:   Thu May 22 02:47:21 2025 -0500
+
+    Actualizar ArquitecturaBack.drawio
+
+[33mcommit 569560e05e0eac41a71fd8ecad20f11a1930611c[m
+Author: Aldair Adrian Seminario Sanchez <104234950+Aldair456@users.noreply.github.com>
+Date:   Thu May 22 02:41:32 2025 -0500
+
+    Actualizar ArquitecturaBack.drawio
+
+[33mcommit fff4c900bce5dca17d7e7eab870a04e270bdedce[m
+Author: Aldair Adrian Seminario Sanchez <104234950+Aldair456@users.noreply.github.com>
+Date:   Thu May 22 02:41:27 2025 -0500
+
+    Actualizar ArquitecturaBack.drawio
+
+[33mcommit 6f519e7dc97810d9a69ee3aadf4ab0cc6a976d03[m
+Author: Aldair Adrian Seminario Sanchez <104234950+Aldair456@users.noreply.github.com>
+Date:   Thu May 22 02:41:10 2025 -0500
+
+    Actualizar ArquitecturaBack.drawio
+
+[33mcommit 438144fe920004ca8d08f745eeefa139df9843b8[m
+Author: Aldair Adrian Seminario Sanchez <104234950+Aldair456@users.noreply.github.com>
+Date:   Thu May 22 02:41:04 2025 -0500
+
+    ArquitecturaBack.drawio
+
+[33mcommit dcbff0048402a2f43ae470904dd9338a041734e2[m
+Author: Aldair Adrian Seminario Sanchez <104234950+Aldair456@users.noreply.github.com>
+Date:   Thu May 22 02:40:55 2025 -0500
+
+    Diagramas de Arqutectura WORK
+
+[33mcommit c3df08ec8a678de1cee9d490bdd7558abcca6399[m
+Author: Aldair Adrian Seminario Sanchez <104234950+Aldair456@users.noreply.github.com>
+Date:   Thu May 22 02:32:20 2025 -0500
+
+    Actualizar ArquitecturaBack.drawio
+
+[33mcommit 80c7961e067e8452bf355620f6d87a20e86a4a5c[m
+Author: Aldair Adrian Seminario Sanchez <104234950+Aldair456@users.noreply.github.com>
+Date:   Thu May 22 01:57:34 2025 -0500
+
+    Actualizar ArquitecturaBack.drawio
+
+[33mc

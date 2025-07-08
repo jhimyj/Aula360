@@ -1,30 +1,38 @@
 // screens/auth/LoginScreen.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, StyleSheet, Image, Alert,
+  View, Text, TextInput, TouchableOpacity, StyleSheet, Image,
   KeyboardAvoidingView, Platform, Keyboard, TouchableWithoutFeedback,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useNavigation } from '@react-navigation/native';
-import { DrawerNavigationProp } from '@react-navigation/drawer';
-import { DrawerNavigatorParamList } from '../../navigation/DrawerNavigator';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { AuthStackParamList } from '../../navigation/AuthStack';
 
-type Navigation = DrawerNavigationProp<DrawerNavigatorParamList, 'Inicio'>;
+type Navigation = NativeStackNavigationProp<AuthStackParamList, 'Login'>;
 
 type Props = {
+  navigation: Navigation;
   setIsAuthenticated: (val: boolean) => void;
 };
 
-export default function LoginScreen({ setIsAuthenticated }: Props) {
-  const navigation = useNavigation<Navigation>();
+export default function LoginScreen({ navigation, setIsAuthenticated }: Props) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleLogin = async () => {
+    if (!username || !password) {
+      setErrorMessage('Por favor ingrese usuario y contraseña');
+      return;
+    }
+
+    setIsLoading(true);
+    setErrorMessage(null);
+
     try {
       const response = await axios.post(
         'https://9l68voxzvc.execute-api.us-east-1.amazonaws.com/dev/user/login',
@@ -33,18 +41,57 @@ export default function LoginScreen({ setIsAuthenticated }: Props) {
       );
 
       const { token } = response.data;
+      console.log('Token obtenido:', token);
+      
+      // Decodificar el token para obtener información del usuario
+      let userRole = 'TEACHER'; // Rol por defecto
+      let userId = null;
+      let userInfo = null;
+      
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        userRole = payload.role || 'TEACHER';
+        userId = payload.id;
+        userInfo = {
+          id: payload.id,
+          username: payload.username || username,
+          role: userRole,
+          loginMethod: 'credentials'
+        };
+        console.log('Información del usuario decodificada:', userInfo);
+      } catch (decodeError) {
+        console.warn('No se pudo decodificar el token, usando valores por defecto');
+        userInfo = {
+          username: username,
+          role: 'TEACHER',
+          loginMethod: 'credentials'
+        };
+      }
+      
+      // Guardar toda la información de autenticación
       await AsyncStorage.setItem('userToken', token);
+      await AsyncStorage.setItem('authMethod', 'token');
+      await AsyncStorage.setItem('userRole', userRole);
+      await AsyncStorage.setItem('userInfo', JSON.stringify(userInfo));
+      
+      console.log('Login exitoso como TEACHER con TOKEN');
+      console.log('Rol asignado:', userRole);
+      console.log('Usuario:', userInfo.username);
+      
       setIsAuthenticated(true);
-      navigation.navigate('Inicio'); // Navega al Dashboard principal
+      
     } catch (error: any) {
       console.error('Error al iniciar sesión:', error.response?.data || error.message);
       setErrorMessage('Usuario o contraseña incorrectos');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  // Nueva función para continuar como alumno
+  // Función para navegar a la autenticación de estudiantes
   const handleContinueAsStudent = () => {
-    navigation.navigate('StudentDashboard'); // Navega a la pantalla del estudiante
+    console.log('Navegando a autenticación de estudiante');
+    navigation.navigate('StudentAuth');
   };
 
   return (
@@ -56,18 +103,21 @@ export default function LoginScreen({ setIsAuthenticated }: Props) {
 
           <View style={styles.formContainer}>
             <Image source={require('../../assets/images/logo_login.png')} style={styles.image} />
-            <Text style={styles.title}>Iniciar Sesión</Text>
+            <Text style={styles.title}>Inicia Sesión</Text>
 
             <TextInput
               placeholder="Nombre de Usuario"
+              placeholderTextColor="#999"          
               style={styles.input}
               value={username}
               onChangeText={setUsername}
+              autoCapitalize="none"
             />
 
             <View style={styles.passwordContainer}>
               <TextInput
                 placeholder="Contraseña"
+                placeholderTextColor="#999" 
                 style={styles.inputPassword}
                 secureTextEntry={!showPassword}
                 value={password}
@@ -80,20 +130,39 @@ export default function LoginScreen({ setIsAuthenticated }: Props) {
 
             {errorMessage && <Text style={styles.errorText}>{errorMessage}</Text>}
 
-            <TouchableOpacity style={styles.button} onPress={handleLogin}>
-              <Text style={styles.buttonText}>Iniciar Sesión</Text>
+            <TouchableOpacity 
+              style={[styles.button, isLoading && styles.buttonDisabled]} 
+              onPress={handleLogin}
+              disabled={isLoading}
+            >
+              <Text style={styles.buttonText}>
+                {isLoading ? 'Iniciando sesión...' : 'Iniciar Sesión como Profesor'}
+              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity onPress={() => navigation.navigate('Register')}>
               <Text style={styles.text}>
-                ¿No tienes cuenta? <Text style={styles.textHighlight}>Regístrate</Text>
+                ¿No tienes cuenta? <Text style={styles.textHighlight}>Regístrate como Profesor</Text>
               </Text>
             </TouchableOpacity>
 
+            {/* Separador visual */}
+            <View style={styles.separator}>
+              <View style={styles.separatorLine} />
+              <Text style={styles.separatorText}>O</Text>
+              <View style={styles.separatorLine} />
+            </View>
+
             {/* Botón de "Continuar como Alumno" */}
-            <TouchableOpacity style={styles.button} onPress={handleContinueAsStudent}>
-              <Text style={styles.buttonText}>Continuar como Alumno</Text>
+            <TouchableOpacity 
+              style={[styles.studentButton]} 
+              onPress={handleContinueAsStudent}
+            >
+              <Text style={styles.buttonText}>🎓 Continuar como Alumno</Text>
             </TouchableOpacity>
+            <Text style={styles.studentNote}>
+              *Acceso independiente para estudiantes
+            </Text>
           </View>
         </View>
       </TouchableWithoutFeedback>
@@ -154,6 +223,7 @@ const styles = StyleSheet.create({
     borderColor: '#FF8C00',
     borderRadius: 10,
     backgroundColor: '#F9F9F9',
+    color: '#333',  // ← AGREGADO: Color del texto que escribes
   },
   passwordContainer: {
     width: 300,
@@ -167,6 +237,7 @@ const styles = StyleSheet.create({
     marginBottom: 5,
   },
   inputPassword: {
+    color: '#333',  // ← YA ESTABA: Color del texto que escribes
     flex: 1,
     fontSize: 16,
     padding: 10,
@@ -186,6 +257,34 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 10,
   },
+  separator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: 300,
+    marginVertical: 20,
+  },
+  separatorLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#E0E0E0',
+  },
+  separatorText: {
+    marginHorizontal: 15,
+    color: '#999',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  studentButton: {
+    backgroundColor: '#4CAF50',
+    padding: 12,
+    borderRadius: 10,
+    width: 300,
+    alignItems: 'center',
+    marginTop: 5,
+  },
+  buttonDisabled: {
+    backgroundColor: '#FFB366',
+  },
   buttonText: {
     color: '#FFF',
     fontSize: 16,
@@ -199,5 +298,11 @@ const styles = StyleSheet.create({
   textHighlight: {
     color: '#FF8C00',
     fontWeight: 'bold',
+  },
+  studentNote: {
+    marginTop: 5,
+    color: '#4CAF50',
+    fontSize: 12,
+    fontStyle: 'italic',
   },
 });
