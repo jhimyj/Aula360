@@ -1,0 +1,105 @@
+service: service-response
+org: ${env:ORG}
+
+provider:
+  name: aws
+  runtime: python3.10
+  memorySize: 1024
+  timeout: 29
+  role: ${env:ROLE}
+  environment: #aca ponemos las  variables de entorno
+    RESPONSE_TABLE: ${env:RESPONSE_TABLE}
+    RESPONSE_GSI_INDEX_QUESTIONID_ROOMIDSTUDENTID: ${env:RESPONSE_GSI_INDEX_QUESTIONID_ROOMIDSTUDENTID}
+    HTTPS_SERVICE_QUESTION: ${env:HTTPS_SERVICE_QUESTION}
+    JWT_SECRET_KEY: ${env:JWT_SECRET_KEY}
+    ANTHROPIC_API_KEY: ${env:ANTHROPIC_API_KEY}
+    ANTHROPIC_API_KEY1: ${env:ANTHROPIC_API_KEY1}
+    URL_SQS_STUDENT: ${env:URL_SQS_STUDENT}
+    RESPONSE_GSI_INDEX_ROOMID_QUESTIONID: ${env:RESPONSE_GSI_INDEX_ROOMID_QUESTIONID}
+
+package:
+  individually: true
+  exclude:
+    - .serverless/**
+    - .venv/**
+    - .idea/**
+    - financial-data/**
+    - build_layer.sh
+    - user/**
+    - test/**
+    - Dockerfile
+    - variables/**
+    - businesses_businessId_ai-parse/**
+    - "*.zip"
+    - README.md
+    - serverless.yml
+    - requirements.txt
+
+layers:
+  commonLib:
+    package:
+      artifact: layer_common_lib.zip
+    description: "Dependencias comunes para todas las Lambdas"
+
+functions:
+  generate:
+    handler: generate/handler.lambda_handler
+    layers:
+      - { Ref: CommonLibLambdaLayer }
+    events:
+      - http:
+          path: responses/generate
+          method: post
+          cors:
+            origin: '*'
+            methods:
+              - POST
+            headers:
+              - Content-Type
+              - Authorization
+              - X-Amz-Date
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+
+
+  get_responses_by_student:
+    handler: get_responses_by_student/handler.lambda_handler
+    layers:
+      - { Ref: CommonLibLambdaLayer }
+    events:
+      - http:
+          path: responses/rooms/{room_id}/students/{student_id}
+          method: get
+          cors:
+            origin: '*'
+            methods:
+              - GET
+            headers:
+              - Content-Type
+              - Authorization
+              - X-Amz-Date
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+
+
+  get_responses_by_room:
+    handler: get_responses_by_room/handler.lambda_handler
+    layers:
+      - { Ref: CommonLibLambdaLayer }
+    events:
+      - http:
+          path: responses/rooms/{room_id}/questions
+          method: get
+          cors:
+            origin: '*'
+            methods:
+              - GET
+            headers:
+              - Content-Type
+              - Authorization
+              - X-Amz-Date
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent

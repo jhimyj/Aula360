@@ -15,20 +15,20 @@ from utils.response import Response
 from utils.token import get_token_instance
 from utils.config import (
     QUESTION_TABLE,
-    ROLES_PERMITED_CREATE_QUESTION
+    ROLES_PERMITED_CREATE_QUESTION,
+    URL_SQS_ROOM
 )
 from utils.external_api import create_external_api_client_room
+from utils.send_message_sqs import send_single_message_to_sqs_fifo
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 token_validator = get_token_instance()
 
-# DynamoDB Resource
 dynamodb = boto3.resource('dynamodb')
 questions_table = dynamodb.Table(QUESTION_TABLE)
 
-# Configuración de validadores
 _validator_question_list = create_validator_schema_question_list()
 _validator_question_item = create_validator_schema_question_item()
 _validator_multiple_choice_single = create_validator_config_multiple_choice_single()
@@ -39,7 +39,6 @@ _dict_validator_item = {
     "OPEN_ENDED": _validator_open_ended
 }
 
-# Cliente externo de rooms
 _service_room = create_external_api_client_room()
 
 
@@ -48,7 +47,7 @@ def lambda_handler(event, context):
     logger.info("Inicio de procesamiento de múltiples preguntas")
 
     try:
-        # 1) Parsear body
+        #parsear body
         body = event.get('body')
         if body is None:
             logger.error("Cuerpo de solicitud ausente")
@@ -80,7 +79,6 @@ def lambda_handler(event, context):
                 "request_id": request_id
             }).to_dict()
 
-        # 2) Validar lista de preguntas completa
         if not _validator_question_list.validate(data=body, path='body'):
             errors = _validator_question_list.get_errors()
             logger.error(f"Validación de lista fallida: {errors}")
@@ -95,7 +93,6 @@ def lambda_handler(event, context):
         room_id = body['room_id']
         questions_input = body['questions']
 
-        # 3) Autorización única
         headers = event.get('headers', {})
         auth_header = headers.get('Authorization')
         if not auth_header:
@@ -130,7 +127,6 @@ def lambda_handler(event, context):
                 "request_id": request_id
             }).to_dict()
 
-        # 4) Verificar room_id una sola vez
         try:
             room_resp = _service_room.request(
                 endpoint=f"/rooms/{room_id}",
@@ -158,7 +154,8 @@ def lambda_handler(event, context):
                 "request_id": request_id
             }).to_dict()
 
-        # 5) Validar cada pregunta sin insertar
+        max_score = 0
+
         for i, q in enumerate(questions_input):
             path = f"questions[{i+1}]"
             if not _validator_question_item.validate(data=q, path=path):
@@ -183,8 +180,8 @@ def lambda_handler(event, context):
                     "details": details,
                     "request_id": request_id
                 }).to_dict()
+            max_score = max_score + q.get('score', 0)
 
-        # 6) Inserción en lote tras validación exitosa
         created = []
 
         try:
@@ -210,7 +207,23 @@ def lambda_handler(event, context):
                 "request_id": request_id
             }).to_dict()
 
-        # 7) Respuesta exitosa
+        try:
+            number_questions_created = len(created)
+            message = {
+                "action": "update",
+                "key": {
+                    "id": room_id
+                },
+                "data": {
+                    "add__number_questions": number_questions_created,
+                    "add__max_score": max_score
+                }
+            }
+            send_single_message_to_sqs_fifo(queue_url=URL_SQS_ROOM, message=message, num_groups=10)
+        except Exception as err:
+            logger.error(f"error al enviar mensaje a la cola de rooms{err}")
+
+
         return Response(201, {
             "success": True,
             "code": "QUESTIONS_CREATED",

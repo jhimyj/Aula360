@@ -15,9 +15,12 @@ from utils.token import get_token_instance
 from utils.config import (
     STUDENT_TABLE,
     STUDENT_GSI_INDEX_USERNAME_ROOMID,
-    ROLE_STUDENT
+    ROLE_STUDENT,
+    URL_SQS_ROOM
 )
 from utils.external_api import create_external_api_client_room
+
+from utils.send_message_sqs import send_single_message_to_sqs_fifo
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -28,9 +31,7 @@ token_validator = get_token_instance()
 dynamodb = boto3.resource('dynamodb')
 students_table = dynamodb.Table(STUDENT_TABLE)
 
-# Configuración de validadores
 _validator_student = create_validator_schema_create_student()
-# Cliente externo de rooms
 _service_room = create_external_api_client_room()
 
 
@@ -102,9 +103,91 @@ def lambda_handler(event, context):
                 }
             ).to_dict()
 
-        # --- Verificar existencia previa del usuario ---
+
         username = body['username']
-        room_id = body['room_id']
+        room_code = body['room_code']
+
+        student_id = str(uuid.uuid4())
+        # creamos token solo para validar que room con code exista
+
+        payload = {
+            'id': student_id,
+            'role': ROLE_STUDENT,
+            'username': username
+        }
+        token = token_validator.generate_token(payload)
+
+        bearer_token = f'Bearer {token}'
+
+        # --- ROOM CHECK ---
+        try:
+            room_resp = _service_room.request(
+                endpoint=f'/rooms/code/{room_code}',
+                method="GET",
+                headers={
+                    'Authorization': bearer_token
+                }
+            )
+        except HTTPError as errorhttp:
+            logger.error(f"Error al consultar room con code {room_code}: {errorhttp}")
+            if errorhttp.response is not None:
+                if errorhttp.response.status_code == 404:
+                    return Response(
+                        status_code=404,
+                        body={
+                            "success": False,
+                            "code": "ROOM_NOT_FOUND",
+                            "message": "No existe el room especificado.",
+                            "details": ["verifica que el code sea valido"],
+                            "request_id": request_id
+                        }
+                    ).to_dict()
+
+            return Response(
+                status_code=502,
+                body={
+                    "success": False,
+                    "code": "ROOM_SERVICE_ERROR",
+                    "message": "Error al comunicarse con el servicio de rooms.",
+                    "details": [str(errorhttp)],
+                    "request_id": request_id
+                }
+            ).to_dict()
+
+        except Exception as err:
+            logger.error(f"Error al consultar room con code {room_code}: {err}")
+            return Response(
+                status_code=502,
+                body={
+                    "success": False,
+                    "code": "ROOM_SERVICE_ERROR",
+                    "message": "Error al comunicarse con el servicio de rooms.",
+                    "details": [str(err)],
+                    "request_id": request_id
+                }
+            ).to_dict()
+
+        room_data = room_resp.get("data")
+        if not room_data:
+            logger.error(f"Room con code {room_code} no encontrado o sin datos")
+            return Response(
+                status_code=404,
+                body={
+                    "success": False,
+                    "code": "ROOM_NOT_FOUND",
+                    "message": "El room especificado no existe.",
+                    "details": [f"room_code '{room_code}' no encontrado."],
+                    "request_id": request_id
+                }
+            ).to_dict()
+        #extraemos el id del room
+        room_id = room_data["id"]
+        body["room_id"] = room_id
+
+
+        del body["room_code"]
+
+        # --- Verificar existencia previa del usuario ---
         try:
             response_bd = students_table.query(
                 IndexName=STUDENT_GSI_INDEX_USERNAME_ROOMID,
@@ -138,83 +221,6 @@ def lambda_handler(event, context):
                 }
             ).to_dict()
 
-        student_id = str(uuid.uuid4())
-
-        #creamos token solo para validar que room_id exista
-
-        payload = {
-            'id': student_id,
-            'role': ROLE_STUDENT,
-            'username': username
-        }
-        token = token_validator.generate_token(payload)
-
-        bearer_token = f'Bearer {token}'
-
-        # --- ROOM CHECK ---
-        try:
-            room_resp = _service_room.request(
-                endpoint=f'/rooms/{room_id}',
-                method="GET",
-                headers={
-                    'Authorization': bearer_token
-                }
-            )
-        except HTTPError as errorhttp:
-            logger.error(f"Error al consultar room {room_id}: {errorhttp}")
-            if errorhttp.response is not None:
-                if errorhttp.response.status_code == 404:
-                    return Response(
-                        status_code=404,
-                        body={
-                            "success": False,
-                            "code": "ROOM_NOT_FOUND",
-                            "message": "No existe el room especificado.",
-                            "details": ["verifica que room_id sea valido"],
-                            "request_id": request_id
-                        }
-                    ).to_dict()
-
-            return Response(
-                status_code=502,
-                body={
-                    "success": False,
-                    "code": "ROOM_SERVICE_ERROR",
-                    "message": "Error al comunicarse con el servicio de rooms.",
-                    "details": [str(errorhttp)],
-                    "request_id": request_id
-                }
-            ).to_dict()
-
-        except Exception as err:
-            logger.error(f"Error al consultar room {room_id}: {err}")
-            return Response(
-                status_code=502,
-                body={
-                    "success": False,
-                    "code": "ROOM_SERVICE_ERROR",
-                    "message": "Error al comunicarse con el servicio de rooms.",
-                    "details": [str(err)],
-                    "request_id": request_id
-                }
-            ).to_dict()
-
-
-        room_data = room_resp.get("data")
-        if not room_data:
-            logger.error(f"Room {room_id} no encontrado o sin datos")
-            return Response(
-                status_code=404,
-                body={
-                    "success": False,
-                    "code": "ROOM_NOT_FOUND",
-                    "message": "El room especificado no existe.",
-                    "details": [f"room_id '{room_id}' no encontrado."],
-                    "request_id": request_id
-                }
-            ).to_dict()
-
-
         # --- CREACIÓN DE LA STUDENT ---
         now = datetime.utcnow().isoformat()
         student_data = {
@@ -224,6 +230,7 @@ def lambda_handler(event, context):
             'role': ROLE_STUDENT,
             "score_student": 0,
             "score_villain": 0,
+            "answered_questions_count": 0,
             "created_at": now,
             "updated_at": now
         }
@@ -236,6 +243,22 @@ def lambda_handler(event, context):
             )
             logger.info(
                 f"Student creado exitosamente en DynamoDB: id={student_id}, username={username}, room_id={room_id}")
+
+            try:
+                message = {
+                    "action": "update",
+                    "key": {
+                        "id": room_id
+                    },
+                    "data": {
+                        "add__number_students": 1
+                    }
+                }
+                send_single_message_to_sqs_fifo(queue_url=URL_SQS_ROOM, message=message, num_groups=10)
+            except Exception as err:
+                logger.error(f"error al enviar mensaje a la cola de rooms{err}")
+
+
             return Response(
                 status_code=201,
                 body={

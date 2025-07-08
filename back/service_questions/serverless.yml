@@ -3,16 +3,19 @@ org: ${env:ORG}
 
 provider:
   name: aws
-  runtime: python3.9
+  runtime: python3.10
   memorySize: 1024
   timeout: 29
   role: ${env:ROLE}
-  environment: #aca las variables de entorno
+  environment: #aca ponemos las variables de entorno
     QUESTION_TABLE: ${env:QUESTION_TABLE}
     QUESTION_GSI_INDEX_ROOMID_ID: ${env:QUESTION_GSI_INDEX_ROOMID_ID}
     QUESTION_GSI_INDEX_ROOMID_CREATEDAT: ${env:QUESTION_GSI_INDEX_ROOMID_CREATEDAT}
     HTTPS_SERVICE_ROOM: ${env:HTTPS_SERVICE_ROOM}
     JWT_SECRET_KEY: ${env:JWT_SECRET_KEY}
+    ANTHROPIC_API_KEY: ${env:ANTHROPIC_API_KEY}
+    ANTHROPIC_API_KEY1: ${env:ANTHROPIC_API_KEY1}
+    URL_SQS_ROOM: ${env:URL_SQS_ROOM}
 
 
 package:
@@ -28,13 +31,12 @@ package:
     - Dockerfile
     - variables/**
     - businesses_businessId_ai-parse/**
-    - "*.zip" #eres incluir otros ZIP que no sean necesarios
-    - README.md  # Ejemplo, si hay archivos de documentación que no necesitas
+    - "*.zip"
+    - README.md
     - serverless.yml
     - requirements.txt
 
-# Definición del layer que contiene las dependencias comunes.
-layers: #si es que hay librerias externa
+layers:
   commonLib:
     package:
       artifact: layer_common_lib.zip
@@ -113,6 +115,67 @@ functions:
             origin: '*'
             methods:
               - GET
+            headers:
+              - Content-Type
+              - Authorization
+              - X-Amz-Date
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+
+  recommendation_ia:
+    handler: recommendation_ia/handler.lambda_handler
+    layers:
+      - { Ref: CommonLibLambdaLayer }
+    events:
+      - http:
+          path: questions/room/recommendation_ia
+          method: post
+          cors:
+            origin: '*'
+            methods:
+              - POST
+            headers:
+              - Content-Type
+              - Authorization
+              - X-Amz-Date
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+
+
+  recommendation_ia_pdf:
+    handler: recommendation_ia_pdf/handler.lambda_handler
+    layers:
+      - { Ref: CommonLibLambdaLayer }
+    events:
+      - http:
+          path: questions/room/recommendation_ia/pdf
+          method: post
+          cors:
+            origin: '*'
+            methods:
+              - POST
+            headers:
+              - Content-Type
+              - Authorization
+              - X-Amz-Date
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+
+  recommendation_ia_with_number:
+    handler: recommendation_ia_with_number/handler.lambda_handler
+    layers:
+      - { Ref: CommonLibLambdaLayer }
+    events:
+      - http:
+          path: questions/room/ia/recommendation/number
+          method: post
+          cors:
+            origin: '*'
+            methods:
+              - POST
             headers:
               - Content-Type
               - Authorization

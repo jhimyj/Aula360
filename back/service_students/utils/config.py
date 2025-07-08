@@ -11,6 +11,7 @@ JWT_EXPIRATION_TIME = 3600*6
 JWT_ALGORITHM = "HS256"
 LIMIT_PAGE_SIZE = 100
 HTTPS_SERVICE_ROOM = os.environ['HTTPS_SERVICE_ROOM']
+URL_SQS_ROOM = os.environ['URL_SQS_ROOM']
 
 #permisos  y configuraciones iniciales
 ROLE_TEACHER = 'TEACHER'
@@ -28,7 +29,7 @@ HEADERS_RESPONSE_DEFAULT = {
 schema_create_student = {
     "type": dict,
     "schema": {
-        "room_id": {"type": str, "required": True},
+        "room_code": {"type": str, "required": True},
         "username": {"type": str, "required": True},
         "data": {"type": dict, "validate_schema": False},
     }
@@ -37,8 +38,11 @@ schema_create_student = {
 schema_login = {
     "type": dict,
     "schema": {
-        "room_id": {"type": str, "required": True},
+        "room_code": {"type": str, "required": True},
         "username": {"type": str, "required": True}
     }
 }
 
+schema_update_student = {
+
+}

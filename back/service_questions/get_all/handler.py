@@ -7,15 +7,12 @@ from utils.response import Response
 from utils.config import QUESTION_TABLE, QUESTION_GSI_INDEX_ROOMID_CREATEDAT
 from utils.dynamo_utils import to_json_serializable
 
-# Configurar logger
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-# Inicializar recursos de DynamoDB
 dynamodb = boto3.resource('dynamodb')
 questions_table = dynamodb.Table(QUESTION_TABLE)
 
-# Patrón para validar UUID v4
 def _compile_uuid_pattern():
     return re.compile(
         r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-"
@@ -34,7 +31,6 @@ def lambda_handler(event, context):
     request_id = getattr(context, 'aws_request_id', 'unknown')
     logger.info("Inicio de recuperación de preguntas de room (request_id=%s)", request_id)
 
-    # Validar path parameter
     params = event.get('pathParameters') or {}
     room_id = params.get('room_id')
     if not room_id:
@@ -63,7 +59,6 @@ def lambda_handler(event, context):
             }
         ).to_dict()
 
-    # Query al GSI por room_id
     index_name = QUESTION_GSI_INDEX_ROOMID_CREATEDAT
     items = []
     last_key = None
@@ -107,10 +102,8 @@ def lambda_handler(event, context):
             }
         ).to_dict()
 
-    # Convertir decimals y fechas
     items = to_json_serializable(items)
 
-    # Respuesta exitosa
     return Response(
         status_code=200,
         body={
